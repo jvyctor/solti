@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { PRESETS, resolveTheme, TERM_SCHEMES, termOptions } from './themes.js'
-import { SlidersHorizontal, Palette, SquareTerminal, Bot, Keyboard, Database, Info, RefreshCw, Smartphone, CalendarClock, X } from 'lucide-react'
+import { SlidersHorizontal, Palette, SquareTerminal, Bot, Keyboard, Database, Info, RefreshCw, Smartphone, CalendarClock, Stethoscope, X } from 'lucide-react'
 import { UpdatesTab } from './Updates.jsx'
 import RemoteTab from './RemoteTab.jsx'
 import RoutinesTab from './RoutinesTab.jsx'
+import { DiagTab } from './Diagnostics.jsx'
 
 const TABS = [
   { id: 'geral', label: 'Geral', Icon: SlidersHorizontal },
@@ -12,6 +13,7 @@ const TABS = [
   { id: 'terminal', label: 'Terminal', Icon: SquareTerminal },
   { id: 'agentes', label: 'Agentes', Icon: Bot },
   { id: 'atalhos', label: 'Atalhos', Icon: Keyboard },
+  { id: 'diag', label: 'Diagnóstico', Icon: Stethoscope },
   { id: 'rotinas', label: 'Rotinas', Icon: CalendarClock },
   { id: 'remoto', label: 'Controle remoto', Icon: Smartphone },
   { id: 'updates', label: 'Atualizações', Icon: RefreshCw },
@@ -408,6 +410,7 @@ export default function SettingsDialog({ open, onOpenChange, settings, api, mode
             {tab === 'terminal' && <TerminalTab s={settings} set={set} mode={mode} />}
             {tab === 'agentes' && <AgentesTab s={settings} set={set} />}
             {tab === 'atalhos' && <Atalhos />}
+            {tab === 'diag' && <DiagTab ui={{ Section }} />}
             {tab === 'rotinas' && <RoutinesTab targets={update.targets} ui={{ Section, Row, Switch }} />}
             {tab === 'remoto' && <RemoteTab s={settings} set={set} ui={{ Section, Row, Switch }} />}
             {tab === 'updates' && <UpdatesTab s={settings} set={set} api={api} state={update.state} onOpen={update.open} ui={{ Section, Row, Switch }} />}

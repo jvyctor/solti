@@ -37,7 +37,7 @@ export function TerminalNode({ id, data, selected }) {
   useEffect(() => {
     if (data.unloaded) return
     const c = cfgRef.current
-    const term = new Terminal(termOptions(c, c.mode))
+    const term = new Terminal(termOptions({ ...c, ...(dataRef.current.look || {}) }, c.mode))
     termRef.current = term
     // Conversation id: the first start assigns it, later starts (restart, reload) resume that conversation.
     const sid = dataRef.current.sid || crypto.randomUUID()
@@ -120,7 +120,7 @@ export function TerminalNode({ id, data, selected }) {
   }, [data.sid, data.preset, data.unloaded])
 
   // Style changes apply to open terminals without restarting them.
-  const opts = termOptions(cfg, cfg.mode)
+  const opts = termOptions({ ...cfg, ...(data.look || {}) }, cfg.mode) // node.data.look overrides the global style for this terminal
   const optsKey = JSON.stringify(opts)
   useEffect(() => {
     const t = termRef.current

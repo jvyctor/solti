@@ -8,6 +8,7 @@ const activity = require('./activity.cjs')
 const backup = require('./backup.cjs')
 const remote = require('./remote.cjs')
 const routines = require('./routines.cjs')
+const { diagnose, CLIS } = require('./diagnose.cjs')
 const QRCode = require('qrcode')
 const portal = require('./portal.cjs')
 
@@ -276,6 +277,18 @@ ipcMain.handle('pty:spawn', (_e, id, opts) => {
   const e = ptys.get(id)
   return { buf: e?.buf || '', cwd: e?.cwd || '' }
 })
+// ---- Diagnostics: are the agent CLIs installed, logged in and wired to the canvas?
+const runOut = (cmd) => new Promise((res, rej) => require('child_process').exec(cmd, { timeout: 8000, windowsHide: true }, (e, out) => (e ? rej(e) : res(String(out)))))
+const runDiag = () => diagnose({ commands: settings.get().commands, which: require('./register.cjs').has, run: runOut })
+ipcMain.handle('diag:run', () => runDiag())
+ipcMain.handle('diag:fix', async (_e, id) => {
+  const bin = CLIS[id]?.bin
+  if (!bin) return runDiag()
+  await require('./register.cjs').registerOne(bin)
+  try { require('./skills.cjs').installSkills() } catch {}
+  return runDiag()
+})
+
 // ---- Scheduled routines (see routines.cjs)
 let routinesInst
 const getRoutines = () => routinesInst ||= routines.create({

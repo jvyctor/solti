@@ -11,6 +11,7 @@ import { resolveTheme, applyTheme } from './themes.js'
 import { Canvas } from './Canvas.jsx'
 import { Sidebar } from './Sidebar.jsx'
 import { runPipeline, stopPipeline } from './pipelineRunner.js'
+import { Onboarding } from './Diagnostics.jsx'
 import { CommCtx, PipeCtx, PRESET_LABELS, SettingsCtx, api, ask, describe, fresh, mem, uid } from './shared.js'
 
 export default function App() {
@@ -241,6 +242,7 @@ export default function App() {
     <div className={'app' + (settings.handCursor ? ' hand' : '')}>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} settings={settings} api={api} mode={mode} update={{ targets, state: upd, open: () => setUpdOpen(true), io: { export: exportWs, import: importWs } }} />
       <ApprovalDialog />
+      <Onboarding open={!!settings && !settings.onboarded && !!state && state.list.every((w) => w.nodes.length === 0)} onClose={() => api.settingsSet({ onboarded: true })} onTeam={() => setTimeout(() => window.dispatchEvent(new Event('ac:team')), 200)} />
       <AwayDigest />
       {state && <Palette open={palette} onClose={() => setPalette(false)} state={state} goTo={goTo} actions={paletteActions} />}
       <UpdateToast state={upd} onOpen={() => { setUpdOpen(true); api.updateDownload() }} />

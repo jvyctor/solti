@@ -58,4 +58,10 @@ async function registerAll() {
   return done
 }
 
-module.exports = { registerAll }
+// One CLI on demand (the diagnostics' "consertar" button).
+async function registerOne(bin) {
+  const fn = AGENTS[bin]
+  return fn ? fn() : false
+}
+
+module.exports = { registerAll, registerOne, has }

@@ -536,3 +536,22 @@ svg { flex: none; }
 .empty-actions { display: flex; gap: 8px; margin: 6px 0; }
 .empty-actions button { padding: 9px 16px; background: var(--surface-3); border: 1px solid var(--border); border-radius: var(--r-md); }
 .empty-actions .primary { background: var(--accent); border-color: var(--accent); color: #0b1020; font-weight: 600; }
+
+/* ───────── Diagnostics ───────── */
+.diag { display: flex; flex-direction: column; gap: 8px; }
+.diag-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--r-md); }
+.diag-name { flex: 1 1 140px; min-width: 120px; }
+.diag-name b, .diag-name small { display: block; }
+.diag-name small, .diag-hint { color: var(--text-3); font-size: 12px; }
+.diag-hint { flex-basis: 100%; }
+.diag-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--r-pill); font-size: 12px; background: var(--surface-3); }
+.diag-chip.ok { color: var(--success); }
+.diag-chip.bad { color: var(--danger); }
+.diag-chip.unk { color: var(--text-3); }
+
+/* ───────── Per-terminal look ───────── */
+.look-row { display: flex !important; flex-direction: row !important; align-items: center; justify-content: space-between; gap: 12px; }
+.look-ctl { display: inline-flex; align-items: center; gap: 8px; }
+.look-ctl input[type=color] { width: 32px; height: 26px; padding: 0; border: 1px solid var(--border); border-radius: var(--r-sm); background: none; }
+.look-ctl code { font: 12px 'JetBrains Mono', monospace; color: var(--text-2); }
+.dlg .look-row select, .dlg .look-row > input { width: 190px; }

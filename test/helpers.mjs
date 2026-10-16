@@ -1,6 +1,6 @@
 // Shared by the UI tests: start the built app in a throwaway profile and talk to it over CDP.
 import { execFileSync, spawn } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import electron from 'electron'
 
@@ -11,7 +11,12 @@ export function treeKill(app) {
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-export async function launch(prof, port) {
+export async function launch(prof, port, { onboarded = true } = {}) {
+  // The first-run welcome would cover the UI in every test: mark it as seen unless a test wants it.
+  const sf = join(prof, 'settings.json')
+  let s = {}
+  try { s = JSON.parse(readFileSync(sf, 'utf8')) } catch {}
+  if (onboarded && s.onboarded === undefined) writeFileSync(sf, JSON.stringify({ ...s, onboarded: true }))
   const app = spawn(electron, ['.', `--user-data-dir=${prof}`, `--remote-debugging-port=${port}`], { stdio: 'ignore' })
   let page
   for (let i = 0; i < 40 && !page; i++) {

@@ -9,6 +9,7 @@ import { ActivityDock } from './Activity.jsx'
 import { Menu } from './Menu.jsx'
 import { NewTerminalDialog } from './NewTerminalDialog.jsx'
 import TeamDialog from './TeamDialog.jsx'
+import LookDialog from './LookDialog.jsx'
 import { TerminalNode } from './TerminalNode.jsx'
 import { FilesNode, GroupNode, KnowledgeNode, NoteNode, PortalNode, TextNode } from './Nodes.jsx'
 import { edgeTypes } from './edges.jsx'
@@ -100,6 +101,7 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
   }
   const [dlg, setDlg] = useState(null) // { pos } while "Novo Terminal…" is open
   const [teamDlg, setTeamDlg] = useState(null) // { pos } while "Time pronto…" is open
+  const [lookId, setLookId] = useState(null) // terminal whose appearance is being edited
   useEffect(() => {
     const open = () => setTeamDlg({ pos: { x: 80, y: 80 + ws.nodes.length * 20 } })
     window.addEventListener('ac:team', open) // from the command palette
@@ -188,6 +190,7 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
       ...(t ? [{ label: 'Reenviar briefing do papel', run: () => api.brief(n.id, { name: d.name, maestro: !!d.maestro, instructions: d.instructions, knowledge: ws.nodes.find((x) => x.type === 'knowledge')?.data.text || '' }) }, { label: 'Monitorar atividade', checked: d.monitor, run: () => patch(n.id, { monitor: !d.monitor }) }, '-'] : []),
       ...(t
         ? [
+            { label: 'Aparência…', run: () => setLookId(n.id) },
             { label: d.blur ? 'Focar' : 'Desfocar', run: () => patch(n.id, { blur: !d.blur }) },
             { label: 'Recarregar (retoma a conversa)', run: () => { api.kill(n.id); patch(n.id, { rev: (d.rev || 0) + 1, unloaded: false }) } },
             { label: 'Nova conversa', run: () => { api.kill(n.id); patch(n.id, { rev: (d.rev || 0) + 1, unloaded: false, sid: undefined, ran: false }) } },
@@ -247,6 +250,9 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
           onClose={() => setDlg(null)}
           onCreate={({ name, cwd, preset, git }) => { addTerminal(preset, dlg.pos, { name: name || undefined, cwd: cwd || undefined, git }); setDlg(null) }}
         />
+      )}
+      {lookId && ws.nodes.some((n) => n.id === lookId) && (
+        <LookDialog node={ws.nodes.find((n) => n.id === lookId)} cfg={cfg} onClose={() => setLookId(null)} onChange={(look) => patch(lookId, { look })} />
       )}
       {teamDlg && (
         <TeamDialog

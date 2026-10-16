@@ -16,6 +16,7 @@ const DEFAULTS = {
   notifyIdle: true,
   idleSeconds: 6,
   autoUpdate: true,
+  onboarded: false, // first-run welcome already shown
   // Controle remoto (celular)
   remoteEnabled: false,
   remotePort: 7443,

@@ -65,6 +65,8 @@ contextBridge.exposeInMainWorld('api', {
   routinesSave: (l) => ipcRenderer.invoke('routines:save', l),
   routinesRun: (id) => ipcRenderer.invoke('routines:run', id),
   onRoutinePipeline: (cb) => on('routine:pipeline', cb),
+  diagRun: () => ipcRenderer.invoke('diag:run'),
+  diagFix: (id) => ipcRenderer.invoke('diag:fix', id),
   pickFolder: () => ipcRenderer.invoke('dialog:folder'),
   termSave: (id, text) => ipcRenderer.send('term:save', id, text),
   termLoad: (id) => ipcRenderer.invoke('term:load', id),
