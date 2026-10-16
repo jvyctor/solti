@@ -11,6 +11,7 @@
     "build": "vite build",
     "start": "vite build && electron .",
     "icons": "node build/make-icons.cjs",
+    "test": "node --test \"test/*.test.mjs\"",
     "dist": "vite build && electron-builder --win nsis --x64 --config.directories.output=%LOCALAPPDATA%\\agent-canvas-release"
   },
   "dependencies": {
