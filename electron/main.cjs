@@ -228,7 +228,7 @@ ipcMain.handle('fs:list', (_e, dir) => {
     return { dir: d, error: String(e.message) }
   }
 })
-ipcMain.on('pty:write',(_e, id, d) => { console.error('WRITE', id, JSON.stringify(d).slice(0,40), ptys.has(id), [...ptys.keys()].join(',')); ptys.get(id)?.p.write(d) })
+ipcMain.on('pty:write',(_e, id, d) => ptys.get(id)?.p.write(d))
 ipcMain.on('pty:resize', (_e, id, c, r) => { try { ptys.get(id)?.p.resize(c, r) } catch {} })
 ipcMain.on('pty:kill', (_e, id) => { ptys.get(id)?.p.kill(); ptys.delete(id); applyPower() })
 ipcMain.handle('settings:get', () => settings.get())
