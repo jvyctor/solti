@@ -25,6 +25,26 @@ npm run dist
 Saída: `%LOCALAPPDATA%\agent-canvas-release\Agent-Canvas-Setup-<versão>.exe`.
 O instalador não é assinado; o SmartScreen mostra um aviso na primeira execução.
 
+## Publicar uma versão
+
+O app confere atualizações no repositório público de releases `jvyctor/agent-canvas-releases` (só instaladores; o código fica neste repositório privado). Não precisa de token no app.
+
+1. Suba `"version"` no `package.json` (ex.: `0.2.2` → `0.2.3`) e faça commit/push.
+2. Rode, com um token do GitHub com permissão de escrita no repositório de releases em `GH_TOKEN`:
+   ```
+   npm run release
+   ```
+   Com o Git Credential Manager (Git Bash):
+   ```
+   GH_TOKEN=$(printf 'protocol=https\nhost=github.com\n\n' | git credential fill | sed -n 's/^password=//p') npm run release
+   ```
+3. Se falhar com `422 ... valid tag`, rode o mesmo comando de novo: ele reaproveita a Release e envia o que faltou. Leva alguns minutos (o instalador tem ~110 MB).
+4. Confira na Release `vX.Y.Z` os 3 arquivos: `Agent-Canvas-Setup-X.Y.Z.exe`, `.exe.blockmap` e `latest.yml`.
+
+Quem tem uma versão anterior (a partir da 0.2.1) recebe o aviso ao abrir o app, ou em Configurações → Atualizações → Verificar atualizações.
+
+Testes: `npm run build` e depois `npm test` (abre o app em perfil temporário; inclui o fluxo de atualização com um feed falso).
+
 ## Estrutura
 
 - `electron/` processo principal: PTYs, bridge HTTP local, registro do MCP, configurações, briefings e skills.
