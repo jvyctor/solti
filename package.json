@@ -84,6 +84,22 @@
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
       "artifactName": "Agent-Canvas-Setup-${version}.${ext}"
-    }
+    },
+    "mac": {
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }, { "target": "zip", "arch": ["x64", "arm64"] }],
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.png",
+      "identity": null
+    },
+    "dmg": { "artifactName": "Agent-Canvas-${version}-${arch}.${ext}" },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Development",
+      "icon": "build/icon.png",
+      "maintainer": "Agent Canvas",
+      "synopsis": "Canvas para orquestrar agentes de IA"
+    },
+    "appImage": { "artifactName": "Agent-Canvas-${version}.${ext}" },
+    "deb": { "artifactName": "Agent-Canvas-${version}.${ext}" }
   }
 }

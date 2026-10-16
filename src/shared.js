@@ -33,7 +33,8 @@ export const describe = (n, ws) => {
 export const PRESET_COLOR = { claude: 'claude', codex: 'codex', gemini: 'gemini', antigravity: 'gemini' }
 export const shortPath = (p) => {
   const parts = (p || '').split(/[\\/]/).filter(Boolean)
-  return parts.length > 2 ? '…\\' + parts.slice(-2).join('\\') : p
+  const sep = (p || '').includes('/') && !(p || '').includes('\\') ? '/' : '\\'
+  return parts.length > 2 ? '…' + sep + parts.slice(-2).join(sep) : p
 }
 
 // Random "adjective-noun" names; checked against the workspace so they stay unique.

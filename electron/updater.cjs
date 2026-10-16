@@ -1,5 +1,5 @@
 // Auto-update from the public GitHub Releases repo (electron-updater); no credentials involved.
-const { app, ipcMain } = require('electron')
+const { app, ipcMain, shell } = require('electron')
 const { autoUpdater } = require('electron-updater')
 
 const CHECK_EVERY = 4 * 60 * 60 * 1000
@@ -53,6 +53,8 @@ function init(win, { beforeInstall }) {
   ipcMain.on('update:check', () => check())
   ipcMain.on('update:download', () => {
     if (state.status !== 'available') return
+    // The Mac build is not code-signed, and macOS refuses to replace an unsigned app in place: open the download page instead.
+    if (process.platform === 'darwin') return shell.openExternal('https://github.com/jvyctor/agent-canvas-releases/releases/latest')
     push({ ...state, status: 'downloading', percent: 0 })
     autoUpdater.downloadUpdate().catch((e) => push({ status: 'error', message: friendly(e), version: state.version }))
   })

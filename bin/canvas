@@ -1,0 +1,7 @@
+#!/bin/sh
+# Inside an Agent Canvas terminal CANVAS_NODE is the app's own runtime, so users need no Node.js install.
+dir="$(dirname "$0")"
+if [ -n "$CANVAS_NODE" ]; then
+  ELECTRON_RUN_AS_NODE=1 exec "$CANVAS_NODE" "$dir/canvas.cjs" "$@"
+fi
+exec node "$dir/canvas.cjs" "$@"

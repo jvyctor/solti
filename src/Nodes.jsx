@@ -109,6 +109,9 @@ export function PortalNode({ id, data, selected }) {
 }
 
 // Lazy directory tree. shortcut: listing is not watched; re-open the folder to refresh.
+// Windows paths use \, everything else /.
+const sepOf = (p) => (p.includes('/') && !p.includes('\\') ? '/' : '\\')
+
 export function Dir({ path, name, depth = 0, tick = 0 }) {
   const [kids, setKids] = useState(null)
   const [open, setOpen] = useState(depth === 0)
@@ -124,7 +127,7 @@ export function Dir({ path, name, depth = 0, tick = 0 }) {
       </div>
       {open && kids?.map((k) =>
         k.dir ? (
-          <Dir key={k.name} path={path + '\\' + k.name} name={k.name} depth={depth + 1} tick={tick} />
+          <Dir key={k.name} path={path + sepOf(path) + k.name} name={k.name} depth={depth + 1} tick={tick} />
         ) : (
           <div key={k.name} className="ftree-row file" style={{ paddingLeft: (depth + 1) * 12 + 13 }}><FileText size={13} /> {k.name}</div>
         ),

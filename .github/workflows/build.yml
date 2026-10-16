@@ -1,0 +1,38 @@
+# Manual: builds the installers for Windows, macOS and Linux without publishing, and keeps them as downloadable artifacts.
+# Actions tab -> "Build installers" -> Run workflow.
+name: Build installers
+on: workflow_dispatch
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            args: --win nsis --x64
+          - os: macos-latest
+            args: --mac
+          - os: ubuntu-latest
+            args: --linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vite build
+      - run: npx electron-builder ${{ matrix.args }} --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.os }}
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.zip
+            release/*.AppImage
+            release/*.deb
+          retention-days: 3
+          if-no-files-found: error
