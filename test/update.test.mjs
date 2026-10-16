@@ -58,7 +58,7 @@ test('new version: toast, download, install button', async () => {
   })
 })
 
-test('same version: manual check says up to date', async () => {
+test('same version: no toast', async () => {
   await run('0.1.0', 9341, async ({ ev, until }) => {
     await sleep(6000) // let the startup check finish
     assert.equal((await ev(`!!document.querySelector('.toast')`)).result.value, false)
