@@ -183,7 +183,7 @@ function renderAsks(list) {
     return card
   }) : [el('p', { className: 'dim', textContent: 'Nenhum pedido pendente.' })]))
 }
-const KIND = { send: 'mensagem', ask: 'pergunta', spawn: 'criou agente', portal: 'navegador', done: 'concluiu', remote: 'celular' }
+const KIND = { send: 'mensagem', ask: 'pergunta', spawn: 'criou agente', portal: 'navegador', done: 'concluiu', remote: 'celular', routine: 'rotina' }
 function renderLog(list) {
   $('log').replaceChildren(...[...list].reverse().map((e) => {
     const d = el('div', { className: 'act' + (e.outcome === 'denied' ? ' denied' : '') })

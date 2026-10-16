@@ -1,58 +1,28 @@
-import { useEffect, useRef } from 'react'
+import { useContext, useEffect, useRef } from 'react'
 import { Handle, NodeResizer, Position, useNodes, useReactFlow } from '@xyflow/react'
 import { Workflow, X, Play, Square, Plus, Trash2 } from 'lucide-react'
-import { HINT, fill, settle, shouldStop } from './pipeline.js'
+import { settle } from './pipeline.js'
+import { isRunning } from './pipelineRunner.js'
+import { PipeCtx } from './shared.js'
 
-const api = window.api
-const STEP_TIMEOUT = 15 * 60 * 1000
 const MARK = { ok: '✓', stopped: '■', timeout: '⏱', running: '…' }
 
-// Waits for `agent` to call canvas_done. Resolves { summary } or { timeout } or { cancelled }.
-const waitDone = (agent, cancel) =>
-  new Promise((resolve) => {
-    const t = setTimeout(() => { off(); resolve({ timeout: true }) }, STEP_TIMEOUT)
-    const off = api.onDone(({ from, summary }) => { if (from === agent) { clearTimeout(t); off(); resolve({ summary }) } })
-    cancel.current = () => { clearTimeout(t); off(); resolve({ cancelled: true }) }
-  })
-
-// Runs saved steps one after another: type the prompt into an agent, wait for its canvas_done, hand the summary on.
+// Steps editor and progress view; the run itself is in pipelineRunner.js (started through PipeCtx).
 export default function PipelineNode({ id, data, selected }) {
   const { updateNodeData, deleteElements } = useReactFlow()
+  const { start, stop } = useContext(PipeCtx)
   const agents = useNodes().filter((n) => n.type === 'terminal')
   const steps = data.steps || []
-  const live = useRef(false)
-  const cancel = useRef(null)
   const dataRef = useRef(data)
   dataRef.current = data
   const set = (p) => updateNodeData(id, p)
   const setStep = (i, p) => set({ steps: steps.map((s, k) => (k === i ? { ...s, ...p } : s)) })
 
-  useEffect(() => { // left "running" by a closed workspace / restart
-    const s = settle(dataRef.current, live.current)
+  useEffect(() => { // left "running" by a restart (a run survives workspace switches, a restart does not)
+    const s = settle(dataRef.current, isRunning(id))
     if (s !== dataRef.current) set({ state: s.state, note: s.note })
-    return () => { cancel.current?.() }
   }, [])
 
-  const run = async () => {
-    live.current = true
-    const results = []
-    set({ state: 'running', results: [], note: '', at: 0 })
-    for (let i = 0; i < steps.length; i++) {
-      const step = steps[i]
-      if (!agents.some((a) => a.id === step.agent)) { results.push({ state: 'stopped', summary: 'Agente não escolhido ou removido.' }); set({ results: [...results], state: 'stopped' }); break }
-      set({ at: i, results: [...results, { state: 'running' }] })
-      const text = fill(step.prompt, { input: data.input, results }) + (data.hint === false ? '' : HINT)
-      api.promptAgent(step.agent, text)
-      const r = await waitDone(step.agent, cancel)
-      if (r.cancelled) { results.push({ state: 'stopped', summary: 'Parado por você.' }); set({ results: [...results], state: 'stopped' }); break }
-      if (r.timeout) { results.push({ state: 'timeout', summary: 'Sem resposta em 15 minutos.' }); set({ results: [...results], state: 'stopped' }); break }
-      results.push({ state: 'ok', summary: r.summary })
-      if (shouldStop(step, r.summary)) { set({ results: [...results], state: 'stopped', note: `Parou: o resumo contém “${step.stopIf}”.` }); break }
-      set({ results: [...results] })
-      if (i === steps.length - 1) set({ state: 'done' })
-    }
-    live.current = false
-  }
   const running = data.state === 'running'
 
   return (
@@ -93,8 +63,8 @@ export default function PipelineNode({ id, data, selected }) {
         <div className="row">
           <label className="pipe-hint"><input type="checkbox" checked={data.hint !== false} disabled={running} onChange={(e) => set({ hint: e.target.checked })} /> lembrar o agente de chamar <code>canvas_done</code></label>
           {running
-            ? <button onClick={() => cancel.current?.()}><Square size={12} /> Parar</button>
-            : <button disabled={!steps.length} onClick={run}><Play size={12} /> Executar</button>}
+            ? <button onClick={() => stop(id)}><Square size={12} /> Parar</button>
+            : <button disabled={!steps.length} onClick={() => start(id)}><Play size={12} /> Executar</button>}
         </div>
       </div>
       <Handle type="source" position={Position.Right} />

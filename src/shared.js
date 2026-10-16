@@ -1,6 +1,7 @@
 import { createContext } from 'react'
 
 export const api = window.api
+export const PipeCtx = createContext({ start() {}, stop() {} }) // pipeline runner (see App)
 export const CommCtx = createContext(new Set()) // 'idA|idB' pairs currently talking
 export const SettingsCtx = createContext(null) // app settings (see electron/settings.cjs) + { mode, eff }
 export const PRESET_LABELS = { claude: 'Claude Code', codex: 'Codex', antigravity: 'Antigravity', opencode: 'OpenCode', gemini: 'Gemini', shell: 'Shell' }

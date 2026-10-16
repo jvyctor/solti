@@ -18,6 +18,14 @@ export function TerminalNode({ id, data, selected }) {
   const [cwd, setCwd] = useState('')
   const [status, setStatus] = useState(null) // working | input | idle | exited | limit (agents only)
   const [tokens, setTokens] = useState(0)
+  // "Starting…" until the shell prints its first output; after 12 s a hint that it is slow, not frozen.
+  const [booting, setBooting] = useState(true)
+  const [slow, setSlow] = useState(false)
+  useEffect(() => {
+    if (!booting) return
+    const t = setTimeout(() => setSlow(true), 12000)
+    return () => clearTimeout(t)
+  }, [booting])
   useEffect(() => { if (data.lastDone?.t && data.lastDone.t > mountedAt.current) setStatus('done') }, [data.lastDone?.t])
   const cfg = useContext(SettingsCtx)
   const cfgRef = useRef(cfg)
@@ -48,6 +56,7 @@ export function TerminalNode({ id, data, selected }) {
     const held = []
     const show = (d) => {
       term.write(d)
+      setBooting(false)
       if (dataRef.current.preset !== 'shell') {
         if (cur !== 'working') { cur = 'working'; setStatus('working') }
         clearTimeout(settle)
@@ -74,7 +83,7 @@ export function TerminalNode({ id, data, selected }) {
     window.addEventListener('beforeunload', save)
     Promise.all([api.termLoad(id), api.spawn(id, { preset: data.preset, name: data.name, maestro: !!data.maestro, instructions: data.instructions, cwd: data.cwd, cols: term.cols, rows: term.rows, resume: !!dataRef.current.ran, sid, knowledge: getNodes().find((n) => n.type === 'knowledge')?.data.text || '' })]).then(([saved, r]) => {
       setCwd(r.cwd)
-      if (r.buf) term.write(r.buf) // pty still alive (reload): its buffer is newer than the file
+      if (r.buf) { term.write(r.buf); setBooting(false) } // pty still alive (reload): its buffer is newer than the file
       // Pushed into scrollback: the shell's startup clear only wipes the visible screen.
       else if (saved) term.write(saved + '\r\n\x1b[2m--- sessão anterior ---\x1b[0m' + '\r\n'.repeat(term.rows))
       ready = true
@@ -143,6 +152,9 @@ export function TerminalNode({ id, data, selected }) {
       </div>
       <div className="tbody nodrag nowheel" ref={host} style={{ background: opts.theme.background, padding: `4px ${cfg.termPadding}px`, ...(data.blur ? { filter: 'blur(6px)' } : {}) }} />
       <div className="tfoot" title={cwd}><Folder size={12} /> {shortPath(cwd)}{data.git && <span className="branch" title={data.git.worktree ? `worktree de ${data.git.base}` : 'branch da pasta'}><GitBranch size={12} /> {data.git.branch}</span>}</div>
+      {booting && !data.unloaded && (
+        <div className="booting" role="status"><i />{slow ? 'O terminal está demorando para iniciar (o computador pode estar ocupado). Use Recarregar no menu do nó se não abrir.' : 'Iniciando terminal…'}</div>
+      )}
       {data.unloaded && (
         <div className="unloaded">
           <button onClick={() => updateNodeData(id, { unloaded: false })}>Descarregado: carregar</button>

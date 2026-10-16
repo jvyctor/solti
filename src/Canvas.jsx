@@ -8,6 +8,7 @@ import PipelineNode from './PipelineNode.jsx'
 import { ActivityDock } from './Activity.jsx'
 import { Menu } from './Menu.jsx'
 import { NewTerminalDialog } from './NewTerminalDialog.jsx'
+import TeamDialog from './TeamDialog.jsx'
 import { TerminalNode } from './TerminalNode.jsx'
 import { FilesNode, GroupNode, KnowledgeNode, NoteNode, PortalNode, TextNode } from './Nodes.jsx'
 import { edgeTypes } from './edges.jsx'
@@ -98,6 +99,12 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
     return { nodes, edges }
   }
   const [dlg, setDlg] = useState(null) // { pos } while "Novo Terminal…" is open
+  const [teamDlg, setTeamDlg] = useState(null) // { pos } while "Time pronto…" is open
+  useEffect(() => {
+    const open = () => setTeamDlg({ pos: { x: 80, y: 80 + ws.nodes.length * 20 } })
+    window.addEventListener('ac:team', open) // from the command palette
+    return () => window.removeEventListener('ac:team', open)
+  }, [ws.nodes.length])
 
   // Pan to a node on request (palette, new agent). The node may need a moment to be measured after mount.
   const { fitView } = useReactFlow()
@@ -209,6 +216,7 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
           label: 'Terminal',
           sub: [
             { label: 'Novo Terminal…', run: () => setDlg({ pos }) },
+            { label: 'Time pronto…', run: () => setTeamDlg({ pos }) },
             '-',
             ...Object.entries(PRESET_LABELS).map(([k, label]) => ({ label, run: () => addTerminal(k, pos) })),
           ],
@@ -239,6 +247,26 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
           onClose={() => setDlg(null)}
           onCreate={({ name, cwd, preset, git }) => { addTerminal(preset, dlg.pos, { name: name || undefined, cwd: cwd || undefined, git }); setDlg(null) }}
         />
+      )}
+      {teamDlg && (
+        <TeamDialog
+          taken={new Set(ws.nodes.map((n) => n.data.name))}
+          origin={teamDlg.pos}
+          hasMaestro={ws.nodes.some((n) => n.type === 'terminal' && n.data.maestro)}
+          onClose={() => setTeamDlg(null)}
+          onCreate={({ nodes, edges }) => { update((w) => ({ ...w, nodes: [...w.nodes, ...nodes], edges: [...w.edges, ...edges] })); setTeamDlg(null) }}
+        />
+      )}
+      {ws.nodes.length === 0 && (
+        <div className="empty-canvas" role="region" aria-label="Canvas vazio">
+          <h2>Este canvas está vazio</h2>
+          <p>Crie um time de agentes já ligados entre si, ou comece com um terminal.</p>
+          <div className="empty-actions">
+            <button className="primary" onClick={() => setTeamDlg({ pos: { x: 80, y: 80 } })}>Criar um time</button>
+            <button onClick={() => setDlg({ pos: { x: 80, y: 80 } })}>Novo terminal</button>
+          </div>
+          <small>Dica: clique com o botão direito no fundo para adicionar qualquer coisa, ou use Ctrl+K.</small>
+        </div>
       )}
       <ReactFlow deleteKeyCode={['Backspace', 'Delete']} onNodeDragStart={onNodeDragStart} onNodeDrag={onNodeDrag} nodes={ws.nodes} edges={shownEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} connectionMode={ConnectionMode.Loose} connectionRadius={48} onBeforeDelete={onBeforeDelete} onConnectEnd={onConnectEnd} defaultEdgeOptions={{ type: 'floating' }} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeContextMenu={(e, n) => openMenu(e, nodeMenu(n))} onPaneContextMenu={(e) => openMenu(e, paneMenu(screenToFlowPosition({ x: e.clientX, y: e.clientY })))} colorMode={cfg.mode} snapToGrid={cfg.eff.snap} snapGrid={[cfg.eff.snapSize, cfg.eff.snapSize]} className={cfg.eff.edgeFlow ? 'flow' : undefined} minZoom={0.1} fitView proOptions={{ hideAttribution: true }}>
         {cfg.eff.gridStyle !== 'none' && <Background variant={GRID_VARIANT[cfg.eff.gridStyle]} color={cfg.eff.grid} gap={cfg.eff.gap} size={cfg.eff.size} lineWidth={cfg.eff.size} />}

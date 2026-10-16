@@ -7,6 +7,7 @@ const pty = require('node-pty')
 const activity = require('./activity.cjs')
 const backup = require('./backup.cjs')
 const remote = require('./remote.cjs')
+const routines = require('./routines.cjs')
 const QRCode = require('qrcode')
 const portal = require('./portal.cjs')
 
@@ -275,6 +276,29 @@ ipcMain.handle('pty:spawn', (_e, id, opts) => {
   const e = ptys.get(id)
   return { buf: e?.buf || '', cwd: e?.cwd || '' }
 })
+// ---- Scheduled routines (see routines.cjs)
+let routinesInst
+const getRoutines = () => routinesInst ||= routines.create({
+  dir: app.getPath('userData'),
+  run: async (r) => {
+    const name = nameOf(r.target.id) || r.target.id
+    if (r.target.type === 'pipeline') {
+      if (!win) throw new Error('janela fechada')
+      win.webContents.send('routine:pipeline', { id: r.target.id })
+      activity.record({ kind: 'routine', from: r.name, to: 'fluxo', text: 'iniciou o fluxo', outcome: 'ok' })
+      return 'fluxo iniciado'
+    }
+    const t = ptys.get(r.target.id)
+    if (!t) throw new Error('agente não está rodando (abra o workspace dele)')
+    typeInto(t, r.prompt)
+    activity.record({ kind: 'routine', from: r.name, to: name, text: r.prompt, outcome: 'ok' })
+    return `enviado a ${name}`
+  },
+})
+ipcMain.handle('routines:list', () => getRoutines().list())
+ipcMain.handle('routines:save', (_e, list) => getRoutines().save(Array.isArray(list) ? list : []))
+ipcMain.handle('routines:run', (_e, id) => getRoutines().runNow(String(id)))
+
 // ---- Phone remote (see remote.cjs): everything it may touch goes through this small host object.
 let remoteError = ''
 let remoteInst
@@ -436,6 +460,7 @@ ipcMain.handle('term:load', (_e, id) => { try { return fs.readFileSync(termFile(
 app.whenReady().then(() => {
   settings.init(app.getPath('userData'))
   applyRemote()
+  getRoutines().start()
   activity.init(app.getPath('userData'), (ch, d) => win?.webContents.send(ch, d))
   applyPower()
   startBridge()

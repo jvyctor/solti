@@ -10,11 +10,25 @@ import { ApprovalDialog, AwayDigest } from './Activity.jsx'
 import { resolveTheme, applyTheme } from './themes.js'
 import { Canvas } from './Canvas.jsx'
 import { Sidebar } from './Sidebar.jsx'
-import { CommCtx, PRESET_LABELS, SettingsCtx, api, ask, describe, fresh, mem, uid } from './shared.js'
+import { runPipeline, stopPipeline } from './pipelineRunner.js'
+import { CommCtx, PipeCtx, PRESET_LABELS, SettingsCtx, api, ask, describe, fresh, mem, uid } from './shared.js'
 
 export default function App() {
   const [state, setState] = useState(null) // { list:[{id,name,nodes,edges}], active }
   const loaded = useRef(false)
+  const stateRef = useRef(null)
+  stateRef.current = state
+  // Pipelines run here, not inside their node, so a run survives opening another workspace.
+  const patchNode = useCallback((id, p) => setState((s) => ({ ...s, list: s.list.map((w) => (w.nodes.some((n) => n.id === id) ? { ...w, nodes: w.nodes.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...p } } : n)) } : w)) })), [])
+  const pipe = useMemo(() => ({
+    start: (id) => runPipeline(id, {
+      api,
+      getNode: (nid) => stateRef.current?.list.flatMap((w) => w.nodes).find((n) => n.id === nid) || null,
+      patch: patchNode,
+      agentExists: (aid) => !!stateRef.current?.list.some((w) => w.nodes.some((n) => n.id === aid && n.type === 'terminal')),
+    }),
+    stop: stopPipeline,
+  }), [patchNode])
 
   useEffect(() => {
     api.load().then((saved) => {
@@ -176,6 +190,9 @@ export default function App() {
     window.addEventListener('keydown', key, true) // capture: works while a terminal has focus
     return () => window.removeEventListener('keydown', key, true)
   }, [])
+  // What a routine can aim at: every terminal and every pipeline, in every workspace.
+  const targets = useMemo(() => (state?.list || []).flatMap((w) => w.nodes.filter((n) => n.type === 'terminal' || n.type === 'pipeline').map((n) => (n.type === 'terminal' ? { type: 'agent', id: n.id, label: `${n.data.name} (${w.name})` } : { type: 'pipeline', id: n.id, label: `${n.data.name || 'Fluxo'} (${w.name})` }))), [state])
+  useEffect(() => api.onRoutinePipeline(({ id }) => pipe.start(id)), [pipe])
   const exportWs = async () => {
     const r = await api.exportWorkspaces(exportable(state))
     return r.path ? `Exportado para ${r.path}` : ''
@@ -202,6 +219,7 @@ export default function App() {
 
   const paletteActions = useMemo(() => [
     { label: 'Novo workspace', run: () => setState((s) => { const w = { id: uid('w'), name: `Workspace ${s.list.length + 1}`, nodes: [], edges: [] }; return { ...s, list: [...s.list, w], active: w.id } }) },
+    { label: 'Criar time pronto', run: () => window.dispatchEvent(new Event('ac:team')) },
     { label: 'Configurações', run: () => setSettingsOpen(true) },
     { label: 'Verificar atualizações', run: () => { setUpdOpen(true); api.updateCheck() } },
     { label: 'Mostrar/ocultar barra lateral', run: toggleSide },
@@ -219,8 +237,9 @@ export default function App() {
   return (
     <SettingsCtx.Provider value={ctx}>
     <CommCtx.Provider value={talking}>
+    <PipeCtx.Provider value={pipe}>
     <div className={'app' + (settings.handCursor ? ' hand' : '')}>
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} settings={settings} api={api} mode={mode} update={{ state: upd, open: () => setUpdOpen(true), io: { export: exportWs, import: importWs } }} />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} settings={settings} api={api} mode={mode} update={{ targets, state: upd, open: () => setUpdOpen(true), io: { export: exportWs, import: importWs } }} />
       <ApprovalDialog />
       <AwayDigest />
       {state && <Palette open={palette} onClose={() => setPalette(false)} state={state} goTo={goTo} actions={paletteActions} />}
@@ -252,6 +271,7 @@ export default function App() {
         </ReactFlowProvider>
       </main>
     </div>
+    </PipeCtx.Provider>
     </CommCtx.Provider>
     </SettingsCtx.Provider>
   )
