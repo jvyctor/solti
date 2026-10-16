@@ -139,3 +139,21 @@ test('revoked devices lose access; repeated failures get the address blocked', a
     assert.equal(fresh.r.status, 429)
   } finally { await t.srv.stop() }
 })
+
+test('certificate meets iOS Safari rules: SAN with the IPs, serverAuth, not a CA, valid under 13 months', async () => {
+  const { X509Certificate } = await import('node:crypto')
+  const os = await import('node:os')
+  const t = await setup()
+  try {
+    const c = JSON.parse(readFileSync(join(t.dir, 'cert.json'), 'utf8'))
+    const x = new X509Certificate(c.cert)
+    const lan = Object.values(os.networkInterfaces()).flat().filter((i) => i && i.family === 'IPv4' && !i.internal).map((i) => i.address)
+    for (const ip of ['127.0.0.1', ...lan]) assert.match(x.subjectAltName, new RegExp(`IP Address:${ip.replace(/\./g, '\.')}`), ip)
+    assert.match(x.subjectAltName, /DNS:localhost/)
+    assert.equal(x.ca, false)
+    assert.ok(x.keyUsage.includes('1.3.6.1.5.5.7.3.1'), 'serverAuth')
+    const days = (new Date(x.validTo) - new Date(x.validFrom)) / 864e5
+    assert.ok(days > 300 && days < 398, `validity ${days} days`)
+    assert.equal(x.checkIP('127.0.0.1') !== undefined, true)
+  } finally { await t.srv.stop() }
+})

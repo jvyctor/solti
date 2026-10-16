@@ -315,6 +315,7 @@ ipcMain.handle('remote:revoke', (_e, id) => { getRemote().revoke(id); return get
 ipcMain.handle('remote:pair', async () => {
   const st = getRemote().status()
   if (!st.listening) return { error: 'Ative o controle remoto primeiro.' }
+  await getRemote().refreshCert()
   const { token, expires } = getRemote().startPairing()
   const urls = st.addresses.map((ip) => `https://${ip}:${st.port}/#pair=${token}`)
   if (!urls.length) return { error: 'Nenhuma rede local encontrada (conecte o computador ao Wi-Fi).' }

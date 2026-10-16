@@ -43,11 +43,30 @@ function create({ dir, host, version = '' }) {
   const limited = (addr) => (fails.get(addr) || []).filter((t) => Date.now() - t < FAIL_WINDOW).length >= MAX_FAILS
   const fail = (addr) => fails.set(addr, [...(fails.get(addr) || []).filter((t) => Date.now() - t < FAIL_WINDOW), Date.now()])
 
+  // iOS Safari refuses certificates that lack a subjectAltName for the address it connects to, are valid for more than
+  // ~13 months, or have no serverAuth usage. So: SAN with every LAN IP, 1 year, proper usages; regenerated when the
+  // network addresses change or the certificate is about to expire.
   async function cert() {
-    try { return JSON.parse(fs.readFileSync(certFile, 'utf8')) } catch {}
+    const ips = ['127.0.0.1', ...lanAddresses()]
+    try {
+      const c = JSON.parse(fs.readFileSync(certFile, 'utf8'))
+      const fresh = c.version === 2 && c.expires - Date.now() > 30 * 24 * 3600 * 1000 && ips.every((ip) => c.ips.includes(ip))
+      if (fresh) return c
+    } catch {}
     const selfsigned = require('selfsigned')
-    const pems = await selfsigned.generate([{ name: 'commonName', value: 'agent-canvas' }], { days: 3650, keySize: 2048, algorithm: 'sha256' })
-    const c = { key: pems.private, cert: pems.cert, fingerprint: pems.fingerprint }
+    const notAfterDate = new Date(Date.now() + 365 * 24 * 3600 * 1000)
+    const pems = await selfsigned.generate([{ name: 'commonName', value: 'Agent Canvas' }], {
+      keySize: 2048,
+      algorithm: 'sha256',
+      notAfterDate,
+      extensions: [
+        { name: 'basicConstraints', cA: false, critical: true },
+        { name: 'keyUsage', digitalSignature: true, keyEncipherment: true, critical: true },
+        { name: 'extKeyUsage', serverAuth: true },
+        { name: 'subjectAltName', altNames: [{ type: 2, value: 'localhost' }, ...ips.map((ip) => ({ type: 7, ip }))] },
+      ],
+    })
+    const c = { version: 2, key: pems.private, cert: pems.cert, fingerprint: pems.fingerprint, ips, expires: notAfterDate.getTime() }
     fs.writeFileSync(certFile, JSON.stringify(c))
     return c
   }
@@ -188,6 +207,13 @@ function create({ dir, host, version = '' }) {
       const s = server
       server = null
       return new Promise((r) => (s ? s.close(() => r()) : r()))
+    },
+    // Called before pairing: if the Wi-Fi/IP changed since the server started, issue a certificate that covers the new address.
+    async refreshCert() {
+      if (!server) return
+      const c = await cert()
+      fingerprint = c.fingerprint
+      server.setSecureContext({ key: c.key, cert: c.cert })
     },
     status: () => ({ listening: !!server, port, addresses: lanAddresses(), fingerprint }),
     // One-time pairing code: shown as a QR code on the desktop.
