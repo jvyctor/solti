@@ -326,13 +326,25 @@ function Atalhos() {
   )
 }
 
-function Dados({ api, onReset }) {
+function Dados({ api, onReset, io }) {
   const [armed, setArmed] = useState(false)
+  const [msg, setMsg] = useState('')
   return (
     <>
       <Section title="ARMAZENAMENTO">
         <Row title="Pasta de dados" desc="Workspaces, configurações e briefings ficam em arquivos locais.">
           <button className="set-btn" onClick={() => api.openData()}>Abrir pasta</button>
+        </Row>
+      </Section>
+      <Section title="BACKUP E TRANSFERÊNCIA">
+        <Row title="Backups automáticos" desc="Uma cópia dos workspaces a cada 10 minutos (as 20 últimas). Se o arquivo principal estragar, o app restaura sozinho a última cópia boa.">
+          <button className="set-btn" onClick={() => api.openBackups()}>Abrir pasta</button>
+        </Row>
+        <Row title="Exportar / importar workspaces" desc={msg || 'Salva todos os workspaces em um arquivo. Ao importar, terminais começam do zero (sem conversa nem worktree) e nada existente é sobrescrito.'}>
+          <span className="set-confirm">
+            <button className="set-btn" onClick={() => io.export().then((m) => m && setMsg(m))}>Exportar…</button>
+            <button className="set-btn" onClick={() => io.import().then((m) => m && setMsg(m))}>Importar…</button>
+          </span>
         </Row>
       </Section>
       <Section title="REDEFINIR">
@@ -390,7 +402,7 @@ export default function SettingsDialog({ open, onOpenChange, settings, api, mode
             {tab === 'agentes' && <AgentesTab s={settings} set={set} />}
             {tab === 'atalhos' && <Atalhos />}
             {tab === 'updates' && <UpdatesTab s={settings} set={set} api={api} state={update.state} onOpen={update.open} ui={{ Section, Row, Switch }} />}
-            {tab === 'dados' && <Dados api={api} onReset={() => api.settingsReset()} />}
+            {tab === 'dados' && <Dados api={api} onReset={() => api.settingsReset()} io={update.io} />}
             {tab === 'sobre' && <Sobre api={api} />}
           </div>
         </Dialog.Content>

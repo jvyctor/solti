@@ -5,6 +5,7 @@ const fs = require('fs')
 const crypto = require('crypto')
 const pty = require('node-pty')
 const activity = require('./activity.cjs')
+const backup = require('./backup.cjs')
 const portal = require('./portal.cjs')
 
 const TOKEN = crypto.randomBytes(16).toString('hex')
@@ -321,9 +322,30 @@ ipcMain.handle('activity:list', () => activity.list())
 ipcMain.on('approval:answer', (_e, id, ok) => activity.answer(id, ok))
 ipcMain.on('portal:register', (_e, id, wcId) => portals.set(id, wcId))
 ipcMain.on('graph:update', (_e, g) => (graph = g))
-ipcMain.handle('ws:load', () => { try { return JSON.parse(fs.readFileSync(wsFile(), 'utf8')) } catch { return null } })
+ipcMain.handle('ws:load', () => {
+  try { return JSON.parse(fs.readFileSync(wsFile(), 'utf8')) } catch {
+    if (!fs.existsSync(wsFile())) return null
+    // Unreadable file: keep it aside and fall back to the newest good backup instead of starting empty.
+    try { fs.copyFileSync(wsFile(), wsFile().replace(/\.json$/, `.corrupt-${Date.now()}.json`)) } catch {}
+    const r = backup.restore(wsFile())
+    if (r) console.error('workspace.json was unreadable; restored', r.name)
+    return r ? r.data : null
+  }
+})
+ipcMain.on('app:open-backups', () => { fs.mkdirSync(backup.dirOf(wsFile()), { recursive: true }); shell.openPath(backup.dirOf(wsFile())) })
+ipcMain.handle('ws:export', async (_e, data) => {
+  const r = await dialog.showSaveDialog(win, { defaultPath: 'agent-canvas-workspaces.json', filters: [{ name: 'JSON', extensions: ['json'] }] })
+  if (r.canceled) return { canceled: true }
+  fs.writeFileSync(r.filePath, JSON.stringify(data, null, 2))
+  return { path: r.filePath }
+})
+ipcMain.handle('ws:import', async () => {
+  const r = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'JSON', extensions: ['json'] }] })
+  if (r.canceled) return { canceled: true }
+  try { return { data: JSON.parse(fs.readFileSync(r.filePaths[0], 'utf8')) } } catch { return { error: 'Não foi possível ler o arquivo.' } }
+})
 ipcMain.on('ws:save', (_e, data) => {
-  try { fs.mkdirSync(path.dirname(wsFile()), { recursive: true }); fs.writeFileSync(wsFile(), JSON.stringify(data)) } catch {}
+  try { backup.rotate(wsFile()); backup.writeAtomic(wsFile(), JSON.stringify(data)) } catch {}
   // Drop saved screens of terminals that no longer exist.
   try {
     const live = new Set((data.list || []).flatMap((w) => w.nodes.map((n) => n.id + '.txt')))

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import SettingsDialog from './Settings.jsx'
 import { useUpdate, UpdateToast, UpdateDialog } from './Updates.jsx'
 import { classify, STATUS } from './status.js'
+import { exportable, mergeImport } from './workspaces.js'
 import DiffNode from './DiffNode.jsx'
 import { ActivityDock, ApprovalDialog } from './Activity.jsx'
 import { resolveTheme, applyTheme, termOptions } from './themes.js'
@@ -1038,6 +1039,20 @@ export default function App() {
   }, [])
 
   const upd = useUpdate(api)
+  const exportWs = async () => {
+    const r = await api.exportWorkspaces(exportable(state))
+    return r.path ? `Exportado para ${r.path}` : ''
+  }
+  const importWs = async () => {
+    const r = await api.importWorkspaces()
+    if (r.canceled) return ''
+    if (r.error) return r.error
+    try {
+      const { state: next, added } = mergeImport(state, r.data, uid)
+      setState(next)
+      return `${added} workspace(s) importado(s).`
+    } catch (e) { return e.message }
+  }
   const [updOpen, setUpdOpen] = useState(false)
   const [sideOpen, setSideOpen] = useState(() => {
     try { return localStorage.getItem('sideOpen') !== '0' } catch { return true }
@@ -1060,7 +1075,7 @@ export default function App() {
     <SettingsCtx.Provider value={ctx}>
     <CommCtx.Provider value={talking}>
     <div className={'app' + (settings.handCursor ? ' hand' : '')}>
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} settings={settings} api={api} mode={mode} update={{ state: upd, open: () => setUpdOpen(true) }} />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} settings={settings} api={api} mode={mode} update={{ state: upd, open: () => setUpdOpen(true), io: { export: exportWs, import: importWs } }} />
       <ApprovalDialog />
       <UpdateToast state={upd} onOpen={() => { setUpdOpen(true); api.updateDownload() }} />
       <UpdateDialog open={updOpen} onOpenChange={setUpdOpen} state={upd} api={api} />
