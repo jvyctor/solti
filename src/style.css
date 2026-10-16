@@ -439,3 +439,6 @@ svg { flex: none; }
 .diff-foot button { padding: 5px 10px; background: var(--surface-3); border: 1px solid var(--border); border-radius: var(--r-sm); white-space: nowrap; }
 .diff-foot button:hover:not(:disabled) { border-color: var(--accent); }
 .diff-foot button:disabled { opacity: 0.55; }
+
+.note.knowledge .k-title { flex: 1; font-size: 12px; font-weight: 600; color: var(--text-2); }
+.note.knowledge .note-head svg { color: var(--accent); flex: none; }

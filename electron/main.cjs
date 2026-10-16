@@ -7,7 +7,7 @@ const pty = require('node-pty')
 
 const TOKEN = crypto.randomBytes(16).toString('hex')
 const ptys = new Map() // id -> { p, buf }
-let graph = { nodes: [], edges: [] }
+let graph = { nodes: [], edges: [], knowledge: {} } // knowledge: workspace id -> shared project notes
 let win
 let bridgePort = 0
 
@@ -110,6 +110,18 @@ function startBridge() {
         win?.webContents.send('spawn', { from, name, preset: j.preset, instructions: j.instructions })
         return reply(200, { ok: true, name, note: 'agent created and connected to you; message it with canvas_send/canvas_ask' })
       }
+      if (req.url === '/knowledge') {
+        const me = graph.nodes.find((n) => n.id === from)
+        return reply(200, { text: (me && graph.knowledge?.[me.ws]) || '' })
+      }
+      if (req.url === '/remember') {
+        const me = graph.nodes.find((n) => n.id === from)
+        if (!me || !String(j.text || '').trim()) return reply(400, { error: 'empty text or unknown caller' })
+        const line = `- ${String(j.text).trim()}`
+        graph.knowledge = { ...graph.knowledge, [me.ws]: ((graph.knowledge?.[me.ws] || '') + '\n' + line).trim() }
+        win?.webContents.send('knowledge', { from, text: line })
+        return reply(200, { ok: true })
+      }
       if (req.url === '/note') {
         win?.webContents.send('note', { from, text: j.text })
         return reply(200, { ok: true })
@@ -133,17 +145,18 @@ function applyPower() {
   if (want && blockerId === null) blockerId = powerSaveBlocker.start('prevent-app-suspension')
   if (!want && blockerId !== null) { powerSaveBlocker.stop(blockerId); blockerId = null }
 }
-function writeBrief(id, name, maestro, instructions) {
+function writeBrief(id, name, maestro, instructions, knowledge) {
   const f = path.join(app.getPath('userData'), 'briefs', id + '.md')
   fs.mkdirSync(path.dirname(f), { recursive: true })
   const extra = instructions ? `\n\n## Instruções específicas do maestro\n${instructions}\n` : ''
-  fs.writeFileSync(f, (maestro ? briefs.maestro : briefs.agent)(name || id) + extra, 'utf8')
+  const know = `\n\n## Conhecimento compartilhado do projeto\nTodos os agentes deste workspace compartilham estas anotações. Consulte com \`canvas_knowledge\` e registre fatos duradouros (decisões, comandos, armadilhas) com \`canvas_remember\`.\n${knowledge ? '\n' + knowledge + '\n' : '\n(vazio por enquanto)\n'}`
+  fs.writeFileSync(f, (maestro ? briefs.maestro : briefs.agent)(name || id) + extra + know, 'utf8')
   return f
 }
 // ASCII only: this line is typed into a PowerShell prompt.
 const briefLine = (f) => `Leia e siga o briefing de papel em ${f}`
 
-function spawnPty(id, { preset, name, maestro, instructions, cwd, cols, rows, resume, sid }) {
+function spawnPty(id, { preset, name, maestro, instructions, cwd, cols, rows, resume, sid, knowledge }) {
   if (ptys.has(id)) return
   const shell = settings.get().shell || (process.platform === 'win32' ? 'powershell.exe' : process.env.SHELL || 'bash')
   const binDir = unpacked(path.join(__dirname, '..', 'bin'))
@@ -174,7 +187,7 @@ function spawnPty(id, { preset, name, maestro, instructions, cwd, cols, rows, re
   })
   if (settings.get().commands[preset]) {
     if (settings.get().sendBriefing) try { require('./skills.cjs').installSkills() } catch {} // idempotent; skills must exist before the agent starts
-    const line = settings.get().sendBriefing ? briefLine(writeBrief(id, name, maestro, instructions)) : ''
+    const line = settings.get().sendBriefing ? briefLine(writeBrief(id, name, maestro, instructions, knowledge)) : ''
     setTimeout(() => p.write(launchCommand(settings.get(), preset, line, { resume, sid }) + '\r'), 400)
   }
 }
@@ -201,7 +214,7 @@ ipcMain.handle('dialog:folder', async () => {
   const r = await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
   return r.canceled ? null : r.filePaths[0]
 })
-ipcMain.on('pty:brief', (_e, id, { name, maestro, instructions }) => { const t = ptys.get(id); if (t) typeInto(t, briefLine(writeBrief(id, name, maestro, instructions))) })
+ipcMain.on('pty:brief', (_e, id, { name, maestro, instructions, knowledge }) => { const t = ptys.get(id); if (t) typeInto(t, briefLine(writeBrief(id, name, maestro, instructions, knowledge))) })
 ipcMain.handle('fs:list', (_e, dir) => {
   const d = dir || require('os').homedir()
   try {
@@ -215,7 +228,7 @@ ipcMain.handle('fs:list', (_e, dir) => {
     return { dir: d, error: String(e.message) }
   }
 })
-ipcMain.on('pty:write',(_e, id, d) => ptys.get(id)?.p.write(d))
+ipcMain.on('pty:write',(_e, id, d) => { console.error('WRITE', id, JSON.stringify(d).slice(0,40), ptys.has(id), [...ptys.keys()].join(',')); ptys.get(id)?.p.write(d) })
 ipcMain.on('pty:resize', (_e, id, c, r) => { try { ptys.get(id)?.p.resize(c, r) } catch {} })
 ipcMain.on('pty:kill', (_e, id) => { ptys.get(id)?.p.kill(); ptys.delete(id); applyPower() })
 ipcMain.handle('settings:get', () => settings.get())

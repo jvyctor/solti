@@ -13,7 +13,7 @@ import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
   X, RefreshCw, Map as MapIcon, ArrowLeft, FolderTree, Folder, FolderOpen, Lock, SquareTerminal,
-  Search, Menu as MenuIcon, Settings as SettingsIcon, Plus, Minus, ChevronRight, ChevronDown, Activity, Check, FileText, GitBranch,
+  Search, Menu as MenuIcon, Settings as SettingsIcon, Plus, Minus, ChevronRight, ChevronDown, Activity, Check, FileText, GitBranch, BookOpen,
 } from 'lucide-react'
 
 const api = window.api
@@ -56,7 +56,7 @@ function Ring() {
 
 function TerminalNode({ id, data, selected }) {
   const host = useRef(null)
-  const { updateNodeData, deleteElements, setNodes } = useReactFlow()
+  const { updateNodeData, deleteElements, setNodes, getNodes } = useReactFlow()
 
   const dataRef = useRef(data)
   dataRef.current = data
@@ -114,7 +114,7 @@ function TerminalNode({ id, data, selected }) {
     const save = () => { if (ready && dirty) { dirty = false; api.termSave(id, ser.serialize({ scrollback: 1000 })) } }
     const timer = setInterval(save, 5000)
     window.addEventListener('beforeunload', save)
-    Promise.all([api.termLoad(id), api.spawn(id, { preset: data.preset, name: data.name, maestro: !!data.maestro, instructions: data.instructions, cwd: data.cwd, cols: term.cols, rows: term.rows, resume: !!dataRef.current.ran, sid })]).then(([saved, r]) => {
+    Promise.all([api.termLoad(id), api.spawn(id, { preset: data.preset, name: data.name, maestro: !!data.maestro, instructions: data.instructions, cwd: data.cwd, cols: term.cols, rows: term.rows, resume: !!dataRef.current.ran, sid, knowledge: getNodes().find((n) => n.type === 'knowledge')?.data.text || '' })]).then(([saved, r]) => {
       setCwd(r.cwd)
       if (r.buf) term.write(r.buf) // pty still alive (reload): its buffer is newer than the file
       // Pushed into scrollback: the shell's startup clear only wipes the visible screen.
@@ -185,6 +185,24 @@ function MdLite({ text }) {
         return <p key={i}>{l || ' '}</p>
       })}
     </>
+  )
+}
+
+// Shared project memory: one per workspace. Agents read it at startup and via canvas_knowledge; they append via canvas_remember.
+function KnowledgeNode({ id, data, selected }) {
+  const { updateNodeData, deleteElements } = useReactFlow()
+  return (
+    <div className={'note knowledge' + (selected ? ' selected' : '')}>
+      <NodeResizer minWidth={240} minHeight={160} isVisible={selected} />
+      <Handle type="target" position={Position.Left} />
+      <div className="note-head">
+        <BookOpen size={14} aria-label="Conhecimento" />
+        <span className="k-title">Conhecimento do projeto</span>
+        <button aria-label="Excluir" onClick={() => deleteElements({ nodes: [{ id }] })}><X size={12} /></button>
+      </div>
+      <textarea className="note-body nodrag nowheel" value={data.text || ''} placeholder="Fatos que todos os agentes devem saber: stack, comandos, decisões…" onChange={(e) => updateNodeData(id, { text: e.target.value })} />
+      <Handle type="source" position={Position.Right} /><Ring />
+    </div>
   )
 }
 
@@ -283,7 +301,7 @@ function PortalNode({ id, data, selected }) {
   )
 }
 
-const nodeTypes = { terminal: TerminalNode, note: NoteNode, group: GroupNode, text: TextNode, portal: PortalNode, files: FilesNode, diff: DiffNode }
+const nodeTypes = { terminal: TerminalNode, note: NoteNode, group: GroupNode, text: TextNode, portal: PortalNode, files: FilesNode, diff: DiffNode, knowledge: KnowledgeNode }
 
 const fmt = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n))
 const resetText = (ts) => {
@@ -666,7 +684,7 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
   // Older saved edges are animated/default-typed: normalise for display only.
   const shownEdges = useMemo(() => ws.edges.map((e) => ({ ...e, type: 'floating', animated: false })), [ws.edges])
 
-  const SIZES = { terminal: { width: 520, height: 340 }, portal: { width: 560, height: 380 }, group: { width: 640, height: 400 }, files: { width: 280, height: 360 }, diff: { width: 560, height: 400 }, note: { width: 280, height: 200 } }
+  const SIZES = { terminal: { width: 520, height: 340 }, portal: { width: 560, height: 380 }, group: { width: 640, height: 400 }, files: { width: 280, height: 360 }, diff: { width: 560, height: 400 }, knowledge: { width: 320, height: 240 }, note: { width: 280, height: 200 } }
   const { screenToFlowPosition, deleteElements } = useReactFlow()
   // Every deletion path (✕, menu, keyboard) funnels through here; ptys die in onNodesChange afterwards.
   const onBeforeDelete = async ({ nodes, edges }) => {
@@ -711,7 +729,7 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
           ]
         : []),
       ...(n.type !== 'note' && n.type !== 'text' ? [{ label: 'Renomear', run: () => focusInput('data-rename', n.id) }] : []),
-      ...(t ? [{ label: 'Reenviar briefing do papel', run: () => api.brief(n.id, { name: d.name, maestro: !!d.maestro, instructions: d.instructions }) }, { label: 'Monitorar atividade', checked: d.monitor, run: () => patch(n.id, { monitor: !d.monitor }) }, '-'] : []),
+      ...(t ? [{ label: 'Reenviar briefing do papel', run: () => api.brief(n.id, { name: d.name, maestro: !!d.maestro, instructions: d.instructions, knowledge: ws.nodes.find((x) => x.type === 'knowledge')?.data.text || '' }) }, { label: 'Monitorar atividade', checked: d.monitor, run: () => patch(n.id, { monitor: !d.monitor }) }, '-'] : []),
       ...(t
         ? [
             { label: d.blur ? 'Focar' : 'Desfocar', run: () => patch(n.id, { blur: !d.blur }) },
@@ -749,6 +767,7 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
         { label: 'Nota', run: () => add('note', { text: '' }, pos) },
         { label: 'Árvore de Arquivos', run: () => add('files', {}, pos) },
         { label: 'Revisão (Diff)', run: () => add('diff', {}, pos) },
+        { label: 'Conhecimento do projeto', disabled: ws.nodes.some((n) => n.type === 'knowledge'), run: () => add('knowledge', { text: '' }, pos) },
         { label: 'Portal', run: () => add('portal', { url: 'https://www.google.com' }, pos) },
         { label: 'Texto', run: () => add('text', { text: '' }, pos) },
         { label: 'Grupo', run: () => add('group', { name: 'Grupo' }, pos) },
@@ -848,6 +867,7 @@ export default function App() {
     api.updateGraph({
       nodes: state.list.flatMap((w) => w.nodes.filter((n) => n.type === 'terminal').map((n) => ({ id: n.id, ws: w.id, name: n.data.name, role: n.data.maestro ? 'maestro' : 'agent', maestro: !!n.data.maestro }))),
       edges: state.list.flatMap((w) => w.edges.map((e) => ({ source: e.source, target: e.target }))),
+      knowledge: Object.fromEntries(state.list.map((w) => [w.id, w.nodes.find((n) => n.type === 'knowledge')?.data.text || ''])),
     })
     const t = setTimeout(() => api.save(state), 500)
     return () => clearTimeout(t)
@@ -882,6 +902,22 @@ export default function App() {
     })
   }
 
+  // An agent called canvas_remember: append to its workspace's knowledge node (created on first use).
+  useEffect(
+    () =>
+      api.onKnowledge(({ from, text }) =>
+        setState((s) => {
+          const w = s.list.find((x) => x.nodes.some((n) => n.id === from))
+          if (!w) return s
+          const k = w.nodes.find((n) => n.type === 'knowledge')
+          const nodes = k
+            ? w.nodes.map((n) => (n === k ? { ...n, data: { ...n.data, text: ((n.data.text || '') + '\n' + text).trim() } } : n))
+            : [...w.nodes, { id: uid('n'), type: 'knowledge', style: { width: 320, height: 240 }, position: { x: 40, y: -300 }, data: { text } }]
+          return { ...s, list: s.list.map((x) => (x === w ? { ...x, nodes } : x)) }
+        }),
+      ),
+    [],
+  )
   // The maestro asked (canvas_spawn) for a new agent: add it next to the maestro, wired to it, in the maestro's workspace.
   useEffect(
     () =>

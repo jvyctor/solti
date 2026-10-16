@@ -10,6 +10,8 @@ const TOOLS = [
   { name: 'canvas_ask', description: 'Send a message to a connected agent and WAIT for its reply (it answers with canvas_send). Use when you need the answer before continuing.', props: { to: 'Peer name or id', text: 'Question/task', timeout: 'Seconds to wait (default 50, max 600)' }, req: ['to', 'text'], route: '/ask' },
   { name: 'canvas_spawn', description: 'MAESTRO ONLY. Create a new agent terminal on the canvas, connected to you. Give it a name, a CLI preset (claude, codex, gemini, antigravity, opencode, shell) and the specialty/instructions it must follow. Returns the final name; then delegate with canvas_send/canvas_ask.', props: { name: 'Agent name, e.g. ux-ui-senior', preset: 'claude | codex | gemini | antigravity | opencode | shell (default claude)', instructions: 'Specialty, scope and rules for this agent (it reads them at startup)' }, req: ['name'], route: '/spawn' },
   { name: 'canvas_read', description: 'Read the recent terminal output of a connected agent.', props: { to: 'Peer name or id', bytes: 'Max bytes (default 4000)' }, req: ['to'], route: '/read' },
+  { name: 'canvas_knowledge', description: 'Read the shared project knowledge of this workspace (facts every agent here should know).', props: {}, route: '/knowledge' },
+  { name: 'canvas_remember', description: 'Add a durable fact to the shared project knowledge (decision, command, pitfall). One short line.', props: { text: 'The fact to remember' }, req: ['text'], route: '/remember' },
   { name: 'canvas_note', description: 'Write a sticky note on the canvas.', props: { text: 'Note text' }, req: ['text'], route: '/note' },
 ]
 

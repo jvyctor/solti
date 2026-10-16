@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('api', {
   onData: (cb) => on('pty:data', cb),
   onExit: (cb) => on('pty:exit', cb),
   onNote: (cb) => on('note', cb),
+  onKnowledge: (cb) => on('knowledge', cb),
   onSpawn: (cb) => on('spawn', cb),
   onComm: (cb) => on('comm', cb),
   onSettings: (cb) => on('settings', cb),
