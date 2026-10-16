@@ -374,3 +374,23 @@ svg { flex: none; }
 
 /* ───────── Edge while two agents are talking ───────── */
 .react-flow__edge-path.comm { stroke: var(--comm-color); stroke-width: calc(var(--edge-width) * 1px + 1px); stroke-dasharray: 10 8; filter: drop-shadow(0 0 5px var(--comm-color)); animation: rope-flow 0.7s linear infinite; }
+
+/* ───────── Updates ───────── */
+.toast { position: fixed; z-index: 170; right: 16px; bottom: 16px; display: flex; align-items: center; gap: 10px; max-width: 340px; padding: 12px 10px 12px 14px; background: var(--surface-2); border: 1px solid var(--accent); border-radius: var(--r-lg); box-shadow: var(--shadow-3); color: var(--accent); animation: toast-in 240ms var(--ease); }
+.toast-main { display: flex; flex-direction: column; gap: 2px; padding: 0; text-align: left; background: none; border: none; color: var(--text); }
+.toast-main span { font-size: 12px; color: var(--text-2); }
+.toast-x { display: inline-flex; padding: 4px; background: none; border: none; color: var(--text-3); border-radius: var(--r-sm); }
+.toast-x:hover { background: var(--surface-3); color: var(--text); }
+@keyframes toast-in { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+.dlg.upd { width: min(460px, calc(100vw - 32px)); }
+.upd-ok, .upd-err { display: flex; gap: 8px; align-items: flex-start; }
+.upd-ok svg { flex: none; color: var(--success); margin-top: 2px; }
+.upd-err svg { flex: none; color: var(--danger); margin-top: 2px; }
+.upd-notes { max-height: 180px; margin: 0; padding: 10px; overflow: auto; white-space: pre-wrap; font: 12px/1.5 var(--font-mono, monospace); background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--r-md); color: var(--text-2); }
+.upd-bar { height: 8px; overflow: hidden; background: var(--surface-3); border-radius: var(--r-pill); }
+.upd-bar i { display: block; height: 100%; background: var(--accent); transition: width 200ms linear; }
+.upd-meta { margin: 0; font-size: 12px; font-variant-numeric: tabular-nums; }
+.set-btn { padding: 7px 14px; background: var(--surface-3); border: 1px solid var(--border); border-radius: var(--r-md); font-size: 13px; transition: border-color var(--t); }
+.set-btn:hover:not(:disabled) { border-color: var(--accent); }
+.set-btn:disabled { opacity: 0.5; }
+.set-token { display: flex; align-items: center; gap: 8px; }

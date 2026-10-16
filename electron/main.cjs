@@ -269,6 +269,7 @@ app.whenReady().then(() => {
       .showMessageBox(win, { type: 'question', buttons: ['Sair', 'Cancelar'], defaultId: 1, cancelId: 1, message: 'Sair do Agent Canvas?', detail: 'Os agentes em execução serão encerrados.' })
       .then((r) => { if (r.response === 0) { confirmed = true; win.close() } })
   })
+  require('./updater.cjs').init(() => win, { beforeInstall: () => win.removeAllListeners('close') })
   win.webContents.on('console-message', (_e, level, msg, line, src) => level >= 2 && console.error('[renderer]', msg, `${src}:${line}`))
   win.webContents.on('render-process-gone', (_e, d) => console.error('[renderer gone]', d.reason))
   if (process.env.DEV) win.loadURL('http://localhost:5173')

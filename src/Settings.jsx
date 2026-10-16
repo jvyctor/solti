@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { PRESETS, resolveTheme, TERM_SCHEMES, termOptions } from './themes.js'
-import { SlidersHorizontal, Palette, SquareTerminal, Bot, Keyboard, Database, Info, X } from 'lucide-react'
+import { SlidersHorizontal, Palette, SquareTerminal, Bot, Keyboard, Database, Info, RefreshCw, X } from 'lucide-react'
+import { UpdatesTab } from './Updates.jsx'
 
 const TABS = [
   { id: 'geral', label: 'Geral', Icon: SlidersHorizontal },
@@ -9,6 +10,7 @@ const TABS = [
   { id: 'terminal', label: 'Terminal', Icon: SquareTerminal },
   { id: 'agentes', label: 'Agentes', Icon: Bot },
   { id: 'atalhos', label: 'Atalhos', Icon: Keyboard },
+  { id: 'updates', label: 'Atualizações', Icon: RefreshCw },
   { id: 'dados', label: 'Dados', Icon: Database },
   { id: 'sobre', label: 'Sobre', Icon: Info },
 ]
@@ -354,7 +356,7 @@ function Sobre({ api }) {
   )
 }
 
-export default function SettingsDialog({ open, onOpenChange, settings, api, mode }) {
+export default function SettingsDialog({ open, onOpenChange, settings, api, mode, update }) {
   const [tab, setTab] = useState('geral')
   const set = (patch) => api.settingsSet(patch)
   return (
@@ -377,6 +379,7 @@ export default function SettingsDialog({ open, onOpenChange, settings, api, mode
             {tab === 'terminal' && <TerminalTab s={settings} set={set} mode={mode} />}
             {tab === 'agentes' && <AgentesTab s={settings} set={set} />}
             {tab === 'atalhos' && <Atalhos />}
+            {tab === 'updates' && <UpdatesTab s={settings} set={set} api={api} state={update.state} onOpen={update.open} ui={{ Section, Row, Switch }} />}
             {tab === 'dados' && <Dados api={api} onReset={() => api.settingsReset()} />}
             {tab === 'sobre' && <Sobre api={api} />}
           </div>

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import SettingsDialog from './Settings.jsx'
+import { useUpdate, UpdateToast, UpdateDialog } from './Updates.jsx'
 import { resolveTheme, applyTheme, termOptions } from './themes.js'
 import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, ConnectionMode, BaseEdge, useInternalNode, MiniMap, NodeResizer, Handle, Position, addEdge, applyNodeChanges, applyEdgeChanges, useReactFlow, useViewport } from '@xyflow/react'
 import { Terminal } from '@xterm/xterm'
@@ -861,6 +862,8 @@ export default function App() {
     return api.onSettings(setSettings)
   }, [])
 
+  const upd = useUpdate(api)
+  const [updOpen, setUpdOpen] = useState(false)
   const [sideOpen, setSideOpen] = useState(() => {
     try { return localStorage.getItem('sideOpen') !== '0' } catch { return true }
   })
@@ -882,7 +885,9 @@ export default function App() {
     <SettingsCtx.Provider value={ctx}>
     <CommCtx.Provider value={talking}>
     <div className={'app' + (settings.handCursor ? ' hand' : '')}>
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} settings={settings} api={api} mode={mode} />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} settings={settings} api={api} mode={mode} update={{ state: upd, open: () => setUpdOpen(true) }} />
+      <UpdateToast state={upd} onOpen={() => { setUpdOpen(true); api.updateDownload() }} />
+      <UpdateDialog open={updOpen} onOpenChange={setUpdOpen} state={upd} api={api} />
       <AlertDialog.Root open={!!confirm} onOpenChange={(o) => !o && answer(false)}>
         <AlertDialog.Portal>
           <AlertDialog.Overlay className="dlg-back" />

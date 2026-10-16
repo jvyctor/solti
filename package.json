@@ -12,10 +12,12 @@
     "start": "vite build && electron .",
     "icons": "node build/make-icons.cjs",
     "test": "node --test \"test/*.test.mjs\"",
+    "release": "vite build && electron-builder --win nsis --x64 --publish always --config.directories.output=%LOCALAPPDATA%\\agent-canvas-release",
     "dist": "vite build && electron-builder --win nsis --x64 --config.directories.output=%LOCALAPPDATA%\\agent-canvas-release"
   },
   "dependencies": {
     "@xterm/addon-serialize": "^0.14.0",
+    "electron-updater": "^6.8.9",
     "node-pty": "^1.1.0"
   },
   "devDependencies": {
@@ -60,6 +62,7 @@
       "node_modules/node-pty/**"
     ],
     "npmRebuild": false,
+    "publish": [{ "provider": "github", "owner": "jvyctor", "repo": "agent-canvas", "private": true, "releaseType": "release" }],
     "win": {
       "target": [
         {

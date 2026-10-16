@@ -15,6 +15,7 @@ const DEFAULTS = {
   // Geral > Notificações
   notifyIdle: true,
   idleSeconds: 6,
+  autoUpdate: true,
   // Terminal
   fontSize: 14,
   fontFamily: 'JetBrains Mono',

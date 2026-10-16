@@ -28,6 +28,12 @@ contextBridge.exposeInMainWorld('api', {
   usage: () => ipcRenderer.invoke('usage:get'),
   load: () => ipcRenderer.invoke('ws:load'),
   save: (d) => ipcRenderer.send('ws:save', d),
+  onUpdate: (cb) => on('update:state', cb),
+  updateState: () => ipcRenderer.invoke('update:state'),
+  updateCheck: () => ipcRenderer.send('update:check'),
+  updateDownload: () => ipcRenderer.send('update:download'),
+  updateInstall: () => ipcRenderer.send('update:install'),
+  updateToken: (t) => ipcRenderer.invoke('update:token', t),
   termSave: (id, text) => ipcRenderer.send('term:save', id, text),
   termLoad: (id) => ipcRenderer.invoke('term:load', id),
 })
