@@ -1,12 +1,13 @@
 // Command typed into the shell to start (or resume) an agent CLI. '' = plain shell.
 // sid: conversation id assigned by the canvas; resume: this terminal already ran before.
-// Resume flags are per CLI; antigravity has no verified one, so it starts fresh.
+// Resume flags are per CLI (taken from each CLI's --help). Gemini is given the canvas id so its token use can be found; its resume takes "latest" per project folder.
 const PROMPT_FLAG = { gemini: '-i ', antigravity: '-i ', opencode: '--prompt ' }
 const SESSION = {
   claude: { start: (sid) => `--session-id ${sid} `, resume: (sid) => `--resume ${sid}` },
-  gemini: { start: () => '', resume: () => '--resume latest' },
+  gemini: { start: (sid) => `--session-id ${sid} `, resume: () => '--resume latest' },
   codex: { start: () => '', resume: () => 'resume --last' },
   opencode: { start: () => '', resume: () => '--continue' },
+  antigravity: { start: () => '', resume: () => '--continue' },
 }
 
 function launchCommand(S, preset, line, { resume, sid } = {}) {

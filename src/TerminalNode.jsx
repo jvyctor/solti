@@ -90,11 +90,11 @@ export function TerminalNode({ id, data, selected }) {
     return () => { save(); offExit(); clearInterval(timer); clearTimeout(idle); clearTimeout(settle); window.removeEventListener('beforeunload', save); mark.dispose(); terms.delete(id); sinks.delete(id); sub.dispose(); ro.disconnect(); term.dispose() }
   }, [id, data.rev, data.unloaded])
 
-  // Claude Code only: its token use is read from its session log; over the limit, the agent is interrupted once.
+  // Claude, Codex and Gemini: token use is read from the CLI's own session log; over the limit, the agent is interrupted once.
   const limitHit = useRef(false)
   useEffect(() => {
-    if (data.preset !== 'claude' || !data.sid || data.unloaded) return
-    const poll = () => api.agentTokens(data.sid).then((r) => {
+    if (!['claude', 'codex', 'gemini'].includes(data.preset) || !data.sid || data.unloaded) return
+    const poll = () => api.agentTokens(id, data.preset, data.sid).then((r) => {
       setTokens(r.tokens)
       const max = cfgRef.current.tokenLimit
       if (max > 0 && r.tokens >= max && !limitHit.current) {

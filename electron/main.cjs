@@ -296,7 +296,7 @@ ipcMain.handle('terms:search', (_e, q) => {
   }
   return out.slice(0, 30)
 })
-ipcMain.handle('usage:agent', (_e, sid) => require('./agentusage.cjs').claudeTokens(sid))
+ipcMain.handle('usage:agent', (_e, id, preset, sid) => require('./agentusage.cjs').agentTokens({ preset, sid, cwd: ptys.get(id)?.cwd }))
 // Emergency stop: Esc (cancels the current turn in most TUIs) then Ctrl+C, for one agent or all.
 const interrupt = (e) => { e.p.write('\x1b'); setTimeout(() => e.p.write('\x03'), 150) }
 ipcMain.on('agents:interrupt', (_e, id) => (id ? ptys.has(id) && interrupt(ptys.get(id)) : [...ptys.values()].forEach(interrupt)))

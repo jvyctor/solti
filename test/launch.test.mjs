@@ -9,7 +9,7 @@ const sid = '11111111-2222-3333-4444-555555555555'
 test('first start assigns the conversation id and sends the briefing', () => {
   assert.equal(launchCommand(S, 'claude', 'BRIEF', { sid }), `claude --session-id ${sid} "BRIEF"`)
   assert.equal(launchCommand(S, 'codex', 'BRIEF', { sid }), 'codex "BRIEF"')
-  assert.equal(launchCommand(S, 'gemini', 'BRIEF', { sid }), 'gemini -i "BRIEF"')
+  assert.equal(launchCommand(S, 'gemini', 'BRIEF', { sid }), `gemini --session-id ${sid} -i "BRIEF"`)
 })
 
 test('resume reopens the previous conversation and skips the briefing', () => {
@@ -19,13 +19,15 @@ test('resume reopens the previous conversation and skips the briefing', () => {
   assert.equal(launchCommand(S, 'opencode', 'BRIEF', { resume: true, sid }), 'opencode --continue')
 })
 
-test('agents without a resume flag start fresh; shell types nothing', () => {
-  assert.equal(launchCommand(S, 'antigravity', 'BRIEF', { resume: true, sid }), 'agy -i "BRIEF"')
+test('shell types nothing; a CLI without a canvas id starts without one', () => {
+  assert.equal(launchCommand(S, 'antigravity', 'BRIEF', { resume: true, sid }), 'agy --continue')
   assert.equal(launchCommand(S, 'shell', 'BRIEF', { resume: true, sid }), '')
+  assert.equal(launchCommand(S, 'antigravity', 'BRIEF', { sid }), 'agy -i "BRIEF"')
 })
 
 test('without briefing, claude still gets its id; others run bare', () => {
   const N = { ...S, sendBriefing: false }
   assert.equal(launchCommand(N, 'claude', '', { sid }), `claude --session-id ${sid}`)
   assert.equal(launchCommand(N, 'codex', '', { sid }), 'codex')
+  assert.equal(launchCommand(N, 'gemini', '', { sid }), `gemini --session-id ${sid}`)
 })

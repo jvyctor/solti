@@ -288,7 +288,7 @@ function AgentesTab({ s, set }) {
         </Row>
       </Section>
       <Section title="LIMITES">
-        <Row title="Limite de tokens por agente" desc="Ao atingir, o agente é interrompido (Esc + Ctrl+C) e você é avisado. Só Claude Code informa o uso.">
+        <Row title="Limite de tokens por agente" desc="Ao atingir, o agente é interrompido (Esc + Ctrl+C) e você é avisado. Vale para Claude Code, Codex e Gemini. No Codex a contagem é da sessão mais recente da pasta do agente.">
           <Select label="Limite de tokens" value={String(s.tokenLimit)} onChange={(v) => set({ tokenLimit: Number(v) })} options={[['0', 'Desligado'], ['200000', '200 mil'], ['500000', '500 mil'], ['1000000', '1 milhão'], ['5000000', '5 milhões']]} />
         </Row>
       </Section>

@@ -44,7 +44,7 @@ contextBridge.exposeInMainWorld('api', {
   gitCommit: (wt, msg) => ipcRenderer.invoke('git:commit', wt, msg),
   gitMerge: (repo, base, branch) => ipcRenderer.invoke('git:merge', repo, base, branch),
   gitPr: (repo, base, branch) => ipcRenderer.invoke('git:pr', repo, base, branch),
-  agentTokens: (sid) => ipcRenderer.invoke('usage:agent', sid),
+  agentTokens: (id, preset, sid) => ipcRenderer.invoke('usage:agent', id, preset, sid),
   interrupt: (id) => ipcRenderer.send('agents:interrupt', id),
   portalRegister: (id, wcId) => ipcRenderer.send('portal:register', id, wcId),
   onActivity: (cb) => on('activity', cb),
