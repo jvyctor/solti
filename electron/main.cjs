@@ -6,6 +6,8 @@ const crypto = require('crypto')
 const pty = require('node-pty')
 const activity = require('./activity.cjs')
 const backup = require('./backup.cjs')
+const remote = require('./remote.cjs')
+const QRCode = require('qrcode')
 const portal = require('./portal.cjs')
 
 const TOKEN = crypto.randomBytes(16).toString('hex')
@@ -65,6 +67,7 @@ async function readNode(n, j) {
   return { type: n.type, name: n.name }
 }
 
+const outputListeners = new Set() // phone remote: live terminal output
 const waiting = new Map() // asker id -> { from (target id), resolve, timer }
 
 // TUIs (Claude, Codex…) treat one fast write as a paste: a trailing \r is then a newline, not "submit".
@@ -246,11 +249,13 @@ function spawnPty(id, { preset, name, maestro, instructions, cwd, cols, rows, re
       CANVAS_NODE: process.execPath, // lets bin/canvas.cmd run on the app's own runtime
     },
   })
-  const entry = { p, buf: '', cwd: cwd || process.env.USERPROFILE || process.env.HOME }
+  const entry = { p, buf: '', cwd: cwd || process.env.USERPROFILE || process.env.HOME, cols: cols || 80, rows: rows || 24, last: 0 }
   ptys.set(id, entry)
   applyPower()
   p.onData((d) => {
     entry.buf = (entry.buf + d).slice(-200000)
+    entry.last = Date.now()
+    outputListeners.forEach((cb) => cb(id, d))
     win?.webContents.send('pty:data', id, d)
   })
   p.onExit(() => {
@@ -270,6 +275,52 @@ ipcMain.handle('pty:spawn', (_e, id, opts) => {
   const e = ptys.get(id)
   return { buf: e?.buf || '', cwd: e?.cwd || '' }
 })
+// ---- Phone remote (see remote.cjs): everything it may touch goes through this small host object.
+let remoteError = ''
+let remoteInst
+const getRemote = () => remoteInst ||= remote.create({
+  dir: path.join(app.getPath('userData'), 'remote'),
+  version: app.getVersion(),
+  host: {
+    terminals: () => [...ptys].map(([id, e]) => {
+      const n = graph.nodes.find((x) => x.id === id)
+      return { id, name: n?.name || id, wsName: graph.wsNames?.[n?.ws] || '', cols: e.cols, rows: e.rows, last: e.last }
+    }),
+    buffer: (id) => ptys.get(id)?.buf || '',
+    write: (id, data, enter) => { const e = ptys.get(id); if (!e) return; e.p.write(data); if (enter) setTimeout(() => e.p.write('\r'), 300) },
+    onOutput: (cb) => { outputListeners.add(cb); return () => outputListeners.delete(cb) },
+    interrupt: (id) => (id ? ptys.has(id) && interrupt(ptys.get(id)) : [...ptys.values()].forEach(interrupt)),
+    activity,
+    assets: {
+      html: fs.readFileSync(path.join(__dirname, 'remote-ui', 'index.html'), 'utf8'),
+      xtermJs: fs.readFileSync(require.resolve('@xterm/xterm/lib/xterm.js')),
+      xtermCss: fs.readFileSync(require.resolve('@xterm/xterm/css/xterm.css')),
+    },
+  },
+})
+async function applyRemote() {
+  const S = settings.get()
+  remoteError = ''
+  if (S.remoteEnabled) {
+    try { await getRemote().start(S.remotePort) } catch (e) {
+      remoteError = e.code === 'EADDRINUSE' ? `Porta ${S.remotePort} em uso. Escolha outra.` : e.message
+      await getRemote().stop()
+      settings.set({ remoteEnabled: false })
+      win?.webContents.send('settings', settings.get())
+    }
+  } else await getRemote().stop()
+}
+ipcMain.handle('remote:status', () => ({ ...getRemote().status(), error: remoteError, devices: getRemote().devices() }))
+ipcMain.handle('remote:revoke', (_e, id) => { getRemote().revoke(id); return getRemote().devices() })
+ipcMain.handle('remote:pair', async () => {
+  const st = getRemote().status()
+  if (!st.listening) return { error: 'Ative o controle remoto primeiro.' }
+  const { token, expires } = getRemote().startPairing()
+  const urls = st.addresses.map((ip) => `https://${ip}:${st.port}/#pair=${token}`)
+  if (!urls.length) return { error: 'Nenhuma rede local encontrada (conecte o computador ao Wi-Fi).' }
+  return { urls, qr: await QRCode.toDataURL(urls[0], { margin: 1, width: 320 }), expires }
+})
+
 // Git / worktrees (see git.cjs). Errors come back as { error } so the dialog can show them.
 const gitx = require('./git.cjs')
 const safe = (fn) => async (_e, ...a) => { try { return await fn(...a) } catch (e) { return { error: e.message } } }
@@ -319,12 +370,13 @@ ipcMain.handle('fs:list', (_e, dir) => {
   }
 })
 ipcMain.on('pty:write',(_e, id, d) => ptys.get(id)?.p.write(d))
-ipcMain.on('pty:resize', (_e, id, c, r) => { try { ptys.get(id)?.p.resize(c, r) } catch {} })
+ipcMain.on('pty:resize', (_e, id, c, r) => { try { const e = ptys.get(id); e?.p.resize(c, r); if (e) { e.cols = c; e.rows = r } } catch {} })
 ipcMain.on('pty:kill', (_e, id) => { ptys.get(id)?.p.kill(); ptys.delete(id); applyPower() })
 ipcMain.handle('settings:get', () => settings.get())
 ipcMain.handle('settings:set', (_e, patch) => {
   const s = settings.set(patch)
   applyPower()
+  if ('remoteEnabled' in patch || 'remotePort' in patch) applyRemote()
   win?.webContents.send('settings', s)
   return s
 })
@@ -380,6 +432,7 @@ ipcMain.handle('term:load', (_e, id) => { try { return fs.readFileSync(termFile(
 
 app.whenReady().then(() => {
   settings.init(app.getPath('userData'))
+  applyRemote()
   activity.init(app.getPath('userData'), (ch, d) => win?.webContents.send(ch, d))
   applyPower()
   startBridge()

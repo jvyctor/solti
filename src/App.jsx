@@ -32,6 +32,7 @@ export default function App() {
     api.updateGraph({
       nodes: state.list.flatMap((w) => w.nodes.map((n) => describe(n, w.id)).filter(Boolean)),
       edges: state.list.flatMap((w) => w.edges.map((e) => ({ source: e.source, target: e.target }))),
+      wsNames: Object.fromEntries(state.list.map((w) => [w.id, w.name])),
       knowledge: Object.fromEntries(state.list.map((w) => [w.id, w.nodes.find((n) => n.type === 'knowledge')?.data.text || ''])),
     })
     const t = setTimeout(() => api.save(state), 500)

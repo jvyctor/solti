@@ -25,23 +25,32 @@ function record(e) {
   if (entries.length > KEEP) entries.shift()
   try { fs.appendFileSync(file, JSON.stringify(entry) + '\n') } catch {}
   send('activity', entry)
+  emit('entry', entry)
 }
 
 // Which actions need the user's OK for a given mode: off | spawn | all.
 const needsApproval = (mode, kind) => mode === 'all' ? ['send', 'ask', 'spawn', 'portal'].includes(kind) : mode === 'spawn' && kind === 'spawn'
 
-// Resolves true/false; no answer within TIMEOUT counts as denied.
+// Listeners (the phone remote) hear about new entries and about approvals opening/closing.
+const listeners = { entry: new Set(), request: new Set(), closed: new Set() }
+const on = (ev, cb) => { listeners[ev].add(cb); return () => listeners[ev].delete(cb) }
+const emit = (ev, d) => listeners[ev].forEach((cb) => { try { cb(d) } catch {} })
+
+// Resolves true/false; no answer within TIMEOUT counts as denied. Anyone (desktop dialog or phone) may answer; the first wins.
 function request(info) {
   return new Promise((resolve) => {
     const id = ++seq
-    const timer = setTimeout(() => { pending.delete(id); send('approval:close', id); resolve(false) }, TIMEOUT)
-    pending.set(id, (ok) => { clearTimeout(timer); resolve(ok) })
+    const done = (ok) => { clearTimeout(timer); pending.delete(id); send('approval:close', id); emit('closed', id); resolve(ok) }
+    const timer = setTimeout(() => done(false), TIMEOUT)
+    pending.set(id, { info: { id, ...info }, done })
     send('approval:request', { id, ...info })
+    emit('request', { id, ...info })
   })
 }
 function answer(id, ok) {
   const r = pending.get(id)
-  if (r) { pending.delete(id); r(!!ok) }
+  if (r) r.done(!!ok)
 }
+const pendingList = () => [...pending.values()].map((p) => p.info)
 
-module.exports = { init, record, list: () => entries.slice(-200), needsApproval, request, answer }
+module.exports = { init, record, list: () => entries.slice(-200), needsApproval, request, answer, pendingList, on }

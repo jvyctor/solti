@@ -16,6 +16,9 @@ const DEFAULTS = {
   notifyIdle: true,
   idleSeconds: 6,
   autoUpdate: true,
+  // Controle remoto (celular)
+  remoteEnabled: false,
+  remotePort: 7443,
   // Terminal
   fontSize: 14,
   fontFamily: 'JetBrains Mono',

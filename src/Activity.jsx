@@ -3,7 +3,7 @@ import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import { ScrollText, X, ShieldAlert } from 'lucide-react'
 
 const api = window.api
-const KIND = { send: 'mensagem', ask: 'pergunta', spawn: 'criou agente', portal: 'navegador', done: 'concluiu' }
+const KIND = { send: 'mensagem', ask: 'pergunta', spawn: 'criou agente', portal: 'navegador', done: 'concluiu', remote: 'celular' }
 const hhmm = (t) => new Date(t).toLocaleTimeString('pt-BR')
 
 // Timeline of what agents did to each other; opens from a dock button.
