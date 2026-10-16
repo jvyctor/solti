@@ -884,7 +884,7 @@ export default function App() {
         <button className={"burger" + (sideOpen ? "" : " closed")} aria-label={sideOpen ? 'Ocultar workspaces' : 'Mostrar workspaces'} title={sideOpen ? 'Ocultar workspaces' : 'Mostrar workspaces'} onClick={toggleSide}>
           <MenuIcon size={18} />
         </button>
-        {!sideOpen && <span className="ws-pill" key={active.id}>{active.name}</span>}
+        <span className="ws-pill" key={active.id}>{active.name}</span>
         <ReactFlowProvider key={active.id}>
           <Canvas ws={active} update={update} scores={state.scores || []} saveScore={saveScore} insertScore={insertScore} />
         </ReactFlowProvider>

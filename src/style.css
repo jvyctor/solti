@@ -368,7 +368,8 @@ svg { flex: none; }
 .side-wrap.closed > .side { transform: translateX(-24px); opacity: 0; }
 .burger svg { transition: transform 240ms var(--ease); }
 .burger.closed svg { transform: rotate(90deg); }
-.ws-pill { position: absolute; z-index: 30; top: 18px; left: 66px; max-width: min(40vw, 320px); padding: 5px 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--side-bg); border: 1px solid var(--side-field); border-radius: var(--r-pill); font-size: 13px; font-weight: 600; color: var(--side-text); box-shadow: var(--shadow-1); pointer-events: none; animation: pill-in 220ms var(--ease) 200ms both; }
+.ws-pill { position: absolute; z-index: 30; top: 18px; left: 66px; max-width: min(40vw, 320px); padding: 5px 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--side-bg); border: 1px solid var(--side-field); border-radius: var(--r-pill); font-size: 13px; font-weight: 600; color: var(--side-text); box-shadow: var(--shadow-1); pointer-events: none; animation: pill-in 220ms var(--ease) both; }
+.side-wrap.closed + main .ws-pill { animation-delay: 200ms; }
 @keyframes pill-in { from { opacity: 0; transform: translateX(-14px) scale(0.96); } to { opacity: 1; transform: none; } }
 
 /* ───────── Edge while two agents are talking ───────── */
