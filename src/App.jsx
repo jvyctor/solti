@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import SettingsDialog from './Settings.jsx'
-import { resolveTheme, applyTheme } from './themes.js'
+import { resolveTheme, applyTheme, termOptions } from './themes.js'
 import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, ConnectionMode, BaseEdge, useInternalNode, MiniMap, NodeResizer, Handle, Position, addEdge, applyNodeChanges, applyEdgeChanges, useReactFlow, useViewport } from '@xyflow/react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
@@ -15,10 +15,6 @@ import {
 const api = window.api
 const CommCtx = createContext(new Set()) // 'idA|idB' pairs currently talking
 const SettingsCtx = createContext(null) // app settings (see electron/settings.cjs) + { mode, eff }
-const TERM_THEME = {
-  dark: { background: '#0d0f13', foreground: '#e8eaf0', cursor: '#e8eaf0', selectionBackground: '#3a4a7a' },
-  light: { background: '#fbfbfd', foreground: '#161a22', cursor: '#161a22', selectionBackground: '#bcd0ff' },
-}
 const PRESET_LABELS = { claude: 'Claude Code', codex: 'Codex', antigravity: 'Antigravity', opencode: 'OpenCode', gemini: 'Gemini', shell: 'Shell' }
 const sinks = new Map() // pty id -> xterm.write
 const terms = new Map() // pty id -> xterm instance (copy/paste/select all)
@@ -63,13 +59,15 @@ function TerminalNode({ id, data, selected }) {
   const cfgRef = useRef(cfg)
   cfgRef.current = cfg
   const termRef = useRef(null)
+  const fitRef = useRef(null)
 
   useEffect(() => {
     if (data.unloaded) return
     const c = cfgRef.current
-    const term = new Terminal({ fontSize: c.fontSize, fontFamily: `'${c.fontFamily}', 'Cascadia Code', Consolas, monospace`, theme: TERM_THEME[c.mode], cursorBlink: c.cursorBlink, scrollback: c.scrollback })
+    const term = new Terminal(termOptions(c, c.mode))
     termRef.current = term
     const fit = new FitAddon()
+    fitRef.current = fit
     term.loadAddon(fit)
     term.open(host.current)
     fit.fit()
@@ -92,16 +90,15 @@ function TerminalNode({ id, data, selected }) {
     return () => { clearTimeout(idle); terms.delete(id); sinks.delete(id); sub.dispose(); ro.disconnect(); term.dispose() }
   }, [id, data.rev, data.unloaded])
 
-  // Font/cursor/scrollback changes apply to open terminals without restarting them.
+  // Style changes apply to open terminals without restarting them.
+  const opts = termOptions(cfg, cfg.mode)
+  const optsKey = JSON.stringify(opts)
   useEffect(() => {
     const t = termRef.current
     if (!t) return
-    t.options.fontSize = cfg.fontSize
-    t.options.fontFamily = `'${cfg.fontFamily}', 'Cascadia Code', Consolas, monospace`
-    t.options.cursorBlink = cfg.cursorBlink
-    t.options.scrollback = cfg.scrollback
-    t.options.theme = TERM_THEME[cfg.mode]
-  }, [cfg.fontSize, cfg.fontFamily, cfg.cursorBlink, cfg.scrollback, cfg.mode])
+    Object.assign(t.options, opts)
+    try { fitRef.current?.fit(); api.resize(id, t.cols, t.rows) } catch {}
+  }, [optsKey, cfg.termPadding])
 
   // Only one maestro per workspace.
   const setRole = (maestro) =>
@@ -122,7 +119,7 @@ function TerminalNode({ id, data, selected }) {
         </select>
         <button className="x" aria-label="Excluir" onClick={() => deleteElements({ nodes: [{ id }] })}><X size={14} /></button>
       </div>
-      <div className="tbody nodrag nowheel" ref={host} style={data.blur ? { filter: 'blur(6px)' } : undefined} />
+      <div className="tbody nodrag nowheel" ref={host} style={{ background: opts.theme.background, padding: `4px ${cfg.termPadding}px`, ...(data.blur ? { filter: 'blur(6px)' } : {}) }} />
       <div className="tfoot" title={cwd}><Folder size={12} /> {shortPath(cwd)}</div>
       {data.unloaded && (
         <div className="unloaded">

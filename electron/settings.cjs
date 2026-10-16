@@ -20,6 +20,16 @@ const DEFAULTS = {
   fontFamily: 'JetBrains Mono',
   cursorBlink: true,
   scrollback: 5000,
+  termScheme: 'auto', // auto | dracula | nord | ... (src/themes.js)
+  termBg: '', // empty = follow scheme
+  termFg: '',
+  termCursor: '',
+  termSelection: '',
+  cursorStyle: 'block', // block | bar | underline
+  fontWeight: 'normal', // normal | 500 | 600
+  lineHeight: 1,
+  letterSpacing: 0,
+  termPadding: 12,
   shell: '',
   // Agentes
   sendBriefing: true,

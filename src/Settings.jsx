@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import { PRESETS, resolveTheme } from './themes.js'
+import { PRESETS, resolveTheme, TERM_SCHEMES, termOptions } from './themes.js'
 import { SlidersHorizontal, Palette, SquareTerminal, Bot, Keyboard, Database, Info, X } from 'lucide-react'
 
 const TABS = [
@@ -213,15 +213,46 @@ function Geral({ s, set }) {
   )
 }
 
-function TerminalTab({ s, set }) {
+function TerminalTab({ s, set, mode }) {
+  const eff = termOptions(s, mode).theme
+  const tc = (k, key, label) => (
+    <Color label={label} value={eff[k]} overridden={!!s[key]} onChange={(v) => set({ [key]: v })} onReset={() => set({ [key]: '' })} />
+  )
   return (
     <>
+      <Section title="CORES">
+        <Row title="Esquema" desc="Paleta de 16 cores ANSI + base. Os ajustes abaixo sobrepõem o esquema.">
+          <Select label="Esquema de cores" value={s.termScheme} onChange={(v) => set({ termScheme: v, termBg: '', termFg: '', termCursor: '', termSelection: '' })} options={Object.entries(TERM_SCHEMES).map(([k, v]) => [k, v.label])} />
+        </Row>
+        <Row title="Fundo">{tc('background', 'termBg', 'Cor de fundo do terminal')}</Row>
+        <Row title="Texto">{tc('foreground', 'termFg', 'Cor do texto')}</Row>
+        <Row title="Cursor">{tc('cursor', 'termCursor', 'Cor do cursor')}</Row>
+        <Row title="Seleção">{tc('selectionBackground', 'termSelection', 'Cor da seleção')}</Row>
+      </Section>
       <Section title="FONTE">
-        <Row title="Família" desc="Aplica-se imediatamente aos terminais abertos.">
-          <Select label="Família da fonte" value={s.fontFamily} onChange={(v) => set({ fontFamily: v })} options={[['JetBrains Mono', 'JetBrains Mono'], ['Cascadia Code', 'Cascadia Code'], ['Consolas', 'Consolas'], ['monospace', 'Monoespaçada do sistema']]} />
+        <Row title="Família" desc="Qualquer fonte monoespaçada instalada. Aplica-se imediatamente.">
+          <input className="set-input" list="term-fonts" aria-label="Família da fonte" value={s.fontFamily} onChange={(e) => set({ fontFamily: e.target.value })} />
+          <datalist id="term-fonts">{['JetBrains Mono', 'Cascadia Code', 'Cascadia Mono', 'Consolas', 'Fira Code', 'Source Code Pro', 'Courier New', 'monospace'].map((f) => <option key={f} value={f} />)}</datalist>
         </Row>
         <Row title="Tamanho">
-          <Select label="Tamanho da fonte" value={String(s.fontSize)} onChange={(v) => set({ fontSize: Number(v) })} options={[11, 12, 13, 14, 15, 16, 18, 20].map((n) => [String(n), `${n} px`])} />
+          <Range label="Tamanho da fonte" value={s.fontSize} min={9} max={28} step={1} unit=" px" onChange={(v) => set({ fontSize: v })} />
+        </Row>
+        <Row title="Peso">
+          <Select label="Peso da fonte" value={s.fontWeight} onChange={(v) => set({ fontWeight: v })} options={[['normal', 'Normal'], ['500', 'Médio'], ['600', 'Seminegrito']]} />
+        </Row>
+        <Row title="Altura da linha">
+          <Range label="Altura da linha" value={s.lineHeight} min={1} max={1.6} step={0.1} onChange={(v) => set({ lineHeight: v })} />
+        </Row>
+        <Row title="Espaço entre letras">
+          <Range label="Espaço entre letras" value={s.letterSpacing} min={0} max={4} step={1} unit=" px" onChange={(v) => set({ letterSpacing: v })} />
+        </Row>
+      </Section>
+      <Section title="CURSOR E MARGEM">
+        <Row title="Formato do cursor">
+          <Select label="Formato do cursor" value={s.cursorStyle} onChange={(v) => set({ cursorStyle: v })} options={[['block', 'Bloco'], ['bar', 'Barra'], ['underline', 'Sublinhado']]} />
+        </Row>
+        <Row title="Margem lateral">
+          <Range label="Margem lateral" value={s.termPadding} min={0} max={32} step={2} unit=" px" onChange={(v) => set({ termPadding: v })} />
         </Row>
       </Section>
       <Section title="COMPORTAMENTO">
@@ -343,7 +374,7 @@ export default function SettingsDialog({ open, onOpenChange, settings, api, mode
           <div className="set-body">
             {tab === 'geral' && <Geral s={settings} set={set} />}
             {tab === 'tela' && <Tela s={settings} set={set} mode={mode} />}
-            {tab === 'terminal' && <TerminalTab s={settings} set={set} />}
+            {tab === 'terminal' && <TerminalTab s={settings} set={set} mode={mode} />}
             {tab === 'agentes' && <AgentesTab s={settings} set={set} />}
             {tab === 'atalhos' && <Atalhos />}
             {tab === 'dados' && <Dados api={api} onReset={() => api.settingsReset()} />}
