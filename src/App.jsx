@@ -3,6 +3,7 @@ import SettingsDialog from './Settings.jsx'
 import { useUpdate, UpdateToast, UpdateDialog } from './Updates.jsx'
 import { classify, STATUS } from './status.js'
 import { exportable, mergeImport } from './workspaces.js'
+import { createHistory, snapshot, applySnapshot } from './history.js'
 import DiffNode from './DiffNode.jsx'
 import { ActivityDock, ApprovalDialog } from './Activity.jsx'
 import { resolveTheme, applyTheme, termOptions } from './themes.js'
@@ -745,6 +746,36 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
     return { nodes, edges }
   }
   const [dlg, setDlg] = useState(null) // { pos } while "Novo Terminal…" is open
+
+  // Undo / redo (Ctrl+Z, Ctrl+Shift+Z / Ctrl+Y). Typing inside terminals, inputs and notes keeps its own undo.
+  const hist = useRef(createHistory())
+  const restoring = useRef(false)
+  useEffect(() => { hist.current.reset(snapshot(ws)) }, [])
+  useEffect(() => {
+    if (restoring.current) { restoring.current = false; return }
+    const t = setTimeout(() => hist.current.push(snapshot(ws)), 500)
+    return () => clearTimeout(t)
+  }, [ws.nodes, ws.edges])
+  const wsRef = useRef(ws)
+  wsRef.current = ws
+  const travel = useCallback((dir) => {
+    const s = dir < 0 ? hist.current.undo() : hist.current.redo()
+    if (!s) return
+    const keep = new Set(s.nodes.map((n) => n.id))
+    wsRef.current.nodes.forEach((n) => n.type === 'terminal' && !keep.has(n.id) && api.kill(n.id)) // undoing an "add" must not leave its pty running
+    restoring.current = true
+    update((w) => ({ ...w, ...applySnapshot(s, w.nodes) }))
+  }, [update])
+  useEffect(() => {
+    const key = (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return
+      if (e.target.closest?.('input, textarea, select, [contenteditable], .xterm')) return
+      const k = e.key.toLowerCase()
+      if (k === 'z' || k === 'y') { e.preventDefault(); travel(k === 'y' || e.shiftKey ? 1 : -1) }
+    }
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  }, [travel])
   const add = (type, data, pos) =>
     setNodes((n) => [
       ...n,
@@ -818,6 +849,8 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
         { label: 'Grupo', run: () => add('group', { name: 'Grupo' }, pos) },
       ],
     },
+    { label: 'Desfazer', run: () => travel(-1) },
+    { label: 'Refazer', run: () => travel(1) },
     { label: 'Colar', disabled: !clip, run: () => clip && setNodes((ns) => [...ns, { ...clip, id: uid('n'), selected: false, position: pos }]) },
     { label: 'Partituras', sub: scoreMenu() },
   ]
@@ -833,7 +866,7 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
           onCreate={({ name, cwd, preset, git }) => { addTerminal(preset, dlg.pos, { name: name || undefined, cwd: cwd || undefined, git }); setDlg(null) }}
         />
       )}
-      <ReactFlow nodes={ws.nodes} edges={shownEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} connectionMode={ConnectionMode.Loose} connectionRadius={48} onBeforeDelete={onBeforeDelete} onConnectEnd={onConnectEnd} defaultEdgeOptions={{ type: 'floating' }} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeContextMenu={(e, n) => openMenu(e, nodeMenu(n))} onPaneContextMenu={(e) => openMenu(e, paneMenu(screenToFlowPosition({ x: e.clientX, y: e.clientY })))} colorMode={cfg.mode} snapToGrid={cfg.eff.snap} snapGrid={[cfg.eff.snapSize, cfg.eff.snapSize]} className={cfg.eff.edgeFlow ? 'flow' : undefined} minZoom={0.1} fitView proOptions={{ hideAttribution: true }}>
+      <ReactFlow deleteKeyCode={['Backspace', 'Delete']} nodes={ws.nodes} edges={shownEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} connectionMode={ConnectionMode.Loose} connectionRadius={48} onBeforeDelete={onBeforeDelete} onConnectEnd={onConnectEnd} defaultEdgeOptions={{ type: 'floating' }} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeContextMenu={(e, n) => openMenu(e, nodeMenu(n))} onPaneContextMenu={(e) => openMenu(e, paneMenu(screenToFlowPosition({ x: e.clientX, y: e.clientY })))} colorMode={cfg.mode} snapToGrid={cfg.eff.snap} snapGrid={[cfg.eff.snapSize, cfg.eff.snapSize]} className={cfg.eff.edgeFlow ? 'flow' : undefined} minZoom={0.1} fitView proOptions={{ hideAttribution: true }}>
         {cfg.eff.gridStyle !== 'none' && <Background variant={GRID_VARIANT[cfg.eff.gridStyle]} color={cfg.eff.grid} gap={cfg.eff.gap} size={cfg.eff.size} lineWidth={cfg.eff.size} />}
         <Zoom><UsageDock /><ActivityDock /></Zoom>
       </ReactFlow>
