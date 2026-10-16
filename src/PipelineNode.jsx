@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Handle, NodeResizer, Position, useNodes, useReactFlow } from '@xyflow/react'
 import { Workflow, X, Play, Square, Plus, Trash2 } from 'lucide-react'
 import { HINT, fill, settle, shouldStop } from './pipeline.js'
