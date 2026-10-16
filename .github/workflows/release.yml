@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
       - name: Unit tests (the UI tests need a desktop session and run locally with npm test)
-        run: node --test test/git.test.mjs test/launch.test.mjs test/status.test.mjs test/agentusage.test.mjs test/activity.test.mjs test/backup.test.mjs test/history.test.mjs test/geometry.test.mjs test/pipeline.test.mjs
+        run: node --test test/git.test.mjs test/launch.test.mjs test/status.test.mjs test/agentusage.test.mjs test/activity.test.mjs test/backup.test.mjs test/history.test.mjs test/geometry.test.mjs test/pipeline.test.mjs test/remote.test.mjs
 
   prepare:
     needs: test
