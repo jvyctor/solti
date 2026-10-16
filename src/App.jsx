@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import SettingsDialog from './Settings.jsx'
 import { useUpdate, UpdateToast, UpdateDialog } from './Updates.jsx'
+import { classify, STATUS } from './status.js'
 import { resolveTheme, applyTheme, termOptions } from './themes.js'
 import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, ConnectionMode, BaseEdge, useInternalNode, MiniMap, NodeResizer, Handle, Position, addEdge, applyNodeChanges, applyEdgeChanges, useReactFlow, useViewport } from '@xyflow/react'
 import { Terminal } from '@xterm/xterm'
@@ -59,6 +60,7 @@ function TerminalNode({ id, data, selected }) {
   const dataRef = useRef(data)
   dataRef.current = data
   const [cwd, setCwd] = useState('')
+  const [status, setStatus] = useState(null) // working | input | idle | exited (agents only)
   const cfg = useContext(SettingsCtx)
   const cfgRef = useRef(cfg)
   cfgRef.current = cfg
@@ -83,10 +85,22 @@ function TerminalNode({ id, data, selected }) {
     fit.fit()
     terms.set(id, term)
     // Output is held until the saved screen (or the live pty buffer) has been written, so order is kept.
-    let idle, ready = false
+    let idle, settle, cur, ready = false
     const held = []
     const show = (d) => {
       term.write(d)
+      if (dataRef.current.preset !== 'shell') {
+        if (cur !== 'working') { cur = 'working'; setStatus('working') }
+        clearTimeout(settle)
+        settle = setTimeout(() => {
+          const b = term.buffer.active
+          const lines = []
+          for (let i = Math.max(0, b.length - 6); i < b.length; i++) lines.push(b.getLine(i)?.translateToString(true) || '')
+          cur = classify(lines)
+          setStatus(cur)
+          if (cur === 'input' && !document.hasFocus() && cfgRef.current.notifyIdle) new Notification(dataRef.current.name, { body: 'Está esperando você.' })
+        }, 2500)
+      }
       if (dataRef.current.monitor && cfgRef.current.notifyIdle) {
         clearTimeout(idle)
         const secs = cfgRef.current.idleSeconds
@@ -109,11 +123,12 @@ function TerminalNode({ id, data, selected }) {
       dirty = false
     })
     const sub = term.onData((d) => api.write(id, d))
+    const offExit = api.onExit((eid) => { if (eid === id) { clearTimeout(settle); cur = 'exited'; setStatus('exited') } })
     const ro = new ResizeObserver(() => {
       try { fit.fit(); api.resize(id, term.cols, term.rows) } catch {}
     })
     ro.observe(host.current)
-    return () => { save(); clearInterval(timer); clearTimeout(idle); window.removeEventListener('beforeunload', save); mark.dispose(); terms.delete(id); sinks.delete(id); sub.dispose(); ro.disconnect(); term.dispose() }
+    return () => { save(); offExit(); clearInterval(timer); clearTimeout(idle); clearTimeout(settle); window.removeEventListener('beforeunload', save); mark.dispose(); terms.delete(id); sinks.delete(id); sub.dispose(); ro.disconnect(); term.dispose() }
   }, [id, data.rev, data.unloaded])
 
   // Style changes apply to open terminals without restarting them.
@@ -138,6 +153,7 @@ function TerminalNode({ id, data, selected }) {
         <i className="dot" style={{ background: AGENT_COLORS[PRESET_COLOR[data.preset]] || '#8b93a5' }} title={data.preset} />
         <input data-rename={id} value={data.name} onChange={(e) => updateNodeData(id, { name: e.target.value })} />
         <span className="spacer" />
+        {status && <span className={'stat ' + status} title={STATUS[status].label}><i style={{ background: STATUS[status].color }} />{STATUS[status].label}</span>}
         {data.monitor && <Activity className="mon" size={13} aria-label="Monitorando atividade" />}
         <select className={'rolepill' + (data.maestro ? ' maestro' : '')} value={data.maestro ? 'maestro' : 'agent'} onChange={(e) => setRole(e.target.value === 'maestro')} title="Papel (use Reenviar briefing no menu para aplicar)">
           <option value="agent">Agente</option>

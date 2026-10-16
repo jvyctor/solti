@@ -25,8 +25,9 @@ async function session(prof, port, body) {
     const pending = {}
     cdp.onmessage = (e) => { const m = JSON.parse(e.data); pending[m.id]?.(m.result) }
     const ev = (expression) => new Promise((r) => { const id = ++n; pending[id] = r; cdp.send(JSON.stringify({ id, method: 'Runtime.evaluate', params: { expression, returnByValue: true } })) })
+    const stat = () => ev(`document.querySelector('.thead .stat')?.textContent || ''`).then((r) => r.result.value)
     const screen = () => ev(`document.querySelector('.xterm-rows')?.textContent || ''`).then((r) => r.result.value)
-    await body(screen)
+    await body(screen, stat)
     await sleep(1200) // let the workspace autosave land
     cdp.close()
   } finally {
@@ -41,9 +42,11 @@ test('first start assigns a session id; the next start resumes it', async () => 
   writeFileSync(join(prof, 'workspace.json'), JSON.stringify({ list: [{ id: 'w1', name: 'A', nodes: [node], edges: [] }], active: 'w1' }))
   writeFileSync(join(prof, 'settings.json'), JSON.stringify({ sendBriefing: false, commands: { claude: 'echo CMD' } }))
 
-  await session(prof, 9390, async (screen) => {
+  await session(prof, 9390, async (screen, stat) => {
     for (let i = 0; i < 40 && !/--session-id/.test(await screen()); i++) await sleep(300)
     assert.match(await screen(), /CMD --session-id/)
+    for (let i = 0; i < 40 && (await stat()) !== 'Ocioso'; i++) await sleep(300) // output settled at a plain prompt
+    assert.equal(await stat(), 'Ocioso')
   })
   const sid = JSON.parse(readFileSync(join(prof, 'workspace.json'), 'utf8')).list[0].nodes[0].data.sid
   assert.match(sid, /^[0-9a-f-]{36}$/)

@@ -411,3 +411,10 @@ svg { flex: none; }
 .dlg .hint { margin: 0; font-size: 12px; color: var(--text-3); }
 .dlg .err { margin: 0; font-size: 12px; color: var(--danger); }
 .tfoot .branch { margin-left: 10px; color: var(--accent); }
+
+/* ───────── Live agent status ───────── */
+.thead .stat { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: var(--r-pill); background: var(--surface-3); font-size: 11px; color: var(--text-2); white-space: nowrap; }
+.thead .stat i { width: 7px; height: 7px; border-radius: 50%; }
+.thead .stat.working i { animation: stat-pulse 1s ease-in-out infinite; }
+.thead .stat.input { color: var(--text); }
+@keyframes stat-pulse { 50% { opacity: 0.3; } }
