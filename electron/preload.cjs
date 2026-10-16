@@ -33,6 +33,12 @@ contextBridge.exposeInMainWorld('api', {
   updateCheck: () => ipcRenderer.send('update:check'),
   updateDownload: () => ipcRenderer.send('update:download'),
   updateInstall: () => ipcRenderer.send('update:install'),
+  gitInfo: (dir) => ipcRenderer.invoke('git:info', dir),
+  gitRemoteBranches: (url) => ipcRenderer.invoke('git:remote-branches', url),
+  gitPrepare: (o) => ipcRenderer.invoke('git:prepare', o),
+  gitRemoveWorktree: (wt) => ipcRenderer.invoke('git:remove-worktree', wt),
+  gitDirty: (dir) => ipcRenderer.invoke('git:dirty', dir),
+  pickFolder: () => ipcRenderer.invoke('dialog:folder'),
   termSave: (id, text) => ipcRenderer.send('term:save', id, text),
   termLoad: (id) => ipcRenderer.invoke('term:load', id),
 })

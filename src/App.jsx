@@ -11,7 +11,7 @@ import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
   X, RefreshCw, Map as MapIcon, ArrowLeft, FolderTree, Folder, FolderOpen, Lock, SquareTerminal,
-  Search, Menu as MenuIcon, Settings as SettingsIcon, Plus, Minus, ChevronRight, ChevronDown, Activity, Check, FileText,
+  Search, Menu as MenuIcon, Settings as SettingsIcon, Plus, Minus, ChevronRight, ChevronDown, Activity, Check, FileText, GitBranch,
 } from 'lucide-react'
 
 const api = window.api
@@ -140,7 +140,7 @@ function TerminalNode({ id, data, selected }) {
         <button className="x" aria-label="Excluir" onClick={() => deleteElements({ nodes: [{ id }] })}><X size={14} /></button>
       </div>
       <div className="tbody nodrag nowheel" ref={host} style={{ background: opts.theme.background, padding: `4px ${cfg.termPadding}px`, ...(data.blur ? { filter: 'blur(6px)' } : {}) }} />
-      <div className="tfoot" title={cwd}><Folder size={12} /> {shortPath(cwd)}</div>
+      <div className="tfoot" title={cwd}><Folder size={12} /> {shortPath(cwd)}{data.git && <span className="branch" title={data.git.worktree ? `worktree de ${data.git.base}` : 'branch da pasta'}><GitBranch size={12} /> {data.git.branch}</span>}</div>
       {data.unloaded && (
         <div className="unloaded">
           <button onClick={() => updateNodeData(id, { unloaded: false })}>Descarregado: carregar</button>
@@ -464,28 +464,92 @@ function Menu({ x, y, items, onClose }) {
   )
 }
 
-// Modal for "Novo Terminal…": name, folder and agent.
+// Modal for "Novo Terminal…": name, agent and project (local folder or git URL) with optional per-agent worktree.
 function NewTerminalDialog({ initialName, onCreate, onClose }) {
   const [name, setName] = useState(initialName)
-  const [cwd, setCwd] = useState('')
   const [preset, setPreset] = useState('shell')
+  const [src, setSrc] = useState('dir') // dir | url
+  const [dir, setDir] = useState('')
+  const [url, setUrl] = useState('')
+  const [info, setInfo] = useState(null) // { isRepo, branches, branch }
+  const [base, setBase] = useState('')
+  const [isolate, setIsolate] = useState(true)
+  const [busy, setBusy] = useState('')
+  const [err, setErr] = useState('')
+
+  const inspect = async (d) => {
+    setErr(''); setInfo(null)
+    if (!d) return
+    const r = await api.gitInfo(d)
+    setInfo(r)
+    if (r.isRepo) setBase(r.branch)
+  }
+  const pick = async () => { const d = await api.pickFolder(); if (d) { setDir(d); inspect(d) } }
+  const fetchBranches = async () => {
+    setErr(''); setInfo(null); setBusy('Buscando branches…')
+    const r = await api.gitRemoteBranches(url.trim())
+    setBusy('')
+    if (r.error) return setErr(r.error)
+    setInfo({ isRepo: true, branches: r.branches })
+    setBase(r.branches.includes('main') ? 'main' : r.branches.includes('master') ? 'master' : r.branches[0] || '')
+  }
+  const gitReady = info?.isRepo
+  const submit = async (e) => {
+    e.preventDefault()
+    const n = name || initialName
+    if (src === 'dir' && (!dir || !gitReady)) return onCreate({ name: n, preset, cwd: dir || undefined })
+    if (src === 'url' && !gitReady) return setErr('Clique em "Buscar branches" primeiro.')
+    setErr(''); setBusy(src === 'url' ? 'Clonando e preparando…' : 'Preparando…')
+    const r = await api.gitPrepare({ ...(src === 'url' ? { url: url.trim() } : { dir }), base, isolate, agent: n })
+    setBusy('')
+    if (r.error) return setErr(r.error)
+    onCreate({ name: n, preset, cwd: r.cwd, git: r.git || undefined })
+  }
   return (
-    <Dialog.Root open onOpenChange={(o) => !o && onClose()}>
+    <Dialog.Root open onOpenChange={(o) => !o && !busy && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="dlg-back" />
-        <Dialog.Content className="dlg" aria-describedby={undefined}>
-          <form onSubmit={(e) => { e.preventDefault(); onCreate({ name, cwd, preset }) }}>
+        <Dialog.Content className="dlg wide" aria-describedby={undefined}>
+          <form onSubmit={submit}>
             <Dialog.Title className="dlg-title">Novo terminal</Dialog.Title>
             <label>Nome<input autoFocus value={name} onChange={(e) => setName(e.target.value)} /></label>
-            <label>Pasta (opcional)<input value={cwd} placeholder="C:\projetos\meu-app" onChange={(e) => setCwd(e.target.value)} /></label>
             <label>Agente
               <select value={preset} onChange={(e) => setPreset(e.target.value)}>
                 {Object.entries(PRESET_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </label>
+            <div className="seg" role="tablist" aria-label="Origem do projeto">
+              <button type="button" role="tab" aria-selected={src === 'dir'} className={src === 'dir' ? 'on' : ''} onClick={() => { setSrc('dir'); setInfo(null); setErr(''); inspect(dir) }}>Pasta do computador</button>
+              <button type="button" role="tab" aria-selected={src === 'url'} className={src === 'url' ? 'on' : ''} onClick={() => { setSrc('url'); setInfo(null); setErr('') }}>Link do Git</button>
+            </div>
+            {src === 'dir' ? (
+              <label>Pasta do projeto (opcional)
+                <span className="row"><input value={dir} placeholder="C:\projetos\meu-app" onChange={(e) => { setDir(e.target.value); setInfo(null) }} onBlur={() => inspect(dir)} /><button type="button" onClick={pick}>Escolher…</button></span>
+              </label>
+            ) : (
+              <label>URL do repositório
+                <span className="row"><input value={url} placeholder="https://github.com/usuario/projeto.git" onChange={(e) => { setUrl(e.target.value); setInfo(null) }} /><button type="button" disabled={!url.trim() || !!busy} onClick={fetchBranches}>Buscar branches</button></span>
+              </label>
+            )}
+            {src === 'dir' && dir && info && !info.isRepo && <p className="hint">Não é um repositório git: o terminal abre direto na pasta, sem isolamento.</p>}
+            {gitReady && (
+              <>
+                <label>Branch de partida
+                  <select value={base} onChange={(e) => setBase(e.target.value)}>
+                    {info.branches.map((b) => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </label>
+                <label className="check">
+                  <input type="checkbox" checked={isolate} onChange={(e) => setIsolate(e.target.checked)} />
+                  <span>Isolar em worktree <small>(branch própria <code>canvas/{(name || initialName).toLowerCase()}</code> a partir de {base || '…'})</small></span>
+                </label>
+                {!isolate && src === 'dir' && <p className="hint">Sem isolamento, o terminal troca a branch da pasta para <b>{base}</b>.</p>}
+              </>
+            )}
+            {err && <p className="err">{err}</p>}
             <div className="dlg-actions">
-              <Dialog.Close asChild><button type="button">Cancelar</button></Dialog.Close>
-              <button type="submit" className="primary">Criar</button>
+              <Dialog.Close asChild><button type="button" disabled={!!busy}>Cancelar</button></Dialog.Close>
+              <button type="submit" className="primary" disabled={!!busy}>{busy || 'Criar'}</button>
             </div>
           </form>
         </Dialog.Content>
@@ -585,8 +649,14 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
   const onBeforeDelete = async ({ nodes, edges }) => {
     const t = nodes.filter((n) => n.type === 'terminal')
     if (!t.length) return { nodes, edges }
-    const msg = t.length === 1 ? `Excluir o terminal "${t[0].data.name}"?` : `Excluir ${t.length} terminais?`
-    return (await ask(msg)) ? { nodes, edges } : false
+    const wt = t.filter((n) => n.data.git?.worktree)
+    const dirty = await Promise.all(wt.map(async (n) => (await api.gitDirty(n.data.cwd)).dirty))
+    const note = !wt.length ? '' : dirty.some(Boolean) ? ' Há worktree com alterações não salvas: ele será mantido.' : ' O worktree será removido (a branch continua no repositório).'
+    const msg = (t.length === 1 ? `Excluir o terminal "${t[0].data.name}"?` : `Excluir ${t.length} terminais?`) + note
+    if (!(await ask(msg))) return false
+    // The pty must die first or Windows keeps the folder locked.
+    wt.forEach((n, i) => { if (!dirty[i]) { api.kill(n.id); setTimeout(() => api.gitRemoveWorktree(n.data.cwd), 500) } })
+    return { nodes, edges }
   }
   const [dlg, setDlg] = useState(null) // { pos } while "Novo Terminal…" is open
   const add = (type, data, pos) =>
@@ -602,7 +672,7 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
 
   const patch = (id, d) => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...d } } : n)))
   const spawnCopy = (n, off = 40) =>
-    setNodes((ns) => [...ns, { ...n, id: uid('n'), selected: false, position: { x: n.position.x + off, y: n.position.y + off }, data: { ...n.data, maestro: false } }])
+    setNodes((ns) => [...ns, { ...n, id: uid('n'), selected: false, position: { x: n.position.x + off, y: n.position.y + off }, data: { ...n.data, maestro: false, git: undefined } }])
   const focusInput = (attr, id) => setTimeout(() => { const el = document.querySelector(`[${attr}="${id}"]`); el?.focus(); el?.select?.() }, 0)
 
   const nodeMenu = (n) => {
@@ -628,7 +698,7 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
             '-',
           ]
         : []),
-      { label: 'Copiar elemento', run: () => (clip = { ...n, data: { ...n.data, maestro: false } }) },
+      { label: 'Copiar elemento', run: () => (clip = { ...n, data: { ...n.data, maestro: false, git: undefined } }) },
       { label: 'Duplicar', run: () => spawnCopy(n) },
       { label: d.locked ? 'Desbloquear' : 'Bloquear', run: () => setNodes((ns) => ns.map((x) => (x.id === n.id ? { ...x, draggable: !!d.locked, deletable: !!d.locked, data: { ...x.data, locked: !d.locked } } : x))) },
       { label: 'Apagar', danger: true, disabled: d.locked, run: () => deleteElements({ nodes: [{ id: n.id }] }) },
@@ -671,7 +741,7 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
         <NewTerminalDialog
           initialName={randomName(new Set(ws.nodes.map((n) => n.data.name)))}
           onClose={() => setDlg(null)}
-          onCreate={({ name, cwd, preset }) => { addTerminal(preset, dlg.pos, { name: name || undefined, cwd: cwd || undefined }); setDlg(null) }}
+          onCreate={({ name, cwd, preset, git }) => { addTerminal(preset, dlg.pos, { name: name || undefined, cwd: cwd || undefined, git }); setDlg(null) }}
         />
       )}
       <ReactFlow nodes={ws.nodes} edges={shownEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} connectionMode={ConnectionMode.Loose} connectionRadius={48} onBeforeDelete={onBeforeDelete} onConnectEnd={onConnectEnd} defaultEdgeOptions={{ type: 'floating' }} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeContextMenu={(e, n) => openMenu(e, nodeMenu(n))} onPaneContextMenu={(e) => openMenu(e, paneMenu(screenToFlowPosition({ x: e.clientX, y: e.clientY })))} colorMode={cfg.mode} snapToGrid={cfg.eff.snap} snapGrid={[cfg.eff.snapSize, cfg.eff.snapSize]} className={cfg.eff.edgeFlow ? 'flow' : undefined} minZoom={0.1} fitView proOptions={{ hideAttribution: true }}>

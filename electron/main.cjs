@@ -191,6 +191,18 @@ ipcMain.handle('pty:spawn', (_e, id, opts) => {
   const e = ptys.get(id)
   return { buf: e?.buf || '', cwd: e?.cwd || '' }
 })
+// Git / worktrees (see git.cjs). Errors come back as { error } so the dialog can show them.
+const gitx = require('./git.cjs')
+const safe = (fn) => async (_e, ...a) => { try { return await fn(...a) } catch (e) { return { error: e.message } } }
+ipcMain.handle('git:info', safe((dir) => gitx.info(dir)))
+ipcMain.handle('git:remote-branches', safe(async (url) => ({ branches: await gitx.remoteBranches(url) })))
+ipcMain.handle('git:prepare', safe((o) => gitx.prepare({ ...o, dest: o.dest || path.join(app.getPath('documents'), 'AgentCanvas', 'repos') })))
+ipcMain.handle('git:remove-worktree', safe((wt) => gitx.removeWorktree(wt)))
+ipcMain.handle('git:dirty', safe(async (dir) => ({ dirty: await gitx.dirty(dir) })))
+ipcMain.handle('dialog:folder', async () => {
+  const r = await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
+  return r.canceled ? null : r.filePaths[0]
+})
 ipcMain.on('pty:brief', (_e, id, { name, maestro, instructions }) => { const t = ptys.get(id); if (t) typeInto(t, briefLine(writeBrief(id, name, maestro, instructions))) })
 ipcMain.handle('fs:list', (_e, dir) => {
   const d = dir || require('os').homedir()

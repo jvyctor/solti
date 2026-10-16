@@ -394,3 +394,20 @@ svg { flex: none; }
 .set-btn:hover:not(:disabled) { border-color: var(--accent); }
 .set-btn:disabled { opacity: 0.5; }
 .set-token { display: flex; align-items: center; gap: 8px; }
+
+
+/* ───────── New terminal: project source / git ───────── */
+.dlg.wide { width: min(480px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; }
+.dlg .seg { display: flex; gap: 4px; padding: 3px; background: var(--surface-1); border-radius: var(--r-md); }
+.dlg .seg button { flex: 1; padding: 6px 8px; background: none; border: none; border-radius: var(--r-sm); font-size: 13px; color: var(--text-2); }
+.dlg .seg button.on { background: var(--surface-3); color: var(--text); }
+.dlg .row { display: flex; gap: 8px; }
+.dlg .row input { flex: 1; min-width: 0; }
+.dlg .row button { flex: none; padding: 0 12px; background: var(--surface-3); border: 1px solid var(--border); border-radius: var(--r-md); font-size: 13px; }
+.dlg .row button:disabled, .dlg-actions button:disabled { opacity: 0.55; }
+.dlg label.check { flex-direction: row; align-items: flex-start; gap: 8px; color: var(--text); font-size: 13px; }
+.dlg label.check input { margin-top: 3px; padding: 0; }
+.dlg label.check small { color: var(--text-3); }
+.dlg .hint { margin: 0; font-size: 12px; color: var(--text-3); }
+.dlg .err { margin: 0; font-size: 12px; color: var(--danger); }
+.tfoot .branch { margin-left: 10px; color: var(--accent); }
