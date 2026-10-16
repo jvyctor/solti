@@ -123,14 +123,7 @@ function startBridge() {
 const briefs = require('./briefs.cjs')
 // Each CLI takes its startup prompt differently.
 const settings = require('./settings.cjs')
-const PROMPT_FLAG = { gemini: '-i ', antigravity: '-i ', opencode: '--prompt ' }
-// Command typed into the shell for a preset; '' = plain shell.
-function launchCommand(preset, line) {
-  const S = settings.get()
-  const cmd = S.commands[preset]
-  if (!cmd) return ''
-  return S.sendBriefing ? `${cmd} ${PROMPT_FLAG[preset] || ''}"${line}"` : cmd
-}
+const { launchCommand } = require('./launch.cjs')
 
 // Keep the machine awake per the "Impedir a suspensão" setting.
 let blockerId = null
@@ -150,7 +143,7 @@ function writeBrief(id, name, maestro, instructions) {
 // ASCII only: this line is typed into a PowerShell prompt.
 const briefLine = (f) => `Leia e siga o briefing de papel em ${f}`
 
-function spawnPty(id, { preset, name, maestro, instructions, cwd, cols, rows }) {
+function spawnPty(id, { preset, name, maestro, instructions, cwd, cols, rows, resume, sid }) {
   if (ptys.has(id)) return
   const shell = settings.get().shell || (process.platform === 'win32' ? 'powershell.exe' : process.env.SHELL || 'bash')
   const binDir = unpacked(path.join(__dirname, '..', 'bin'))
@@ -182,7 +175,7 @@ function spawnPty(id, { preset, name, maestro, instructions, cwd, cols, rows }) 
   if (settings.get().commands[preset]) {
     if (settings.get().sendBriefing) try { require('./skills.cjs').installSkills() } catch {} // idempotent; skills must exist before the agent starts
     const line = settings.get().sendBriefing ? briefLine(writeBrief(id, name, maestro, instructions)) : ''
-    setTimeout(() => p.write(launchCommand(preset, line) + '\r'), 400)
+    setTimeout(() => p.write(launchCommand(settings.get(), preset, line, { resume, sid }) + '\r'), 400)
   }
 }
 

@@ -28,6 +28,8 @@ const uid = (p) => p + seq++
 
 api.onData((id, d) => sinks.get(id)?.(d))
 
+// A copied terminal is a new agent: no shared worktree, no shared conversation.
+const fresh = (d) => ({ ...d, maestro: false, git: undefined, sid: undefined, ran: false })
 const PRESET_COLOR = { claude: 'claude', codex: 'codex', gemini: 'gemini', antigravity: 'gemini' }
 const shortPath = (p) => {
   const parts = (p || '').split(/[\\/]/).filter(Boolean)
@@ -68,6 +70,10 @@ function TerminalNode({ id, data, selected }) {
     const c = cfgRef.current
     const term = new Terminal(termOptions(c, c.mode))
     termRef.current = term
+    // Conversation id: the first start assigns it, later starts (restart, reload) resume that conversation.
+    const sid = dataRef.current.sid || crypto.randomUUID()
+    if (!dataRef.current.sid) updateNodeData(id, { sid, ran: true })
+    else if (!dataRef.current.ran) updateNodeData(id, { ran: true })
     const fit = new FitAddon()
     fitRef.current = fit
     term.loadAddon(fit)
@@ -93,7 +99,7 @@ function TerminalNode({ id, data, selected }) {
     const save = () => { if (ready && dirty) { dirty = false; api.termSave(id, ser.serialize({ scrollback: 1000 })) } }
     const timer = setInterval(save, 5000)
     window.addEventListener('beforeunload', save)
-    Promise.all([api.termLoad(id), api.spawn(id, { preset: data.preset, name: data.name, maestro: !!data.maestro, instructions: data.instructions, cwd: data.cwd, cols: term.cols, rows: term.rows })]).then(([saved, r]) => {
+    Promise.all([api.termLoad(id), api.spawn(id, { preset: data.preset, name: data.name, maestro: !!data.maestro, instructions: data.instructions, cwd: data.cwd, cols: term.cols, rows: term.rows, resume: !!dataRef.current.ran, sid })]).then(([saved, r]) => {
       setCwd(r.cwd)
       if (r.buf) term.write(r.buf) // pty still alive (reload): its buffer is newer than the file
       // Pushed into scrollback: the shell's startup clear only wipes the visible screen.
@@ -672,7 +678,7 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
 
   const patch = (id, d) => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...d } } : n)))
   const spawnCopy = (n, off = 40) =>
-    setNodes((ns) => [...ns, { ...n, id: uid('n'), selected: false, position: { x: n.position.x + off, y: n.position.y + off }, data: { ...n.data, maestro: false, git: undefined } }])
+    setNodes((ns) => [...ns, { ...n, id: uid('n'), selected: false, position: { x: n.position.x + off, y: n.position.y + off }, data: { ...fresh(n.data) } }])
   const focusInput = (attr, id) => setTimeout(() => { const el = document.querySelector(`[${attr}="${id}"]`); el?.focus(); el?.select?.() }, 0)
 
   const nodeMenu = (n) => {
@@ -692,13 +698,14 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
       ...(t
         ? [
             { label: d.blur ? 'Focar' : 'Desfocar', run: () => patch(n.id, { blur: !d.blur }) },
-            { label: 'Recarregar', run: () => { api.kill(n.id); patch(n.id, { rev: (d.rev || 0) + 1, unloaded: false }) } },
+            { label: 'Recarregar (retoma a conversa)', run: () => { api.kill(n.id); patch(n.id, { rev: (d.rev || 0) + 1, unloaded: false }) } },
+            { label: 'Nova conversa', run: () => { api.kill(n.id); patch(n.id, { rev: (d.rev || 0) + 1, unloaded: false, sid: undefined, ran: false }) } },
             { label: 'Descarregar', run: () => { api.kill(n.id); patch(n.id, { unloaded: true }) } },
             { label: d.maestro ? 'Papel: Maestro → Agente' : 'Papel: Agente → Maestro', run: () => setNodes((ns) => ns.map((x) => (x.type === 'terminal' ? { ...x, data: { ...x.data, maestro: x.id === n.id ? !d.maestro : false } } : x))) },
             '-',
           ]
         : []),
-      { label: 'Copiar elemento', run: () => (clip = { ...n, data: { ...n.data, maestro: false, git: undefined } }) },
+      { label: 'Copiar elemento', run: () => (clip = { ...n, data: fresh(n.data) }) },
       { label: 'Duplicar', run: () => spawnCopy(n) },
       { label: d.locked ? 'Desbloquear' : 'Bloquear', run: () => setNodes((ns) => ns.map((x) => (x.id === n.id ? { ...x, draggable: !!d.locked, deletable: !!d.locked, data: { ...x.data, locked: !d.locked } } : x))) },
       { label: 'Apagar', danger: true, disabled: d.locked, run: () => deleteElements({ nodes: [{ id: n.id }] }) },
@@ -843,7 +850,7 @@ export default function App() {
   const insertScore = (sc) =>
     update((w) => {
       const ids = new Map(sc.nodes.map((n) => [n.id, uid('n')]))
-      const nodes = sc.nodes.map((n) => ({ ...n, id: ids.get(n.id), data: { ...n.data, rev: 0, unloaded: false } }))
+      const nodes = sc.nodes.map((n) => ({ ...n, id: ids.get(n.id), data: { ...fresh(n.data), rev: 0, unloaded: false } }))
       const edges = sc.edges.map((e) => ({ ...e, id: uid('e'), source: ids.get(e.source), target: ids.get(e.target) }))
       return { ...w, nodes: [...w.nodes, ...nodes], edges: [...w.edges, ...edges] }
     })
