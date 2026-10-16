@@ -4,6 +4,8 @@ const path = require('path')
 const fs = require('fs')
 const crypto = require('crypto')
 const pty = require('node-pty')
+const activity = require('./activity.cjs')
+const portal = require('./portal.cjs')
 
 const TOKEN = crypto.randomBytes(16).toString('hex')
 const ptys = new Map() // id -> { p, buf }
@@ -87,6 +89,7 @@ function startBridge() {
       let j = {}
       try { j = body ? JSON.parse(body) : {} } catch { return reply(400, { error: 'bad json' }) }
       const from = j.from
+      const go = () => {
       if (req.url === '/peers') return reply(200, { peers: peersOf(from).map((n) => ({ id: n.id, name: n.name, type: n.type || 'terminal', role: n.role })) })
       if (req.url === '/send' || req.url === '/ask') {
         const target = peersOf(from).find((n) => n.id === j.to || n.name === j.to)
@@ -154,11 +157,42 @@ function startBridge() {
         win?.webContents.send('knowledge', { from, text: line })
         return reply(200, { ok: true })
       }
+      if (req.url === '/portal') {
+        const target = peersOf(from).find((n) => (n.id === j.to || n.name === j.to) && n.type === 'portal')
+        if (!target) return reply(404, { error: 'portal not found or not connected to you (see canvas_peers)' })
+        const wc = portals.has(target.id) ? webContents.fromId(portals.get(target.id)) : null
+        if (!wc || wc.isDestroyed()) return reply(404, { error: 'portal page not loaded yet' })
+        return portal.act(wc, j).then(
+          (r) => {
+            if (!r.png) return reply(200, r)
+            const dir = path.join(app.getPath('userData'), 'shots')
+            fs.mkdirSync(dir, { recursive: true })
+            const f = path.join(dir, `${target.id}-${Date.now()}.png`)
+            fs.writeFileSync(f, r.png)
+            for (const old of fs.readdirSync(dir).sort().slice(0, -20)) fs.rmSync(path.join(dir, old), { force: true }) // keep the newest 20
+            reply(200, { ok: true, path: f, url: r.url, image: r.png.toString('base64') })
+          },
+          (e) => reply(500, { error: e.message }),
+        )
+      }
       if (req.url === '/note') {
         win?.webContents.send('note', { from, text: j.text })
         return reply(200, { ok: true })
       }
       reply(404, { error: 'unknown route' })
+      }
+      // Timeline + approval gate for actions where one agent acts on another (or on the browser).
+      const kind = { '/send': 'send', '/ask': 'ask', '/spawn': 'spawn', '/portal': 'portal' }[req.url]
+      if (!kind) return go()
+      const info = { kind, from: nameOf(from) || from, to: j.to || j.name || '', text: j.text || j.instructions || [j.action, j.url, j.selector, j.value, j.key].filter(Boolean).join(' ') }
+      if (activity.needsApproval(settings.get().approval, kind)) {
+        return activity.request(info).then((ok) => {
+          activity.record({ ...info, outcome: ok ? 'ok' : 'denied' })
+          ok ? go() : reply(403, { error: 'denied by the user' })
+        })
+      }
+      activity.record({ ...info, outcome: 'ok' })
+      go()
     })
   })
   srv.listen(0, '127.0.0.1', () => (bridgePort = srv.address().port))
@@ -283,6 +317,8 @@ ipcMain.handle('settings:reset', () => {
 ipcMain.handle('app:info', () => ({ version: app.getVersion(), electron: process.versions.electron, node: process.versions.node, dataDir: app.getPath('userData') }))
 ipcMain.on('app:open-data', () => shell.openPath(app.getPath('userData')))
 ipcMain.handle('usage:get', () => { try { return require('./usage.cjs').getUsage() } catch { return null } })
+ipcMain.handle('activity:list', () => activity.list())
+ipcMain.on('approval:answer', (_e, id, ok) => activity.answer(id, ok))
 ipcMain.on('portal:register', (_e, id, wcId) => portals.set(id, wcId))
 ipcMain.on('graph:update', (_e, g) => (graph = g))
 ipcMain.handle('ws:load', () => { try { return JSON.parse(fs.readFileSync(wsFile(), 'utf8')) } catch { return null } })
@@ -302,6 +338,7 @@ ipcMain.handle('term:load', (_e, id) => { try { return fs.readFileSync(termFile(
 
 app.whenReady().then(() => {
   settings.init(app.getPath('userData'))
+  activity.init(app.getPath('userData'), (ch, d) => win?.webContents.send(ch, d))
   applyPower()
   startBridge()
   // Re-register only when the MCP script location changes.

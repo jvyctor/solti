@@ -3,6 +3,7 @@ import SettingsDialog from './Settings.jsx'
 import { useUpdate, UpdateToast, UpdateDialog } from './Updates.jsx'
 import { classify, STATUS } from './status.js'
 import DiffNode from './DiffNode.jsx'
+import { ActivityDock, ApprovalDialog } from './Activity.jsx'
 import { resolveTheme, applyTheme, termOptions } from './themes.js'
 import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, ConnectionMode, BaseEdge, useInternalNode, MiniMap, NodeResizer, Handle, Position, addEdge, applyNodeChanges, applyEdgeChanges, useReactFlow, useViewport } from '@xyflow/react'
 import { Terminal } from '@xterm/xterm'
@@ -833,7 +834,7 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
       )}
       <ReactFlow nodes={ws.nodes} edges={shownEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} connectionMode={ConnectionMode.Loose} connectionRadius={48} onBeforeDelete={onBeforeDelete} onConnectEnd={onConnectEnd} defaultEdgeOptions={{ type: 'floating' }} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeContextMenu={(e, n) => openMenu(e, nodeMenu(n))} onPaneContextMenu={(e) => openMenu(e, paneMenu(screenToFlowPosition({ x: e.clientX, y: e.clientY })))} colorMode={cfg.mode} snapToGrid={cfg.eff.snap} snapGrid={[cfg.eff.snapSize, cfg.eff.snapSize]} className={cfg.eff.edgeFlow ? 'flow' : undefined} minZoom={0.1} fitView proOptions={{ hideAttribution: true }}>
         {cfg.eff.gridStyle !== 'none' && <Background variant={GRID_VARIANT[cfg.eff.gridStyle]} color={cfg.eff.grid} gap={cfg.eff.gap} size={cfg.eff.size} lineWidth={cfg.eff.size} />}
-        <Zoom><UsageDock /></Zoom>
+        <Zoom><UsageDock /><ActivityDock /></Zoom>
       </ReactFlow>
     </>
   )
@@ -1060,6 +1061,7 @@ export default function App() {
     <CommCtx.Provider value={talking}>
     <div className={'app' + (settings.handCursor ? ' hand' : '')}>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} settings={settings} api={api} mode={mode} update={{ state: upd, open: () => setUpdOpen(true) }} />
+      <ApprovalDialog />
       <UpdateToast state={upd} onOpen={() => { setUpdOpen(true); api.updateDownload() }} />
       <UpdateDialog open={updOpen} onOpenChange={setUpdOpen} state={upd} api={api} />
       <AlertDialog.Root open={!!confirm} onOpenChange={(o) => !o && answer(false)}>

@@ -13,6 +13,18 @@ const routes = {
   read: ['/read', () => ({ to: args[0], bytes: Number(args[1]) || undefined })],
   note: ['/note', () => ({ text: args.join(' ') })],
   knowledge: ['/knowledge', () => ({})],
+  // canvas portal <portal> <go|click|clicktext|type|press|scroll|back|reload|screenshot> [args]
+  portal: ['/portal', () => {
+    const [to, action, ...r] = args
+    const a = { to, action }
+    if (action === 'go') a.url = r[0]
+    else if (action === 'click') a.selector = r.join(' ')
+    else if (action === 'clicktext') a.text = r.join(' ')
+    else if (action === 'type') { a.selector = r[0]; a.value = r.slice(1).join(' ') }
+    else if (action === 'press') a.key = r[0]
+    else if (action === 'scroll') a.dy = Number(r[0])
+    return a
+  }],
   remember: ['/remember', () => ({ text: args.join(' ') })],
 }
 if (!routes[cmd]) { console.error('usage: canvas peers|send|ask|spawn|read|note|knowledge|remember'); process.exit(1) }
@@ -27,6 +39,7 @@ const req = http.request(CANVAS_URL + routes[cmd][0], { method: 'POST' }, (res) 
     if (cmd === 'peers') j.peers.forEach((p) => console.log(`${p.name} [${p.type}]${p.role ? ' - ' + p.role : ''}`))
     else if (cmd === 'read') console.log(j.output ?? JSON.stringify(j, null, 2))
     else if (cmd === 'knowledge') console.log(j.text || '(vazio)')
+    else if (cmd === 'portal') console.log(j.path ? `screenshot: ${j.path}` : JSON.stringify(j))
     else if (cmd === 'spawn') console.log(`created: ${j.name}`)
     else if (cmd === 'ask') console.log(j.reply ?? j.note ?? 'ok')
     else console.log('ok')

@@ -33,6 +33,7 @@ const DEFAULTS = {
   termPadding: 12,
   shell: '',
   // Agentes
+  approval: 'spawn', // ask the user before agents act on each other: off | spawn (create agents) | all (also messages and portal control)
   tokenLimit: 0, // per-agent token limit (Claude Code only); 0 = off
   sendBriefing: true,
   commands: { claude: 'claude', codex: 'codex', gemini: 'gemini', antigravity: 'agy', opencode: 'opencode' },

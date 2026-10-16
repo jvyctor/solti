@@ -282,6 +282,11 @@ function AgentesTab({ s, set }) {
           <Switch label="Enviar briefing" checked={s.sendBriefing} onChange={(v) => set({ sendBriefing: v })} />
         </Row>
       </Section>
+      <Section title="SEGURANÇA">
+        <Row title="Pedir sua aprovação" desc="Protege contra um agente que seguiu uma instrução maliciosa de uma página ou arquivo. Sem resposta em 2 minutos, o pedido é negado.">
+          <Select label="Aprovação" value={s.approval} onChange={(v) => set({ approval: v })} options={[['off', 'Nunca (tudo liberado)'], ['spawn', 'Ao criar agentes'], ['all', 'Em tudo (mensagens, agentes, navegador)']]} />
+        </Row>
+      </Section>
       <Section title="LIMITES">
         <Row title="Limite de tokens por agente" desc="Ao atingir, o agente é interrompido (Esc + Ctrl+C) e você é avisado. Só Claude Code informa o uso.">
           <Select label="Limite de tokens" value={String(s.tokenLimit)} onChange={(v) => set({ tokenLimit: Number(v) })} options={[['0', 'Desligado'], ['200000', '200 mil'], ['500000', '500 mil'], ['1000000', '1 milhão'], ['5000000', '5 milhões']]} />

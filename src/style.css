@@ -448,3 +448,15 @@ svg { flex: none; }
 .usage .stop-all { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 10px; padding: 8px; background: none; border: 1px solid var(--danger); border-radius: var(--r-md); color: var(--danger); font-size: 13px; transition: background var(--t); }
 .usage .stop-all:hover { background: var(--danger); color: #fff; }
 .thead .tok.over { color: var(--danger); font-weight: 600; }
+
+/* ───────── Activity timeline / approvals ───────── */
+.usage.activity { width: 380px; }
+.act-empty { margin: 0; padding: 12px; color: var(--text-3); font-size: 12px; }
+.act-row { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12px; }
+.act-head { display: flex; gap: 4px; flex-wrap: wrap; align-items: baseline; color: var(--text-2); }
+.act-head b { color: var(--text); }
+.act-head time { margin-left: auto; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.act-text { margin-top: 3px; color: var(--text-2); white-space: pre-wrap; word-break: break-word; max-height: 4.5em; overflow: hidden; }
+.act-row.denied .act-head { color: var(--danger); }
+.act-flag { margin-top: 2px; color: var(--danger); font-size: 11px; }
+.dlg-title svg { vertical-align: -2px; color: var(--maestro); }
