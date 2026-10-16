@@ -33,6 +33,7 @@ const DEFAULTS = {
   termPadding: 12,
   shell: '',
   // Agentes
+  tokenLimit: 0, // per-agent token limit (Claude Code only); 0 = off
   sendBriefing: true,
   commands: { claude: 'claude', codex: 'codex', gemini: 'gemini', antigravity: 'agy', opencode: 'opencode' },
 }

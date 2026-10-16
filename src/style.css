@@ -442,3 +442,9 @@ svg { flex: none; }
 
 .note.knowledge .k-title { flex: 1; font-size: 12px; font-weight: 600; color: var(--text-2); }
 .note.knowledge .note-head svg { color: var(--accent); flex: none; }
+
+/* ───────── Token use / emergency stop ───────── */
+.thead .tok { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.usage .stop-all { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 10px; padding: 8px; background: none; border: 1px solid var(--danger); border-radius: var(--r-md); color: var(--danger); font-size: 13px; transition: background var(--t); }
+.usage .stop-all:hover { background: var(--danger); color: #fff; }
+.thead .tok.over { color: var(--danger); font-weight: 600; }

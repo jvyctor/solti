@@ -210,6 +210,10 @@ ipcMain.handle('git:patch', safe(async (wt, base, file, isNew) => ({ patch: awai
 ipcMain.handle('git:commit', safe((wt, msg) => gitx.commit(wt, msg)))
 ipcMain.handle('git:merge', safe((repo, base, branch) => gitx.merge(repo, base, branch)))
 ipcMain.handle('git:pr', safe(async (repo, base, branch) => { const r = await gitx.pushForPr(repo, base, branch); shell.openExternal(r.url); return r }))
+ipcMain.handle('usage:agent', (_e, sid) => require('./agentusage.cjs').claudeTokens(sid))
+// Emergency stop: Esc (cancels the current turn in most TUIs) then Ctrl+C, for one agent or all.
+const interrupt = (e) => { e.p.write('\x1b'); setTimeout(() => e.p.write('\x03'), 150) }
+ipcMain.on('agents:interrupt', (_e, id) => (id ? ptys.has(id) && interrupt(ptys.get(id)) : [...ptys.values()].forEach(interrupt)))
 ipcMain.handle('dialog:folder', async () => {
   const r = await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
   return r.canceled ? null : r.filePaths[0]

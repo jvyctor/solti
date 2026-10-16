@@ -13,7 +13,7 @@ import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
   X, RefreshCw, Map as MapIcon, ArrowLeft, FolderTree, Folder, FolderOpen, Lock, SquareTerminal,
-  Search, Menu as MenuIcon, Settings as SettingsIcon, Plus, Minus, ChevronRight, ChevronDown, Activity, Check, FileText, GitBranch, BookOpen,
+  Search, Menu as MenuIcon, Settings as SettingsIcon, Plus, Minus, ChevronRight, ChevronDown, Activity, Check, FileText, GitBranch, BookOpen, Square,
 } from 'lucide-react'
 
 const api = window.api
@@ -61,7 +61,8 @@ function TerminalNode({ id, data, selected }) {
   const dataRef = useRef(data)
   dataRef.current = data
   const [cwd, setCwd] = useState('')
-  const [status, setStatus] = useState(null) // working | input | idle | exited (agents only)
+  const [status, setStatus] = useState(null) // working | input | idle | exited | limit (agents only)
+  const [tokens, setTokens] = useState(0)
   const cfg = useContext(SettingsCtx)
   const cfgRef = useRef(cfg)
   cfgRef.current = cfg
@@ -132,6 +133,26 @@ function TerminalNode({ id, data, selected }) {
     return () => { save(); offExit(); clearInterval(timer); clearTimeout(idle); clearTimeout(settle); window.removeEventListener('beforeunload', save); mark.dispose(); terms.delete(id); sinks.delete(id); sub.dispose(); ro.disconnect(); term.dispose() }
   }, [id, data.rev, data.unloaded])
 
+  // Claude Code only: its token use is read from its session log; over the limit, the agent is interrupted once.
+  const limitHit = useRef(false)
+  useEffect(() => {
+    if (data.preset !== 'claude' || !data.sid || data.unloaded) return
+    const poll = () => api.agentTokens(data.sid).then((r) => {
+      setTokens(r.tokens)
+      const max = cfgRef.current.tokenLimit
+      if (max > 0 && r.tokens >= max && !limitHit.current) {
+        limitHit.current = true
+        api.interrupt(id)
+        setStatus('limit')
+        new Notification(data.name, { body: `Limite de ${fmt(max)} tokens atingido; agente interrompido.` })
+      }
+      if (!(max > 0 && r.tokens >= max)) limitHit.current = false
+    })
+    poll()
+    const t = setInterval(poll, 15000)
+    return () => clearInterval(t)
+  }, [data.sid, data.preset, data.unloaded])
+
   // Style changes apply to open terminals without restarting them.
   const opts = termOptions(cfg, cfg.mode)
   const optsKey = JSON.stringify(opts)
@@ -155,6 +176,7 @@ function TerminalNode({ id, data, selected }) {
         <input data-rename={id} value={data.name} onChange={(e) => updateNodeData(id, { name: e.target.value })} />
         <span className="spacer" />
         {status && <span className={'stat ' + status} title={STATUS[status].label}><i style={{ background: STATUS[status].color }} />{STATUS[status].label}</span>}
+        {tokens > 0 && <span className={'tok' + (cfg.tokenLimit > 0 && tokens >= cfg.tokenLimit ? ' over' : '')} title="Tokens usados por este agente (entrada + cache novo + saída)">{fmt(tokens)} tok</span>}
         {data.monitor && <Activity className="mon" size={13} aria-label="Monitorando atividade" />}
         <select className={'rolepill' + (data.maestro ? ' maestro' : '')} value={data.maestro ? 'maestro' : 'agent'} onChange={(e) => setRole(e.target.value === 'maestro')} title="Papel (use Reenviar briefing no menu para aplicar)">
           <option value="agent">Agente</option>
@@ -426,6 +448,7 @@ function UsageDock() {
           <div className="usage-scroll">
             {agents.map((a) => <AgentUsage key={a.key} color={AGENT_COLORS[a.key]} {...a} />)}
           </div>
+          <button className="stop-all" onClick={() => api.interrupt()} title="Envia Esc e Ctrl+C para todos os terminais"><Square size={13} /> Interromper todos os agentes</button>
         </div>
       )}
       <button className="dock" onClick={() => setOpen((o) => !o)} aria-label="Uso dos agentes" aria-expanded={open} title="Uso dos agentes">
