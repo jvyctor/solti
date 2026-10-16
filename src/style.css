@@ -418,3 +418,24 @@ svg { flex: none; }
 .thead .stat.working i { animation: stat-pulse 1s ease-in-out infinite; }
 .thead .stat.input { color: var(--text); }
 @keyframes stat-pulse { 50% { opacity: 0.3; } }
+
+/* ───────── Review (diff) node ───────── */
+.tnode.diff { font-size: 12px; }
+.diff-title { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diff-empty { margin: 0; padding: 16px; color: var(--text-3); }
+.diff-body { flex: 1; min-height: 0; display: flex; }
+.diff-files { flex: none; width: 36%; margin: 0; padding: 4px; list-style: none; overflow: auto; border-right: 1px solid var(--border); }
+.diff-files li { padding: 4px 6px; border-radius: var(--r-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.diff-files li:hover, .diff-files li.on { background: var(--surface-3); }
+.diff-files .diff-none { cursor: default; color: var(--text-3); white-space: normal; }
+.diff-files b { display: inline-block; width: 14px; text-align: center; }
+.st-M { color: var(--maestro); } .st-A, .st-N { color: var(--success); } .st-D { color: var(--danger); }
+.diff-patch { flex: 1; min-width: 0; margin: 0; padding: 6px 8px; overflow: auto; font: 11px/1.45 'JetBrains Mono', monospace; color: var(--text-2); }
+.diff-patch .add { color: var(--success); } .diff-patch .del { color: var(--danger); } .diff-patch .hunk { color: var(--accent); }
+.diff-foot { padding: 6px 8px; border-top: 1px solid var(--border); }
+.diff-foot p { margin: 0 0 6px; } .diff-foot .ok { color: var(--success); } .diff-foot .err { color: var(--danger); }
+.diff-foot .row { display: flex; gap: 6px; }
+.diff-foot input { flex: 1; min-width: 0; padding: 5px 8px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--r-sm); }
+.diff-foot button { padding: 5px 10px; background: var(--surface-3); border: 1px solid var(--border); border-radius: var(--r-sm); white-space: nowrap; }
+.diff-foot button:hover:not(:disabled) { border-color: var(--accent); }
+.diff-foot button:disabled { opacity: 0.55; }

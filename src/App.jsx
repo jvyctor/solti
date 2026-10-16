@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import SettingsDialog from './Settings.jsx'
 import { useUpdate, UpdateToast, UpdateDialog } from './Updates.jsx'
 import { classify, STATUS } from './status.js'
+import DiffNode from './DiffNode.jsx'
 import { resolveTheme, applyTheme, termOptions } from './themes.js'
 import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, ConnectionMode, BaseEdge, useInternalNode, MiniMap, NodeResizer, Handle, Position, addEdge, applyNodeChanges, applyEdgeChanges, useReactFlow, useViewport } from '@xyflow/react'
 import { Terminal } from '@xterm/xterm'
@@ -282,7 +283,7 @@ function PortalNode({ id, data, selected }) {
   )
 }
 
-const nodeTypes = { terminal: TerminalNode, note: NoteNode, group: GroupNode, text: TextNode, portal: PortalNode, files: FilesNode }
+const nodeTypes = { terminal: TerminalNode, note: NoteNode, group: GroupNode, text: TextNode, portal: PortalNode, files: FilesNode, diff: DiffNode }
 
 const fmt = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n))
 const resetText = (ts) => {
@@ -665,7 +666,7 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
   // Older saved edges are animated/default-typed: normalise for display only.
   const shownEdges = useMemo(() => ws.edges.map((e) => ({ ...e, type: 'floating', animated: false })), [ws.edges])
 
-  const SIZES = { terminal: { width: 520, height: 340 }, portal: { width: 560, height: 380 }, group: { width: 640, height: 400 }, files: { width: 280, height: 360 }, note: { width: 280, height: 200 } }
+  const SIZES = { terminal: { width: 520, height: 340 }, portal: { width: 560, height: 380 }, group: { width: 640, height: 400 }, files: { width: 280, height: 360 }, diff: { width: 560, height: 400 }, note: { width: 280, height: 200 } }
   const { screenToFlowPosition, deleteElements } = useReactFlow()
   // Every deletion path (✕, menu, keyboard) funnels through here; ptys die in onNodesChange afterwards.
   const onBeforeDelete = async ({ nodes, edges }) => {
@@ -747,6 +748,7 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
         },
         { label: 'Nota', run: () => add('note', { text: '' }, pos) },
         { label: 'Árvore de Arquivos', run: () => add('files', {}, pos) },
+        { label: 'Revisão (Diff)', run: () => add('diff', {}, pos) },
         { label: 'Portal', run: () => add('portal', { url: 'https://www.google.com' }, pos) },
         { label: 'Texto', run: () => add('text', { text: '' }, pos) },
         { label: 'Grupo', run: () => add('group', { name: 'Grupo' }, pos) },

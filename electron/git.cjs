@@ -86,4 +86,50 @@ async function prepare({ dir, url, dest, base, isolate, agent }) {
   return { cwd: wt, git: { repo: i.root, branch, base: start, worktree: true } }
 }
 
-module.exports = { info, remoteBranches, clone, prepare, removeWorktree, dirty }
+// ---- review: what an agent changed relative to its base branch (committed + uncommitted + new files) ----
+async function changes(wt, base) {
+  const out = []
+  for (const l of lines(await git(['diff', '--name-status', base], wt))) {
+    const [s, ...f] = l.split('\t')
+    out.push({ status: s[0], file: f[f.length - 1] })
+  }
+  for (const f of lines(await git(['ls-files', '--others', '--exclude-standard'], wt))) out.push({ status: 'N', file: f })
+  return out
+}
+
+async function patch(wt, base, file, isNew) {
+  if (!isNew) return git(['diff', base, '--', file], wt)
+  const text = fs.readFileSync(path.join(wt, file), 'utf8').split('\n').slice(0, 400)
+  return `+++ ${file} (novo arquivo)\n` + text.map((l) => '+' + l).join('\n')
+}
+
+async function commit(wt, message) {
+  await git(['add', '-A'], wt)
+  if (!(await dirty(wt))) return { committed: false }
+  await git(['commit', '-m', message || 'Alterações do agente'], wt)
+  return { committed: true }
+}
+
+// Merge the agent branch into its base inside the main checkout; refuses on a dirty checkout, aborts on conflict.
+async function merge(repo, base, branch) {
+  if (await dirty(repo)) throw new Error('A pasta principal tem alterações não salvas. Salve ou descarte antes de fazer o merge.')
+  const current = await git(['rev-parse', '--abbrev-ref', 'HEAD'], repo)
+  if (current !== base) await git(['checkout', base], repo)
+  try {
+    await git(['merge', '--no-ff', branch, '-m', `Merge ${branch}`], repo)
+  } catch (e) {
+    await git(['merge', '--abort'], repo).catch(() => {})
+    throw new Error('Conflitos no merge; nada foi alterado. Resolva no terminal do agente. ' + e.message)
+  }
+  return { merged: true }
+}
+
+// Pushes the branch and returns the GitHub "compare" page for opening a pull request.
+async function pushForPr(repo, base, branch) {
+  await git(['push', '-u', 'origin', branch], repo)
+  const m = (await git(['remote', 'get-url', 'origin'], repo)).match(/github\.com[:/](.+?)(\.git)?$/)
+  if (!m) throw new Error('O remoto não é do GitHub: abra o PR manualmente.')
+  return { url: `https://github.com/${m[1]}/compare/${encodeURIComponent(base)}...${encodeURIComponent(branch)}?expand=1` }
+}
+
+module.exports = { info, remoteBranches, clone, prepare, removeWorktree, dirty, changes, patch, commit, merge, pushForPr }

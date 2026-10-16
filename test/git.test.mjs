@@ -74,3 +74,44 @@ test('clone: first time clones, second time reuses; lists remote branches', asyn
   assert.equal(w.git.base, 'dev')
   assert.ok(existsSync(join(w.cwd, 'a.txt')))
 })
+
+test('review: changes, patch, commit and merge back into the base', async () => {
+  const repo = makeRepo()
+  const w = await g.prepare({ dir: repo, base: 'main', isolate: true, agent: 'reviewer' })
+  writeFileSync(join(w.cwd, 'a.txt'), 'changed')
+  writeFileSync(join(w.cwd, 'b.txt'), 'brand new')
+  const files = await g.changes(w.cwd, 'main')
+  assert.deepEqual(files.map((f) => f.status + f.file).sort(), ['Ma.txt', 'Nb.txt'])
+  assert.match(await g.patch(w.cwd, 'main', 'a.txt', false), /\+changed/)
+  assert.match(await g.patch(w.cwd, 'main', 'b.txt', true), /\+brand new/)
+
+  assert.deepEqual(await g.commit(w.cwd, 'agent work'), { committed: true })
+  assert.deepEqual(await g.commit(w.cwd, 'nothing left'), { committed: false })
+  assert.equal((await g.changes(w.cwd, 'main')).length, 2) // committed changes still show against the base
+
+  assert.deepEqual(await g.merge(repo, 'main', w.git.branch), { merged: true })
+  assert.equal(sh(repo, 'show', 'main:a.txt'), 'changed')
+})
+
+test('merge refuses a dirty main checkout and aborts on conflict', async () => {
+  const repo = makeRepo()
+  const w = await g.prepare({ dir: repo, base: 'main', isolate: true, agent: 'conflict' })
+  writeFileSync(join(w.cwd, 'a.txt'), 'from agent')
+  await g.commit(w.cwd, 'agent edit')
+  writeFileSync(join(repo, 'a.txt'), 'dirty main')
+  await assert.rejects(g.merge(repo, 'main', w.git.branch), /alterações não salvas/)
+  sh(repo, 'commit', '-am', 'main edit') // now clean, but both sides changed a.txt
+  await assert.rejects(g.merge(repo, 'main', w.git.branch), /Conflitos/)
+  assert.equal(sh(repo, 'status', '--porcelain'), '') // aborted cleanly
+})
+
+test('pushForPr builds the GitHub compare URL', async () => {
+  const bare = join(mkdtempSync(join(tmpdir(), 'ac-bare-')), 'r.git')
+  sh(tmpdir(), 'init', '--bare', '-b', 'main', bare)
+  const repo = makeRepo()
+  sh(repo, 'remote', 'add', 'origin', 'https://github.com/o/r.git')
+  sh(repo, 'remote', 'set-url', '--push', 'origin', bare) // push goes to the local bare repo
+  sh(repo, 'branch', 'canvas/x')
+  const r = await g.pushForPr(repo, 'main', 'canvas/x')
+  assert.equal(r.url, 'https://github.com/o/r/compare/main...canvas%2Fx?expand=1')
+})

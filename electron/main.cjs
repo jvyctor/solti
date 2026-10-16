@@ -192,6 +192,11 @@ ipcMain.handle('git:remote-branches', safe(async (url) => ({ branches: await git
 ipcMain.handle('git:prepare', safe((o) => gitx.prepare({ ...o, dest: o.dest || path.join(app.getPath('documents'), 'AgentCanvas', 'repos') })))
 ipcMain.handle('git:remove-worktree', safe((wt) => gitx.removeWorktree(wt)))
 ipcMain.handle('git:dirty', safe(async (dir) => ({ dirty: await gitx.dirty(dir) })))
+ipcMain.handle('git:changes', safe(async (wt, base) => ({ files: await gitx.changes(wt, base) })))
+ipcMain.handle('git:patch', safe(async (wt, base, file, isNew) => ({ patch: await gitx.patch(wt, base, file, isNew) })))
+ipcMain.handle('git:commit', safe((wt, msg) => gitx.commit(wt, msg)))
+ipcMain.handle('git:merge', safe((repo, base, branch) => gitx.merge(repo, base, branch)))
+ipcMain.handle('git:pr', safe(async (repo, base, branch) => { const r = await gitx.pushForPr(repo, base, branch); shell.openExternal(r.url); return r }))
 ipcMain.handle('dialog:folder', async () => {
   const r = await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
   return r.canceled ? null : r.filePaths[0]
