@@ -7,6 +7,7 @@ import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
+import { treeKill } from './helpers.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const sh = (cwd, ...a) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { cwd, encoding: 'utf8' }).trim()
@@ -77,6 +78,6 @@ test('new terminal in a git folder gets an isolated worktree', async () => {
     assert.match(sh(repo, 'worktree', 'list'), /canvas-worktrees/)
     cdp.close()
   } finally {
-    app.kill()
+    treeKill(app)
   }
 })

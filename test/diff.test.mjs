@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createRequire } from 'node:module'
 import electron from 'electron'
+import { treeKill } from './helpers.mjs'
 
 const g = createRequire(import.meta.url)('../electron/git.cjs')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -59,6 +60,6 @@ test('diff node shows changes, approves and merges', async () => {
     assert.equal(sh(repo, 'show', 'main:feature.txt'), 'hello from agent')
     cdp.close()
   } finally {
-    app.kill()
+    treeKill(app)
   }
 })

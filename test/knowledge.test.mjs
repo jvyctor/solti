@@ -7,6 +7,7 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
+import { treeKill } from './helpers.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -44,6 +45,6 @@ test('canvas remember / knowledge round trip', async () => {
     assert.match(readFileSync(out, 'utf8'), /- Usamos pnpm no projeto/)
     cdp.close()
   } finally {
-    app.kill()
+    treeKill(app)
   }
 })

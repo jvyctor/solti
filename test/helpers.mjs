@@ -1,8 +1,13 @@
 // Shared by the UI tests: start the built app in a throwaway profile and talk to it over CDP.
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import electron from 'electron'
+
+// electron.exe leaves renderer/GPU children behind a plain kill(); they slow down the next launch.
+export function treeKill(app) {
+  try { execFileSync('taskkill', ['/PID', String(app.pid), '/T', '/F'], { stdio: 'ignore' }) } catch { app.kill() }
+}
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -39,5 +44,5 @@ export async function launch(prof, port) {
   }
   // Shell started and showing its prompt; typed input before that is lost.
   const ready = async () => { await until(`/PS [A-Z]:/.test(document.querySelector('.xterm-rows')?.textContent || '')`, 'shell prompt', 120); await sleep(1000) }
-  return { ev, until, run, ready, close: () => { cdp.close(); app.kill() } }
+  return { send, ev, until, run, ready, close: () => { cdp.close(); treeKill(app) } }
 }

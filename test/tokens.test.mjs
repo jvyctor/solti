@@ -6,6 +6,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
+import { treeKill } from './helpers.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -40,6 +41,6 @@ test('token badge shows usage and turns red over the limit', async () => {
     assert.equal(await ev(`document.querySelector('.thead .tok').classList.contains('over')`), true)
     cdp.close()
   } finally {
-    app.kill()
+    treeKill(app)
   }
 })

@@ -88,7 +88,8 @@ export const TERM_SCHEMES = {
 }
 const TERM_AUTO = {
   dark: { background: '#0d0f13', foreground: '#e8eaf0', cursor: '#e8eaf0', selectionBackground: '#3a4a7a' },
-  light: { background: '#fbfbfd', foreground: '#161a22', cursor: '#161a22', selectionBackground: '#bcd0ff' },
+  // Darker ANSI colours: the xterm defaults are unreadable on white.
+  light: { background: '#fbfbfd', foreground: '#161a22', cursor: '#161a22', selectionBackground: '#bcd0ff', ...ansi(['#161a22', '#cd3131', '#107c10', '#8a7500', '#0451a5', '#bc05bc', '#057a96', '#555555', '#666666', '#cd3131', '#107c10', '#8a7500', '#0451a5', '#bc05bc', '#057a96', '#a5a5a5']) },
 }
 
 // xterm options derived from settings; empty colour fields fall back to the scheme.

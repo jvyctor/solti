@@ -339,7 +339,7 @@ function PortalNode({ id, data, selected }) {
         <input className="role" value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && go()} />
         <button className="x" aria-label="Excluir" onClick={() => deleteElements({ nodes: [{ id }] })}><X size={14} /></button>
       </div>
-      <webview ref={view} src={data.url || 'https://www.google.com'} className="tbody nodrag nowheel" style={{ flex: 1 }} partition="persist:portal" />
+      <webview ref={view} src={data.url || 'https://www.google.com'} className="tbody nodrag nowheel" style={{ flex: 1, background: '#fff' }} partition="persist:portal" />
     </div>
   )
 }

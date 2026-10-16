@@ -7,6 +7,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
+import { treeKill } from './helpers.mjs'
 
 const PORT = 9334
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -39,7 +40,7 @@ test('workspace pill shows only the active workspace', async () => {
     }
     cdp.close()
   } finally {
-    app.kill()
+    treeKill(app)
   }
 })
 
@@ -71,6 +72,6 @@ test('terminal screen is restored and saved', async () => {
     assert.match(saved, /HELLO-SAVED-SCREEN/) // survived the shell's startup clear (kept in scrollback)
     cdp.close()
   } finally {
-    app.kill()
+    treeKill(app)
   }
 })

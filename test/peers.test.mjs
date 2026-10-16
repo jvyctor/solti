@@ -7,6 +7,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
+import { treeKill } from './helpers.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -66,6 +67,6 @@ test('canvas peers/read cover notes, portals and file trees', async () => {
     assert.match(await run('canvas read arquivos-f1'), /hello\.txt/)
     cdp.close()
   } finally {
-    app.kill()
+    treeKill(app)
   }
 })

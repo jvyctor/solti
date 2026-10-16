@@ -460,3 +460,11 @@ svg { flex: none; }
 .act-row.denied .act-head { color: var(--danger); }
 .act-flag { margin-top: 2px; color: var(--danger); font-size: 11px; }
 .dlg-title svg { vertical-align: -2px; color: var(--maestro); }
+
+/* ───────── Visual QA fixes ───────── */
+.dlg:focus, .dlg:focus-visible { outline: none; }
+.dlg form > * { flex: none; }
+.dlg .seg button { display: flex; align-items: center; justify-content: center; min-height: 30px; }
+.set-tabs { overflow-x: auto; scrollbar-width: none; }
+.set-tabs button { flex: none; white-space: nowrap; padding: 10px 9px; font-size: 13.5px; }
+.note.knowledge .k-title, .note.knowledge .note-head svg { color: #6d6730; }

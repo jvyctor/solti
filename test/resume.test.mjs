@@ -7,6 +7,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
+import { treeKill } from './helpers.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -14,7 +15,7 @@ async function session(prof, port, body) {
   const app = spawn(electron, ['.', `--user-data-dir=${prof}`, `--remote-debugging-port=${port}`], { stdio: 'ignore' })
   try {
     let page
-    for (let i = 0; i < 40 && !page; i++) {
+    for (let i = 0; i < 100 && !page; i++) {
       await sleep(500)
       try { page = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find((t) => t.type === 'page') } catch {}
     }
@@ -31,7 +32,7 @@ async function session(prof, port, body) {
     await sleep(1200) // let the workspace autosave land
     cdp.close()
   } finally {
-    app.kill()
+    treeKill(app)
     await sleep(500)
   }
 }
@@ -43,16 +44,16 @@ test('first start assigns a session id; the next start resumes it', async () => 
   writeFileSync(join(prof, 'settings.json'), JSON.stringify({ sendBriefing: false, commands: { claude: 'echo CMD' } }))
 
   await session(prof, 9390, async (screen, stat) => {
-    for (let i = 0; i < 40 && !/--session-id/.test(await screen()); i++) await sleep(300)
+    for (let i = 0; i < 100 && !/--session-id/.test(await screen()); i++) await sleep(300)
     assert.match(await screen(), /CMD --session-id/)
-    for (let i = 0; i < 40 && (await stat()) !== 'Ocioso'; i++) await sleep(300) // output settled at a plain prompt
+    for (let i = 0; i < 100 && (await stat()) !== 'Ocioso'; i++) await sleep(300) // output settled at a plain prompt
     assert.equal(await stat(), 'Ocioso')
   })
   const sid = JSON.parse(readFileSync(join(prof, 'workspace.json'), 'utf8')).list[0].nodes[0].data.sid
   assert.match(sid, /^[0-9a-f-]{36}$/)
 
   await session(prof, 9391, async (screen) => {
-    for (let i = 0; i < 40 && !new RegExp(`--resume ${sid}`).test(await screen()); i++) await sleep(300)
+    for (let i = 0; i < 100 && !new RegExp(`--resume ${sid}`).test(await screen()); i++) await sleep(300)
     assert.match(await screen(), new RegExp(`CMD --resume ${sid}`))
   })
 })

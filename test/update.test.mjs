@@ -9,6 +9,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
+import { treeKill } from './helpers.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -44,7 +45,7 @@ async function run(version, port, body) {
     await body({ ev, until })
     cdp.close()
   } finally {
-    app.kill()
+    treeKill(app)
     feed.close()
   }
 }

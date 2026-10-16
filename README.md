@@ -53,6 +53,8 @@ Testes: `npm run build` e depois `npm test` (abre o app em perfil temporário; i
 - **Status ao vivo** em cada agente: trabalhando, esperando você, ocioso, encerrado (detectado pela saída do terminal).
 - **Conhecimento do projeto**: nó de memória compartilhada por workspace. Os agentes leem no início e usam `canvas_knowledge` / `canvas_remember`.
 - **Controle de uso**: tokens por agente (só Claude Code), limite configurável em Configurações → Agentes, e "Interromper todos os agentes" no painel de uso.
+- **Atividade e aprovação**: o botão de pergaminho (canto inferior direito) mostra a linha do tempo do que os agentes fizeram entre si. Em Configurações → Agentes → Segurança você escolhe pedir aprovação ao criar agentes (padrão), em tudo ou nunca; sem resposta em 2 minutos o pedido é negado.
+- **Portal controlável**: o agente ligado a um Portal usa `canvas_portal` para abrir URLs (http/https), clicar, digitar, rolar e tirar capturas de tela. `canvas_peers` / `canvas_read` mostram e leem tudo que está ligado ao agente (notas, portais, árvores de arquivos, revisões).
 
 ## Estrutura
 
