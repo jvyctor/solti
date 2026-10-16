@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Usage: canvas peers | canvas send <peer> <text...> | canvas read <peer> [bytes] | canvas note <text...> | canvas knowledge | canvas remember <text...>
+// Usage: canvas peers | canvas send <peer> <text...> | canvas read <peer> [bytes] | canvas note <text...> | canvas knowledge | canvas remember <text...> | canvas done <summary...>
 const http = require('http')
 const { CANVAS_URL, CANVAS_ID } = process.env
 if (!CANVAS_URL) { console.error('canvas: run inside an Agent Canvas terminal'); process.exit(1) }
@@ -13,6 +13,7 @@ const routes = {
   read: ['/read', () => ({ to: args[0], bytes: Number(args[1]) || undefined })],
   note: ['/note', () => ({ text: args.join(' ') })],
   knowledge: ['/knowledge', () => ({})],
+  done: ['/done', () => ({ summary: args.join(' ') })],
   // canvas portal <portal> <go|click|clicktext|type|press|scroll|back|reload|screenshot> [args]
   portal: ['/portal', () => {
     const [to, action, ...r] = args
@@ -27,7 +28,7 @@ const routes = {
   }],
   remember: ['/remember', () => ({ text: args.join(' ') })],
 }
-if (!routes[cmd]) { console.error('usage: canvas peers|send|ask|spawn|read|note|knowledge|remember'); process.exit(1) }
+if (!routes[cmd]) { console.error('usage: canvas peers|send|ask|spawn|read|note|knowledge|remember|done'); process.exit(1) }
 
 const body = JSON.stringify({ from: CANVAS_ID, ...routes[cmd][1]() })
 const req = http.request(CANVAS_URL + routes[cmd][0], { method: 'POST' }, (res) => {

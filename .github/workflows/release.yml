@@ -1,0 +1,39 @@
+# Push a tag like v0.4.1 (matching package.json) to test, build and publish the installer to the public releases repo.
+# One-time setup: add a repository secret RELEASES_TOKEN = a GitHub token with write access to
+# jvyctor/agent-canvas-releases (fine-grained: Contents read/write).
+name: Release
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Git identity for the tests that commit and merge
+        run: |
+          git config --global user.name ci
+          git config --global user.email ci@example.com
+      - name: Tag must match package.json
+        shell: bash
+        run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+      - name: Unit tests (the UI tests need a desktop session and run locally with npm test)
+        run: node --test test/git.test.mjs test/launch.test.mjs test/status.test.mjs test/agentusage.test.mjs test/activity.test.mjs test/backup.test.mjs test/history.test.mjs test/geometry.test.mjs test/pipeline.test.mjs
+      - run: npx vite build
+      - name: Create the release first (two parallel uploads would race to create it and fail with 422)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" --repo jvyctor/agent-canvas-releases >/dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --repo jvyctor/agent-canvas-releases --title "${GITHUB_REF_NAME#v}" --notes "Agent Canvas ${GITHUB_REF_NAME#v}"
+      - name: Build and publish the installer
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: npx electron-builder --win nsis --x64 --publish always

@@ -12,5 +12,6 @@ export const STATUS = {
   input: { label: 'Esperando você', color: 'var(--maestro)' },
   idle: { label: 'Ocioso', color: 'var(--success)' },
   exited: { label: 'Encerrado', color: 'var(--text-3)' },
+  done: { label: 'Concluído', color: 'var(--success)' },
   limit: { label: 'Limite de tokens', color: 'var(--danger)' },
 }

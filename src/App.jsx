@@ -6,8 +6,9 @@ import { exportable, mergeImport } from './workspaces.js'
 import { createHistory, snapshot, applySnapshot } from './history.js'
 import { kidsInside } from './geometry.js'
 import Palette from './Palette.jsx'
+import PipelineNode from './PipelineNode.jsx'
 import DiffNode from './DiffNode.jsx'
-import { ActivityDock, ApprovalDialog } from './Activity.jsx'
+import { ActivityDock, ApprovalDialog, AwayDigest } from './Activity.jsx'
 import { resolveTheme, applyTheme, termOptions } from './themes.js'
 import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, ConnectionMode, BaseEdge, useInternalNode, MiniMap, NodeResizer, Handle, Position, addEdge, applyNodeChanges, applyEdgeChanges, useReactFlow, useViewport } from '@xyflow/react'
 import { Terminal } from '@xterm/xterm'
@@ -81,10 +82,12 @@ function TerminalNode({ id, data, selected }) {
   const [cwd, setCwd] = useState('')
   const [status, setStatus] = useState(null) // working | input | idle | exited | limit (agents only)
   const [tokens, setTokens] = useState(0)
+  useEffect(() => { if (data.lastDone?.t && data.lastDone.t > mountedAt.current) setStatus('done') }, [data.lastDone?.t])
   const cfg = useContext(SettingsCtx)
   const cfgRef = useRef(cfg)
   cfgRef.current = cfg
   const termRef = useRef(null)
+  const mountedAt = useRef(Date.now())
   const fitRef = useRef(null)
 
   useEffect(() => {
@@ -348,7 +351,7 @@ function PortalNode({ id, data, selected }) {
   )
 }
 
-const nodeTypes = { terminal: TerminalNode, note: NoteNode, group: GroupNode, text: TextNode, portal: PortalNode, files: FilesNode, diff: DiffNode, knowledge: KnowledgeNode }
+const nodeTypes = { terminal: TerminalNode, note: NoteNode, group: GroupNode, text: TextNode, portal: PortalNode, files: FilesNode, diff: DiffNode, knowledge: KnowledgeNode, pipeline: PipelineNode }
 
 const fmt = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n))
 const resetText = (ts) => {
@@ -738,7 +741,7 @@ function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
   // Older saved edges are animated/default-typed: normalise for display only.
   const shownEdges = useMemo(() => ws.edges.map((e) => ({ ...e, type: 'floating', animated: false })), [ws.edges])
 
-  const SIZES = { terminal: { width: 520, height: 340 }, portal: { width: 560, height: 380 }, group: { width: 640, height: 400 }, files: { width: 280, height: 360 }, diff: { width: 560, height: 400 }, knowledge: { width: 320, height: 240 }, note: { width: 280, height: 200 } }
+  const SIZES = { terminal: { width: 520, height: 340 }, portal: { width: 560, height: 380 }, group: { width: 640, height: 400 }, files: { width: 280, height: 360 }, diff: { width: 560, height: 400 }, knowledge: { width: 320, height: 240 }, pipeline: { width: 420, height: 480 }, note: { width: 280, height: 200 } }
   const { screenToFlowPosition, deleteElements } = useReactFlow()
   // Every deletion path (✕, menu, keyboard) funnels through here; ptys die in onNodesChange afterwards.
   const onBeforeDelete = async ({ nodes, edges }) => {
@@ -872,6 +875,7 @@ function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
         { label: 'Nota', run: () => add('note', { text: '' }, pos) },
         { label: 'Árvore de Arquivos', run: () => add('files', {}, pos) },
         { label: 'Revisão (Diff)', run: () => add('diff', {}, pos) },
+        { label: 'Fluxo (pipeline)', run: () => add('pipeline', { steps: [], input: '' }, pos) },
         { label: 'Conhecimento do projeto', disabled: ws.nodes.some((n) => n.type === 'knowledge'), run: () => add('knowledge', { text: '' }, pos) },
         { label: 'Portal', run: () => add('portal', { url: 'https://www.google.com' }, pos) },
         { label: 'Texto', run: () => add('text', { text: '' }, pos) },
@@ -1102,6 +1106,8 @@ export default function App() {
   }, [])
 
   const upd = useUpdate(api)
+  // An agent called canvas_done: remember it on its node (drives the "Concluído" badge).
+  useEffect(() => api.onDone(({ from, summary, t }) => setState((s) => ({ ...s, list: s.list.map((w) => (w.nodes.some((n) => n.id === from) ? { ...w, nodes: w.nodes.map((n) => (n.id === from ? { ...n, data: { ...n.data, lastDone: { summary, t } } } : n)) } : w)) }))), [])
   const [focus, setFocus] = useState(null) // { nodeId, n }: Canvas pans to it
   const [palette, setPalette] = useState(false)
   const goTo = useCallback((wsId, nodeId) => {
@@ -1161,6 +1167,7 @@ export default function App() {
     <div className={'app' + (settings.handCursor ? ' hand' : '')}>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} settings={settings} api={api} mode={mode} update={{ state: upd, open: () => setUpdOpen(true), io: { export: exportWs, import: importWs } }} />
       <ApprovalDialog />
+      <AwayDigest />
       {state && <Palette open={palette} onClose={() => setPalette(false)} state={state} goTo={goTo} actions={paletteActions} />}
       <UpdateToast state={upd} onOpen={() => { setUpdOpen(true); api.updateDownload() }} />
       <UpdateDialog open={updOpen} onOpenChange={setUpdOpen} state={upd} api={api} />

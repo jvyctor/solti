@@ -3,7 +3,7 @@ import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import { ScrollText, X, ShieldAlert } from 'lucide-react'
 
 const api = window.api
-const KIND = { send: 'mensagem', ask: 'pergunta', spawn: 'criou agente', portal: 'navegador' }
+const KIND = { send: 'mensagem', ask: 'pergunta', spawn: 'criou agente', portal: 'navegador', done: 'concluiu' }
 const hhmm = (t) => new Date(t).toLocaleTimeString('pt-BR')
 
 // Timeline of what agents did to each other; opens from a dock button.
@@ -39,6 +39,29 @@ export function ActivityDock() {
         </div>
       )}
       <button className={'mapbtn' + (open ? ' on' : '')} onClick={() => setOpen((o) => !o)} aria-label="Atividade dos agentes" title="Atividade dos agentes"><ScrollText size={18} /></button>
+    </div>
+  )
+}
+
+// "While you were away": summaries of agents that finished while the window was not focused, shown when you come back.
+export function AwayDigest() {
+  const [items, setItems] = useState([])
+  const away = useRef([])
+  useEffect(() => {
+    const off = api.onDone((d) => { if (!document.hasFocus()) { away.current = [...away.current, d]; } })
+    const back = () => { if (away.current.length) { setItems(away.current); away.current = [] } }
+    window.addEventListener('focus', back)
+    return () => { off(); window.removeEventListener('focus', back) }
+  }, [])
+  if (!items.length) return null
+  return (
+    <div className="toast digest" role="status">
+      <ScrollText size={18} />
+      <div className="toast-main">
+        <b>Enquanto você estava fora, {items.length} {items.length === 1 ? 'agente concluiu' : 'agentes concluíram'}</b>
+        {items.slice(-5).map((d, i) => <span key={i}>{d.name ? d.name + ': ' : ''}{d.summary}</span>)}
+      </div>
+      <button className="toast-x" aria-label="Fechar" onClick={() => setItems([])}><X size={14} /></button>
     </div>
   )
 }

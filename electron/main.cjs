@@ -176,6 +176,12 @@ function startBridge() {
           (e) => reply(500, { error: e.message }),
         )
       }
+      if (req.url === '/done') {
+        const summary = String(j.summary || '').trim() || '(sem resumo)'
+        activity.record({ kind: 'done', from: nameOf(from) || from, to: '', text: summary, outcome: 'ok' })
+        win?.webContents.send('agent:done', { from, name: nameOf(from) || from, summary, t: Date.now() })
+        return reply(200, { ok: true })
+      }
       if (req.url === '/note') {
         win?.webContents.send('note', { from, text: j.text })
         return reply(200, { ok: true })
@@ -331,6 +337,7 @@ ipcMain.handle('settings:reset', () => {
 ipcMain.handle('app:info', () => ({ version: app.getVersion(), electron: process.versions.electron, node: process.versions.node, dataDir: app.getPath('userData') }))
 ipcMain.on('app:open-data', () => shell.openPath(app.getPath('userData')))
 ipcMain.handle('usage:get', () => { try { return require('./usage.cjs').getUsage() } catch { return null } })
+ipcMain.on('agent:prompt', (_e, id, text) => { const t = ptys.get(id); if (t) typeInto(t, String(text)) })
 ipcMain.handle('activity:list', () => activity.list())
 ipcMain.on('approval:answer', (_e, id, ok) => activity.answer(id, ok))
 ipcMain.on('portal:register', (_e, id, wcId) => portals.set(id, wcId))

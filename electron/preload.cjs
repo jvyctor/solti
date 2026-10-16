@@ -56,6 +56,8 @@ contextBridge.exposeInMainWorld('api', {
   exportWorkspaces: (data) => ipcRenderer.invoke('ws:export', data),
   importWorkspaces: () => ipcRenderer.invoke('ws:import'),
   searchTerminals: (q) => ipcRenderer.invoke('terms:search', q),
+  onDone: (cb) => on('agent:done', cb),
+  promptAgent: (id, text) => ipcRenderer.send('agent:prompt', id, text),
   pickFolder: () => ipcRenderer.invoke('dialog:folder'),
   termSave: (id, text) => ipcRenderer.send('term:save', id, text),
   termLoad: (id) => ipcRenderer.invoke('term:load', id),
