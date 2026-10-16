@@ -11,7 +11,7 @@
     "build": "vite build",
     "start": "vite build && electron .",
     "icons": "node build/make-icons.cjs",
-    "test": "node --test \"test/*.test.mjs\"",
+    "test": "node --test --test-concurrency=1 \"test/*.test.mjs\"",
     "release": "vite build && electron-builder --win nsis --x64 --publish always \"--config.directories.output=%LOCALAPPDATA%\\agent-canvas-release\"",
     "dist": "vite build && electron-builder --win nsis --x64 \"--config.directories.output=%LOCALAPPDATA%\\agent-canvas-release\""
   },
