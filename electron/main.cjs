@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, powerSaveBlocker, shell, dialog, webContents } = require('electron')
+const { app, BrowserWindow, ipcMain, powerSaveBlocker, shell, dialog, webContents, Menu } = require('electron')
 const http = require('http')
 const path = require('path')
 const fs = require('fs')
@@ -485,6 +485,20 @@ app.whenReady().then(() => {
       console.log('mcp registered:', r)
       fs.writeFileSync(marker, mcpPath)
     })
+  // macOS needs an application menu for Cmd+C / V / Q / W to work at all. Windows and Linux keep none: a menu with
+  // Ctrl+C / Ctrl+Z accelerators would swallow keys the terminals and the canvas undo need.
+  if (process.platform === 'darwin') {
+    const ask = (cmd) => () => win?.webContents.send('menu', cmd)
+    Menu.setApplicationMenu(Menu.buildFromTemplate([
+      { role: 'appMenu' },
+      { label: 'Arquivo', submenu: [{ label: 'Configurações…', accelerator: 'CmdOrCtrl+,', click: ask('settings') }, { label: 'Paleta de comandos', click: ask('palette') }, { role: 'close' }] },
+      // Undo/redo are ours: the canvas has its own history, text fields keep theirs (the renderer decides).
+      { label: 'Editar', submenu: [{ label: 'Desfazer', accelerator: 'CmdOrCtrl+Z', click: ask('undo') }, { label: 'Refazer', accelerator: 'Shift+CmdOrCtrl+Z', click: ask('redo') }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
+      { role: 'viewMenu' },
+      { role: 'windowMenu' },
+      { role: 'help', submenu: [{ label: 'Versões e downloads', click: () => shell.openExternal('https://github.com/jvyctor/agent-canvas-releases/releases') }] },
+    ]))
+  }
   win =new BrowserWindow({
     width: 1400,
     height: 900,

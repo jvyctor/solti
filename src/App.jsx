@@ -1,17 +1,17 @@
-import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { ReactFlowProvider } from '@xyflow/react'
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import { Menu as MenuIcon } from 'lucide-react'
-import SettingsDialog from './Settings.jsx'
+const SettingsDialog = lazy(() => import('./Settings.jsx')) // dialogs load when first opened
 import { useUpdate, UpdateToast, UpdateDialog } from './Updates.jsx'
 import { exportable, mergeImport } from './workspaces.js'
-import Palette from './Palette.jsx'
+const Palette = lazy(() => import('./Palette.jsx'))
 import { ApprovalDialog, AwayDigest } from './Activity.jsx'
 import { resolveTheme, applyTheme } from './themes.js'
 import { Canvas } from './Canvas.jsx'
 import { Sidebar } from './Sidebar.jsx'
 import { runPipeline, stopPipeline } from './pipelineRunner.js'
-import { Onboarding } from './Diagnostics.jsx'
+const Onboarding = lazy(() => import('./Diagnostics.jsx').then((m) => ({ default: m.Onboarding })))
 import { CommCtx, PipeCtx, PRESET_LABELS, SettingsCtx, api, ask, describe, fresh, mem, uid } from './shared.js'
 
 export default function App() {
@@ -194,6 +194,16 @@ export default function App() {
   // What a routine can aim at: every terminal and every pipeline, in every workspace.
   const targets = useMemo(() => (state?.list || []).flatMap((w) => w.nodes.filter((n) => n.type === 'terminal' || n.type === 'pipeline').map((n) => (n.type === 'terminal' ? { type: 'agent', id: n.id, label: `${n.data.name} (${w.name})` } : { type: 'pipeline', id: n.id, label: `${n.data.name || 'Fluxo'} (${w.name})` }))), [state])
   useEffect(() => api.onRoutinePipeline(({ id }) => pipe.start(id)), [pipe])
+  // macOS application menu -> same actions as the keyboard shortcuts.
+  useEffect(() => api.onMenu((cmd) => {
+    if (cmd === 'settings') setSettingsOpen(true)
+    else if (cmd === 'palette') setPalette((o) => !o)
+    else if (cmd === 'undo' || cmd === 'redo') {
+      const el = document.activeElement
+      if (el?.matches?.('input, textarea, [contenteditable]')) document.execCommand(cmd) // text fields keep their own history
+      else window.dispatchEvent(new CustomEvent('ac:history', { detail: cmd === 'undo' ? -1 : 1 }))
+    }
+  }), [])
   const exportWs = async () => {
     const r = await api.exportWorkspaces(exportable(state))
     return r.path ? `Exportado para ${r.path}` : ''
@@ -240,11 +250,13 @@ export default function App() {
     <CommCtx.Provider value={talking}>
     <PipeCtx.Provider value={pipe}>
     <div className={'app' + (settings.handCursor ? ' hand' : '')}>
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} settings={settings} api={api} mode={mode} update={{ targets, state: upd, open: () => setUpdOpen(true), io: { export: exportWs, import: importWs } }} />
+      <Suspense fallback={null}>
+        {settingsOpen && <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} settings={settings} api={api} mode={mode} update={{ targets, state: upd, open: () => setUpdOpen(true), io: { export: exportWs, import: importWs } }} />}
+      </Suspense>
       <ApprovalDialog />
-      <Onboarding open={!!settings && !settings.onboarded && !!state && state.list.every((w) => w.nodes.length === 0)} onClose={() => api.settingsSet({ onboarded: true })} onTeam={() => setTimeout(() => window.dispatchEvent(new Event('ac:team')), 200)} />
+      <Suspense fallback={null}>{(!!settings && !settings.onboarded && !!state && state.list.every((w) => w.nodes.length === 0)) && <Onboarding open onClose={() => api.settingsSet({ onboarded: true })} onTeam={() => setTimeout(() => window.dispatchEvent(new Event('ac:team')), 200)} />}</Suspense>
       <AwayDigest />
-      {state && <Palette open={palette} onClose={() => setPalette(false)} state={state} goTo={goTo} actions={paletteActions} />}
+      <Suspense fallback={null}>{state && palette && <Palette open={palette} onClose={() => setPalette(false)} state={state} goTo={goTo} actions={paletteActions} />}</Suspense>
       <UpdateToast state={upd} onOpen={() => { setUpdOpen(true); api.updateDownload() }} />
       <UpdateDialog open={updOpen} onOpenChange={setUpdOpen} state={upd} api={api} />
       <AlertDialog.Root open={!!confirm} onOpenChange={(o) => !o && answer(false)}>

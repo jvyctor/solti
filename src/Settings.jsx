@@ -322,15 +322,19 @@ const SHORTCUTS = [
   ['Esc', 'Fechar menus, diálogos e o painel de uso'],
 ]
 
+// On a Mac the shortcuts use Cmd.
+const MAC = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform)
+const platformKeys = (s) => (MAC ? s.replace(/Ctrl/g, '⌘') : s)
+
 function Atalhos() {
   return (
     <Section title="ATALHOS E GESTOS">
-      {SHORTCUTS.map(([k, v]) => (
+      {SHORTCUTS.map(([k0, v]) => { const k = platformKeys(k0); return (
         <div key={k} className="set-row">
           <div className="set-text"><div className="set-title">{k}</div></div>
           <div className="set-ctl set-note">{v}</div>
         </div>
-      ))}
+      ) })}
     </Section>
   )
 }

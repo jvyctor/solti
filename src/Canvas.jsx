@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { Background, BackgroundVariant, ConnectionMode, MiniMap, ReactFlow, addEdge, applyEdgeChanges, applyNodeChanges, useReactFlow, useViewport } from '@xyflow/react'
 import { Map as MapIcon, Minus, Plus, X } from 'lucide-react'
 import { createHistory, snapshot, applySnapshot } from './history.js'
@@ -8,8 +8,8 @@ import PipelineNode from './PipelineNode.jsx'
 import { ActivityDock } from './Activity.jsx'
 import { Menu } from './Menu.jsx'
 import { NewTerminalDialog } from './NewTerminalDialog.jsx'
-import TeamDialog from './TeamDialog.jsx'
-import LookDialog from './LookDialog.jsx'
+const TeamDialog = lazy(() => import('./TeamDialog.jsx'))
+const LookDialog = lazy(() => import('./LookDialog.jsx'))
 import { TerminalNode } from './TerminalNode.jsx'
 import { FilesNode, GroupNode, KnowledgeNode, NoteNode, PortalNode, TextNode } from './Nodes.jsx'
 import { edgeTypes } from './edges.jsx'
@@ -149,6 +149,11 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
     update((w) => ({ ...w, ...applySnapshot(s, w.nodes) }))
   }, [update])
   useEffect(() => {
+    const menu = (e) => travel(e.detail)
+    window.addEventListener('ac:history', menu)
+    return () => window.removeEventListener('ac:history', menu)
+  }, [travel])
+  useEffect(() => {
     const key = (e) => {
       if (!(e.ctrlKey || e.metaKey) || e.altKey) return
       if (e.target.closest?.('input, textarea, select, [contenteditable], .xterm')) return
@@ -251,6 +256,7 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
           onCreate={({ name, cwd, preset, git }) => { addTerminal(preset, dlg.pos, { name: name || undefined, cwd: cwd || undefined, git }); setDlg(null) }}
         />
       )}
+      <Suspense fallback={null}>
       {lookId && ws.nodes.some((n) => n.id === lookId) && (
         <LookDialog node={ws.nodes.find((n) => n.id === lookId)} cfg={cfg} onClose={() => setLookId(null)} onChange={(look) => patch(lookId, { look })} />
       )}
@@ -263,6 +269,7 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
           onCreate={({ nodes, edges }) => { update((w) => ({ ...w, nodes: [...w.nodes, ...nodes], edges: [...w.edges, ...edges] })); setTeamDlg(null) }}
         />
       )}
+      </Suspense>
       {ws.nodes.length === 0 && (
         <div className="empty-canvas" role="region" aria-label="Canvas vazio">
           <h2>Este canvas está vazio</h2>
