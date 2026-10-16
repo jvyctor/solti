@@ -83,7 +83,6 @@ export function UpdateDialog({ open, onOpenChange, state, api }) {
 
 // Settings tab body; Section/Row/Switch come from Settings.jsx.
 export function UpdatesTab({ s, set, api, state, onOpen, ui: { Section, Row, Switch } }) {
-  const [token, setToken] = useState('')
   const checking = state.status === 'checking'
   const msg = {
     none: state.dev ? 'Modo de desenvolvimento: atualizações desativadas.' : 'Você está na versão mais recente.',
@@ -105,15 +104,6 @@ export function UpdatesTab({ s, set, api, state, onOpen, ui: { Section, Row, Swi
           {['available', 'downloading', 'downloaded'].includes(state.status)
             ? <button className="set-btn" onClick={onOpen}>Ver atualização</button>
             : <button className="set-btn" disabled={checking} onClick={() => api.updateCheck()}>Verificar atualizações…</button>}
-        </Row>
-      </Section>
-      <Section title="ACESSO AO REPOSITÓRIO">
-        <Row title="Token do GitHub" desc="O repositório é privado: cole um token fine-grained só de leitura (Contents: Read). Fica criptografado neste computador.">
-          <span className="set-token">
-            <input className="set-input" type="password" aria-label="Token do GitHub" placeholder={state.hasToken ? '•••••••• (salvo)' : 'github_pat_…'} value={token} onChange={(e) => setToken(e.target.value)} />
-            <button className="set-btn" disabled={!token} onClick={() => api.updateToken(token).then(() => setToken(''))}>Salvar</button>
-            {state.hasToken && <button className="set-link" onClick={() => api.updateToken('')}>remover</button>}
-          </span>
         </Row>
       </Section>
     </>

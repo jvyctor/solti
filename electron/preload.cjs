@@ -33,7 +33,6 @@ contextBridge.exposeInMainWorld('api', {
   updateCheck: () => ipcRenderer.send('update:check'),
   updateDownload: () => ipcRenderer.send('update:download'),
   updateInstall: () => ipcRenderer.send('update:install'),
-  updateToken: (t) => ipcRenderer.invoke('update:token', t),
   termSave: (id, text) => ipcRenderer.send('term:save', id, text),
   termLoad: (id) => ipcRenderer.invoke('term:load', id),
 })

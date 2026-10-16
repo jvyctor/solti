@@ -1,7 +1,7 @@
 {
   "name": "agent-canvas",
   "productName": "Agent Canvas",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Canvas para orquestrar agentes de IA (Maestro e Agentes) em terminais conectados.",
   "author": "Agent Canvas",
   "private": true,
@@ -62,7 +62,7 @@
       "node_modules/node-pty/**"
     ],
     "npmRebuild": false,
-    "publish": [{ "provider": "github", "owner": "jvyctor", "repo": "agent-canvas", "private": true, "releaseType": "release" }],
+    "publish": [{ "provider": "github", "owner": "jvyctor", "repo": "agent-canvas-releases", "releaseType": "release" }],
     "win": {
       "target": [
         {

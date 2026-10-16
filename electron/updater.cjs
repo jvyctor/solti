@@ -1,27 +1,14 @@
-// Auto-update from GitHub Releases (electron-updater). The repo is private, so a read-only token
-// pasted by the user is kept encrypted (safeStorage) in userData and sent as the auth header.
-const { app, safeStorage, ipcMain } = require('electron')
+// Auto-update from the public GitHub Releases repo (electron-updater); no credentials involved.
+const { app, ipcMain } = require('electron')
 const { autoUpdater } = require('electron-updater')
-const fs = require('fs')
-const path = require('path')
 
 const CHECK_EVERY = 4 * 60 * 60 * 1000
-const tokenFile = () => path.join(app.getPath('userData'), 'update-token')
 let getWin = () => null
 let state = { status: 'idle' }
 let timer
 
-const readToken = () => {
-  try { return safeStorage.decryptString(fs.readFileSync(tokenFile())) } catch { return '' }
-}
-const writeToken = (t) => {
-  if (!t) return fs.rmSync(tokenFile(), { force: true })
-  if (!safeStorage.isEncryptionAvailable()) throw new Error('Criptografia do sistema indisponível')
-  fs.writeFileSync(tokenFile(), safeStorage.encryptString(t))
-}
-
 const push = (p) => {
-  state = { ...p, status: p.status, hasToken: !!readToken(), current: app.getVersion() }
+  state = { ...p, current: app.getVersion() }
   getWin()?.webContents.send('update:state', state)
 }
 
@@ -33,21 +20,16 @@ const notesText = (n) => {
 
 const friendly = (e) => {
   const m = String(e?.message || e)
-  if (/401|403|404|Not Found|Bad credentials/i.test(m)) return 'Sem acesso às versões. Confira o token de acesso (repositório privado).'
+  if (/404|Not Found|Cannot find latest/i.test(m)) return 'Nenhuma versão publicada encontrada.'
+  if (/403|rate limit/i.test(m)) return 'Limite de consultas do GitHub atingido. Tente mais tarde.'
   if (/ENOTFOUND|ETIMEDOUT|ECONNREFUSED|ERR_INTERNET|ERR_NETWORK|net::/i.test(m)) return 'Sem conexão com a internet.'
   return m.split('\n')[0].slice(0, 200)
-}
-
-function applyAuth() {
-  const t = readToken()
-  autoUpdater.requestHeaders = t ? { Authorization: `token ${t}` } : null
 }
 
 async function check() {
   if (!app.isPackaged && !process.env.AC_UPDATE_URL) return push({ status: 'none', dev: true })
   if (['checking', 'downloading'].includes(state.status)) return
   push({ status: 'checking' })
-  applyAuth()
   try { await autoUpdater.checkForUpdates() } catch (e) { push({ status: 'error', message: friendly(e) }) }
 }
 
@@ -67,7 +49,7 @@ function init(win, { beforeInstall }) {
   autoUpdater.on('update-downloaded', (i) => push({ ...state, status: 'downloaded', version: i.version }))
   autoUpdater.on('error', (e) => push({ status: 'error', message: friendly(e), version: state.version }))
 
-  ipcMain.handle('update:state', () => ({ ...state, hasToken: !!readToken(), current: app.getVersion() }))
+  ipcMain.handle('update:state', () => ({ ...state, current: app.getVersion() }))
   ipcMain.on('update:check', () => check())
   ipcMain.on('update:download', () => {
     if (state.status !== 'available') return
@@ -79,7 +61,6 @@ function init(win, { beforeInstall }) {
     beforeInstall() // skip the "quit?" confirmation
     autoUpdater.quitAndInstall(true, true) // silent installer, relaunch afterwards
   })
-  ipcMain.handle('update:token', (_e, t) => { writeToken((t || '').trim()); push(state); return true })
 
   const auto = () => { if (require('./settings.cjs').get().autoUpdate) check() }
   setTimeout(auto, 4000)
