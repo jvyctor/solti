@@ -3,7 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
@@ -37,6 +37,38 @@ test('workspace pill shows only the active workspace', async () => {
       await sleep(300)
       assert.deepEqual(await pills(), [name])
     }
+    cdp.close()
+  } finally {
+    app.kill()
+  }
+})
+
+// Terminal screens persist: a saved screen is restored on start, and a running terminal writes one back.
+test('terminal screen is restored and saved', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ac-term-'))
+  const node = { id: 'n1', type: 'terminal', position: { x: 50, y: 50 }, style: { width: 600, height: 300 }, data: { name: 'x', preset: 'shell' } }
+  writeFileSync(join(dir, 'workspace.json'), JSON.stringify({ list: [{ id: 'w1', name: 'A', nodes: [node], edges: [] }], active: 'w1' }))
+  mkdirSync(join(dir, 'terms'))
+  writeFileSync(join(dir, 'terms', 'n1.txt'), 'HELLO-SAVED-SCREEN')
+  const app = spawn(electron, ['.', `--user-data-dir=${dir}`, `--remote-debugging-port=${PORT + 1}`], { stdio: 'ignore' })
+  try {
+    let page
+    for (let i = 0; i < 40 && !page; i++) {
+      await sleep(500)
+      try { page = (await (await fetch(`http://127.0.0.1:${PORT + 1}/json`)).json()).find((t) => t.type === 'page') } catch {}
+    }
+    assert.ok(page, 'app window did not open')
+    const cdp = new WebSocket(page.webSocketDebuggerUrl)
+    await new Promise((r) => (cdp.onopen = r))
+    let n = 0
+    const pending = {}
+    cdp.onmessage = (e) => { const m = JSON.parse(e.data); pending[m.id]?.(m.result) }
+    const ev = (expression) => new Promise((r) => { const id = ++n; pending[id] = r; cdp.send(JSON.stringify({ id, method: 'Runtime.evaluate', params: { expression, returnByValue: true } })) })
+    await sleep(3000)
+    await sleep(1000)
+    await sleep(6000) // autosave interval
+    const saved = readFileSync(join(dir, 'terms', 'n1.txt'), 'utf8')
+    assert.match(saved, /HELLO-SAVED-SCREEN/) // survived the shell's startup clear (kept in scrollback)
     cdp.close()
   } finally {
     app.kill()

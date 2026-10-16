@@ -4,6 +4,7 @@ import { resolveTheme, applyTheme, termOptions } from './themes.js'
 import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, ConnectionMode, BaseEdge, useInternalNode, MiniMap, NodeResizer, Handle, Position, addEdge, applyNodeChanges, applyEdgeChanges, useReactFlow, useViewport } from '@xyflow/react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
+import { SerializeAddon } from '@xterm/addon-serialize'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import * as Dialog from '@radix-ui/react-dialog'
@@ -69,25 +70,43 @@ function TerminalNode({ id, data, selected }) {
     const fit = new FitAddon()
     fitRef.current = fit
     term.loadAddon(fit)
+    const ser = new SerializeAddon()
+    term.loadAddon(ser)
     term.open(host.current)
     fit.fit()
     terms.set(id, term)
-    let idle
-    sinks.set(id, (d) => {
+    // Output is held until the saved screen (or the live pty buffer) has been written, so order is kept.
+    let idle, ready = false
+    const held = []
+    const show = (d) => {
       term.write(d)
       if (dataRef.current.monitor && cfgRef.current.notifyIdle) {
         clearTimeout(idle)
         const secs = cfgRef.current.idleSeconds
         idle = setTimeout(() => new Notification(dataRef.current.name, { body: `Atividade parou (${secs} s sem saída).` }), secs * 1000)
       }
+    }
+    sinks.set(id, (d) => (ready ? show(d) : held.push(d)))
+    let dirty = false
+    const mark = term.onWriteParsed(() => { dirty = true })
+    const save = () => { if (ready && dirty) { dirty = false; api.termSave(id, ser.serialize({ scrollback: 1000 })) } }
+    const timer = setInterval(save, 5000)
+    window.addEventListener('beforeunload', save)
+    Promise.all([api.termLoad(id), api.spawn(id, { preset: data.preset, name: data.name, maestro: !!data.maestro, instructions: data.instructions, cwd: data.cwd, cols: term.cols, rows: term.rows })]).then(([saved, r]) => {
+      setCwd(r.cwd)
+      if (r.buf) term.write(r.buf) // pty still alive (reload): its buffer is newer than the file
+      // Pushed into scrollback: the shell's startup clear only wipes the visible screen.
+      else if (saved) term.write(saved + '\r\n\x1b[2m--- sessão anterior ---\x1b[0m' + '\r\n'.repeat(term.rows))
+      ready = true
+      held.forEach(show)
+      dirty = false
     })
-    api.spawn(id, { preset: data.preset, name: data.name, maestro: !!data.maestro, instructions: data.instructions, cwd: data.cwd, cols: term.cols, rows: term.rows }).then((r) => { setCwd(r.cwd); r.buf && term.write(r.buf) })
     const sub = term.onData((d) => api.write(id, d))
     const ro = new ResizeObserver(() => {
       try { fit.fit(); api.resize(id, term.cols, term.rows) } catch {}
     })
     ro.observe(host.current)
-    return () => { clearTimeout(idle); terms.delete(id); sinks.delete(id); sub.dispose(); ro.disconnect(); term.dispose() }
+    return () => { save(); clearInterval(timer); clearTimeout(idle); window.removeEventListener('beforeunload', save); mark.dispose(); terms.delete(id); sinks.delete(id); sub.dispose(); ro.disconnect(); term.dispose() }
   }, [id, data.rev, data.unloaded])
 
   // Style changes apply to open terminals without restarting them.

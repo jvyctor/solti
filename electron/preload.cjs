@@ -28,4 +28,6 @@ contextBridge.exposeInMainWorld('api', {
   usage: () => ipcRenderer.invoke('usage:get'),
   load: () => ipcRenderer.invoke('ws:load'),
   save: (d) => ipcRenderer.send('ws:save', d),
+  termSave: (id, text) => ipcRenderer.send('term:save', id, text),
+  termLoad: (id) => ipcRenderer.invoke('term:load', id),
 })

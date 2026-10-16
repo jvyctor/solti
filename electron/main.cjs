@@ -228,7 +228,17 @@ ipcMain.on('graph:update', (_e, g) => (graph = g))
 ipcMain.handle('ws:load', () => { try { return JSON.parse(fs.readFileSync(wsFile(), 'utf8')) } catch { return null } })
 ipcMain.on('ws:save', (_e, data) => {
   try { fs.mkdirSync(path.dirname(wsFile()), { recursive: true }); fs.writeFileSync(wsFile(), JSON.stringify(data)) } catch {}
+  // Drop saved screens of terminals that no longer exist.
+  try {
+    const live = new Set((data.list || []).flatMap((w) => w.nodes.map((n) => n.id + '.txt')))
+    for (const f of fs.readdirSync(termDir())) if (!live.has(f)) fs.unlinkSync(path.join(termDir(), f))
+  } catch {}
 })
+// Terminal screens (serialized xterm buffer) survive app restarts.
+const termDir = () => path.join(app.getPath('userData'), 'terms')
+const termFile = (id) => path.join(termDir(), String(id).replace(/[^\w-]/g, '_') + '.txt')
+ipcMain.on('term:save', (_e, id, text) => { try { fs.mkdirSync(termDir(), { recursive: true }); fs.writeFileSync(termFile(id), text) } catch {} })
+ipcMain.handle('term:load', (_e, id) => { try { return fs.readFileSync(termFile(id), 'utf8') } catch { return '' } })
 
 app.whenReady().then(() => {
   settings.init(app.getPath('userData'))

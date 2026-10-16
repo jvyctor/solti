@@ -15,6 +15,7 @@
     "dist": "vite build && electron-builder --win nsis --x64 --config.directories.output=%LOCALAPPDATA%\\agent-canvas-release"
   },
   "dependencies": {
+    "@xterm/addon-serialize": "^0.14.0",
     "node-pty": "^1.1.0"
   },
   "devDependencies": {
@@ -42,12 +43,32 @@
   "build": {
     "appId": "com.agentcanvas.app",
     "productName": "Agent Canvas",
-    "directories": { "output": "release", "buildResources": "build" },
-    "files": ["electron/**", "dist/**", "bin/**", "build/icon.png", "build/icon.ico", "package.json"],
-    "asarUnpack": ["bin/**", "node_modules/node-pty/**"],
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**",
+      "dist/**",
+      "bin/**",
+      "build/icon.png",
+      "build/icon.ico",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "bin/**",
+      "node_modules/node-pty/**"
+    ],
     "npmRebuild": false,
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "build/icon.ico"
     },
     "nsis": {
@@ -63,4 +84,3 @@
     }
   }
 }
-
