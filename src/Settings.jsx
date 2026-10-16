@@ -310,6 +310,9 @@ const SHORTCUTS = [
   ['Delete / Backspace', 'Excluir nó ou corda selecionada'],
   ['Duplo clique numa nota', 'Editar o texto'],
   ['Ctrl + roda do mouse', 'Zoom no canvas'],
+  ['Ctrl + K', 'Paleta: ir para workspace ou terminal, buscar na saída dos terminais, executar ações'],
+  ['Ctrl + Z / Ctrl + Shift + Z (ou Ctrl + Y)', 'Desfazer / refazer no canvas (fora de terminais e campos de texto)'],
+  ['Arrastar um Grupo', 'Leva junto os nós que estão dentro dele'],
   ['Esc', 'Fechar menus, diálogos e o painel de uso'],
 ]
 

@@ -55,6 +55,7 @@ contextBridge.exposeInMainWorld('api', {
   openBackups: () => ipcRenderer.send('app:open-backups'),
   exportWorkspaces: (data) => ipcRenderer.invoke('ws:export', data),
   importWorkspaces: () => ipcRenderer.invoke('ws:import'),
+  searchTerminals: (q) => ipcRenderer.invoke('terms:search', q),
   pickFolder: () => ipcRenderer.invoke('dialog:folder'),
   termSave: (id, text) => ipcRenderer.send('term:save', id, text),
   termLoad: (id) => ipcRenderer.invoke('term:load', id),

@@ -4,6 +4,8 @@ import { useUpdate, UpdateToast, UpdateDialog } from './Updates.jsx'
 import { classify, STATUS } from './status.js'
 import { exportable, mergeImport } from './workspaces.js'
 import { createHistory, snapshot, applySnapshot } from './history.js'
+import { kidsInside } from './geometry.js'
+import Palette from './Palette.jsx'
 import DiffNode from './DiffNode.jsx'
 import { ActivityDock, ApprovalDialog } from './Activity.jsx'
 import { resolveTheme, applyTheme, termOptions } from './themes.js'
@@ -646,12 +648,13 @@ function NewTerminalDialog({ initialName, onCreate, onClose }) {
 }
 
 // Lazy directory tree. shortcut: listing is not watched; re-open the folder to refresh.
-function Dir({ path, name, depth = 0 }) {
+function Dir({ path, name, depth = 0, tick = 0 }) {
   const [kids, setKids] = useState(null)
   const [open, setOpen] = useState(depth === 0)
+  // Re-listed on every tick (see FilesNode); the state only changes when the listing really did.
   useEffect(() => {
-    if (open && !kids) api.ls(path).then((r) => setKids(r.entries || []))
-  }, [open])
+    if (open) api.ls(path).then((r) => setKids((prev) => (JSON.stringify(prev) === JSON.stringify(r.entries || []) ? prev : r.entries || [])))
+  }, [open, tick])
   return (
     <div>
       <div className="ftree-row" style={{ paddingLeft: depth * 12 }} onClick={() => setOpen((o) => !o)}>
@@ -660,7 +663,7 @@ function Dir({ path, name, depth = 0 }) {
       </div>
       {open && kids?.map((k) =>
         k.dir ? (
-          <Dir key={k.name} path={path + '\\' + k.name} name={k.name} depth={depth + 1} />
+          <Dir key={k.name} path={path + '\\' + k.name} name={k.name} depth={depth + 1} tick={tick} />
         ) : (
           <div key={k.name} className="ftree-row file" style={{ paddingLeft: (depth + 1) * 12 + 13 }}><FileText size={13} /> {k.name}</div>
         ),
@@ -673,6 +676,11 @@ function FilesNode({ id, data, selected }) {
   const { updateNodeData, deleteElements } = useReactFlow()
   const [path, setPath] = useState(data.path || '')
   const [root, setRoot] = useState(null)
+  const [tick, setTick] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => document.hasFocus() && setTick((n) => n + 1), 4000)
+    return () => clearInterval(t)
+  }, [])
   const load = (p) => api.ls(p).then((r) => { if (!r.error) { setRoot(r.dir); setPath(r.dir); updateNodeData(id, { path: r.dir }) } })
   useEffect(() => { load(data.path || '') }, [])
   return (
@@ -685,12 +693,12 @@ function FilesNode({ id, data, selected }) {
         <input className="pathin" value={path} onChange={(e) => setPath(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && load(path)} />
         <button className="x" aria-label="Excluir" onClick={() => deleteElements({ nodes: [{ id }] })}><X size={14} /></button>
       </div>
-      <div className="tbody ftree nodrag nowheel">{root && <Dir key={root} path={root} name={root.split(/[\\/]/).pop() || root} />}</div>
+      <div className="tbody ftree nodrag nowheel">{root && <Dir key={root} path={root} name={root.split(/[\\/]/).pop() || root} tick={tick} />}</div>
     </div>
   )
 }
 
-function Canvas({ ws, update, scores, saveScore, insertScore }) {
+function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
   const cfg = useContext(SettingsCtx)
   const [menu, setMenu] = useState(null)
   const setNodes = useCallback((fn) => update((w) => ({ ...w, nodes: fn(w.nodes) })), [update])
@@ -746,6 +754,27 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
     return { nodes, edges }
   }
   const [dlg, setDlg] = useState(null) // { pos } while "Novo Terminal…" is open
+
+  // Pan to a node on request (palette, new agent). The node may need a moment to be measured after mount.
+  const { fitView } = useReactFlow()
+  useEffect(() => {
+    if (!focus || !ws.nodes.some((n) => n.id === focus.nodeId)) return
+    const t = setTimeout(() => fitView({ nodes: [{ id: focus.nodeId }], duration: 500, maxZoom: 1, padding: 0.35 }), 250)
+    return () => clearTimeout(t)
+  }, [focus?.n])
+
+  // Moving a group carries the nodes sitting inside it (decided when the drag starts).
+  const gdrag = useRef(null)
+  const onNodeDragStart = (_e, n) => {
+    gdrag.current = n.type === 'group' ? { id: n.id, from: n.position, kids: new Map(kidsInside(n, ws.nodes).map((k) => [k.id, k.position])) } : null
+  }
+  const onNodeDrag = (_e, n) => {
+    const g = gdrag.current
+    if (!g || g.id !== n.id || !g.kids.size) return
+    const dx = n.position.x - g.from.x
+    const dy = n.position.y - g.from.y
+    setNodes((ns) => ns.map((k) => (g.kids.has(k.id) ? { ...k, position: { x: g.kids.get(k.id).x + dx, y: g.kids.get(k.id).y + dy } } : k)))
+  }
 
   // Undo / redo (Ctrl+Z, Ctrl+Shift+Z / Ctrl+Y). Typing inside terminals, inputs and notes keeps its own undo.
   const hist = useRef(createHistory())
@@ -866,7 +895,7 @@ function Canvas({ ws, update, scores, saveScore, insertScore }) {
           onCreate={({ name, cwd, preset, git }) => { addTerminal(preset, dlg.pos, { name: name || undefined, cwd: cwd || undefined, git }); setDlg(null) }}
         />
       )}
-      <ReactFlow deleteKeyCode={['Backspace', 'Delete']} nodes={ws.nodes} edges={shownEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} connectionMode={ConnectionMode.Loose} connectionRadius={48} onBeforeDelete={onBeforeDelete} onConnectEnd={onConnectEnd} defaultEdgeOptions={{ type: 'floating' }} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeContextMenu={(e, n) => openMenu(e, nodeMenu(n))} onPaneContextMenu={(e) => openMenu(e, paneMenu(screenToFlowPosition({ x: e.clientX, y: e.clientY })))} colorMode={cfg.mode} snapToGrid={cfg.eff.snap} snapGrid={[cfg.eff.snapSize, cfg.eff.snapSize]} className={cfg.eff.edgeFlow ? 'flow' : undefined} minZoom={0.1} fitView proOptions={{ hideAttribution: true }}>
+      <ReactFlow deleteKeyCode={['Backspace', 'Delete']} onNodeDragStart={onNodeDragStart} onNodeDrag={onNodeDrag} nodes={ws.nodes} edges={shownEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} connectionMode={ConnectionMode.Loose} connectionRadius={48} onBeforeDelete={onBeforeDelete} onConnectEnd={onConnectEnd} defaultEdgeOptions={{ type: 'floating' }} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeContextMenu={(e, n) => openMenu(e, nodeMenu(n))} onPaneContextMenu={(e) => openMenu(e, paneMenu(screenToFlowPosition({ x: e.clientX, y: e.clientY })))} colorMode={cfg.mode} snapToGrid={cfg.eff.snap} snapGrid={[cfg.eff.snapSize, cfg.eff.snapSize]} className={cfg.eff.edgeFlow ? 'flow' : undefined} minZoom={0.1} fitView proOptions={{ hideAttribution: true }}>
         {cfg.eff.gridStyle !== 'none' && <Background variant={GRID_VARIANT[cfg.eff.gridStyle]} color={cfg.eff.grid} gap={cfg.eff.gap} size={cfg.eff.size} lineWidth={cfg.eff.size} />}
         <Zoom><UsageDock /><ActivityDock /></Zoom>
       </ReactFlow>
@@ -999,12 +1028,13 @@ export default function App() {
   // The maestro asked (canvas_spawn) for a new agent: add it next to the maestro, wired to it, in the maestro's workspace.
   useEffect(
     () =>
-      api.onSpawn(({ from, name, preset, instructions }) =>
+      api.onSpawn(({ from, name, preset, instructions }) => {
+        const id = uid('n')
+        setFocus({ nodeId: id, n: Date.now() }) // bring the new agent into view
         setState((s) => {
           const w = s.list.find((x) => x.nodes.some((n) => n.id === from))
           if (!w) return s
           const src = w.nodes.find((n) => n.id === from)
-          const id = uid('n')
           const kids = w.edges.filter((e) => e.source === from).length
           const node = {
             id, type: 'terminal', style: { width: 520, height: 340 },
@@ -1013,8 +1043,8 @@ export default function App() {
           }
           const edge = { id: uid('e'), source: from, target: id, type: 'floating' }
           return { ...s, list: s.list.map((x) => (x.id === w.id ? { ...x, nodes: [...x.nodes, node], edges: [...x.edges, edge] } : x)) }
-        }),
-      ),
+        })
+      }),
     [],
   )
 
@@ -1072,6 +1102,19 @@ export default function App() {
   }, [])
 
   const upd = useUpdate(api)
+  const [focus, setFocus] = useState(null) // { nodeId, n }: Canvas pans to it
+  const [palette, setPalette] = useState(false)
+  const goTo = useCallback((wsId, nodeId) => {
+    if (wsId) setState((s) => ({ ...s, active: wsId }))
+    if (nodeId) setFocus({ nodeId, n: Date.now() })
+  }, [])
+  useEffect(() => {
+    const key = (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k') { e.preventDefault(); setPalette((o) => !o) }
+    }
+    window.addEventListener('keydown', key, true) // capture: works while a terminal has focus
+    return () => window.removeEventListener('keydown', key, true)
+  }, [])
   const exportWs = async () => {
     const r = await api.exportWorkspaces(exportable(state))
     return r.path ? `Exportado para ${r.path}` : ''
@@ -1096,6 +1139,14 @@ export default function App() {
       return !o
     })
 
+  const paletteActions = useMemo(() => [
+    { label: 'Novo workspace', run: () => setState((s) => { const w = { id: uid('w'), name: `Workspace ${s.list.length + 1}`, nodes: [], edges: [] }; return { ...s, list: [...s.list, w], active: w.id } }) },
+    { label: 'Configurações', run: () => setSettingsOpen(true) },
+    { label: 'Verificar atualizações', run: () => { setUpdOpen(true); api.updateCheck() } },
+    { label: 'Mostrar/ocultar barra lateral', run: toggleSide },
+    { label: 'Interromper todos os agentes', run: () => api.interrupt() },
+  ], [])
+
   const [confirm, setConfirm] = useState(null) // { msg, done }
   useEffect(() => {
     askFn = (msg) => new Promise((done) => setConfirm({ msg, done }))
@@ -1110,6 +1161,7 @@ export default function App() {
     <div className={'app' + (settings.handCursor ? ' hand' : '')}>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} settings={settings} api={api} mode={mode} update={{ state: upd, open: () => setUpdOpen(true), io: { export: exportWs, import: importWs } }} />
       <ApprovalDialog />
+      {state && <Palette open={palette} onClose={() => setPalette(false)} state={state} goTo={goTo} actions={paletteActions} />}
       <UpdateToast state={upd} onOpen={() => { setUpdOpen(true); api.updateDownload() }} />
       <UpdateDialog open={updOpen} onOpenChange={setUpdOpen} state={upd} api={api} />
       <AlertDialog.Root open={!!confirm} onOpenChange={(o) => !o && answer(false)}>
@@ -1134,7 +1186,7 @@ export default function App() {
         </button>
         <span className="ws-pill">{active.name}</span>
         <ReactFlowProvider key={active.id}>
-          <Canvas ws={active} update={update} scores={state.scores || []} saveScore={saveScore} insertScore={insertScore} />
+          <Canvas ws={active} update={update} scores={state.scores || []} saveScore={saveScore} insertScore={insertScore} focus={focus} />
         </ReactFlowProvider>
       </main>
     </div>

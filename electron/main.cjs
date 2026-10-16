@@ -277,6 +277,19 @@ ipcMain.handle('git:patch', safe(async (wt, base, file, isNew) => ({ patch: awai
 ipcMain.handle('git:commit', safe((wt, msg) => gitx.commit(wt, msg)))
 ipcMain.handle('git:merge', safe((repo, base, branch) => gitx.merge(repo, base, branch)))
 ipcMain.handle('git:pr', safe(async (repo, base, branch) => { const r = await gitx.pushForPr(repo, base, branch); shell.openExternal(r.url); return r }))
+// Search what terminals printed (ANSI stripped). Capped so a chatty agent cannot flood the palette.
+ipcMain.handle('terms:search', (_e, q) => {
+  const needle = String(q || '').toLowerCase()
+  const out = []
+  for (const [id, t] of ptys) {
+    const name = graph.nodes.find((n) => n.id === id)?.name || id
+    const clean = t.buf.replace(/\x1b\[[0-9;?]*[ -\/]*[@-~]|\x1b\][^\x07]*\x07/g, '')
+    for (const line of clean.split(/\r?\n/).reverse()) {
+      if (line.toLowerCase().includes(needle)) { out.push({ id, name, line: line.trim().slice(0, 160) }); if (out.filter((o) => o.id === id).length >= 5) break }
+    }
+  }
+  return out.slice(0, 30)
+})
 ipcMain.handle('usage:agent', (_e, sid) => require('./agentusage.cjs').claudeTokens(sid))
 // Emergency stop: Esc (cancels the current turn in most TUIs) then Ctrl+C, for one agent or all.
 const interrupt = (e) => { e.p.write('\x1b'); setTimeout(() => e.p.write('\x03'), 150) }
