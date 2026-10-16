@@ -32,6 +32,19 @@ api.onData((id, d) => sinks.get(id)?.(d))
 
 // A copied terminal is a new agent: no shared worktree, no shared conversation.
 const fresh = (d) => ({ ...d, maestro: false, git: undefined, sid: undefined, ran: false })
+// What the bridge may show agents about a node. Names of non-terminals are unique-ish; ids always work.
+const describe = (n, ws) => {
+  const d = n.data
+  const base = { id: n.id, ws, type: n.type }
+  if (n.type === 'terminal') return { ...base, name: d.name, role: d.maestro ? 'maestro' : 'agent', maestro: !!d.maestro, cwd: d.cwd, git: d.git }
+  if (n.type === 'note') return { ...base, name: `nota-${(d.title || n.id).toString().slice(0, 24)}`, text: d.text || '' }
+  if (n.type === 'text') return { ...base, name: `texto-${n.id}`, text: d.text || '' }
+  if (n.type === 'knowledge') return { ...base, name: 'conhecimento', text: d.text || '' }
+  if (n.type === 'portal') return { ...base, name: `portal-${n.id}`, url: d.url }
+  if (n.type === 'files') return { ...base, name: `arquivos-${n.id}`, path: d.path }
+  if (n.type === 'diff') return { ...base, name: `revisao-${n.id}` }
+  return null
+}
 const PRESET_COLOR = { claude: 'claude', codex: 'codex', gemini: 'gemini', antigravity: 'gemini' }
 const shortPath = (p) => {
   const parts = (p || '').split(/[\\/]/).filter(Boolean)
@@ -302,6 +315,13 @@ function PortalNode({ id, data, selected }) {
   const { updateNodeData, deleteElements } = useReactFlow()
   const view = useRef(null)
   const [url, setUrl] = useState(data.url || 'https://www.google.com')
+  // Lets agents read the page: main finds this <webview>'s webContents by node id.
+  useEffect(() => {
+    const v = view.current
+    const reg = () => api.portalRegister(id, v.getWebContentsId())
+    v?.addEventListener('dom-ready', reg)
+    return () => v?.removeEventListener('dom-ready', reg)
+  }, [id])
   const go = () => {
     const u = /^[a-z]+:\/\//i.test(url) ? url : 'https://' + url
     updateNodeData(id, { url: u })
@@ -888,7 +908,7 @@ export default function App() {
   useEffect(() => {
     if (!state || !loaded.current) return
     api.updateGraph({
-      nodes: state.list.flatMap((w) => w.nodes.filter((n) => n.type === 'terminal').map((n) => ({ id: n.id, ws: w.id, name: n.data.name, role: n.data.maestro ? 'maestro' : 'agent', maestro: !!n.data.maestro }))),
+      nodes: state.list.flatMap((w) => w.nodes.map((n) => describe(n, w.id)).filter(Boolean)),
       edges: state.list.flatMap((w) => w.edges.map((e) => ({ source: e.source, target: e.target }))),
       knowledge: Object.fromEntries(state.list.map((w) => [w.id, w.nodes.find((n) => n.type === 'knowledge')?.data.text || ''])),
     })

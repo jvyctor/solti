@@ -31,7 +31,7 @@ test('canvas remember / knowledge round trip', async () => {
     const ev = (expression) => new Promise((r) => { const id = ++n; pending[id] = r; cdp.send(JSON.stringify({ id, method: 'Runtime.evaluate', params: { expression, returnByValue: true } })) }).then((r) => r.result.value)
     const until = async (expr, what, tries = 60) => { for (let i = 0; i < tries; i++) { if (await ev(expr)) return; await sleep(250) } assert.fail('timeout: ' + what + ' :: ' + await ev(`document.querySelector('.xterm-rows')?.textContent.slice(-300)`)) }
 
-    await sleep(4000) // shell up, graph registered with the bridge
+    await sleep(7000) // shell up, graph registered with the bridge
     await ev(`window.api.write('t1', 'canvas remember Usamos pnpm no projeto\\r')`)
     await until(`document.querySelector('.note.knowledge textarea')?.value.includes('Usamos pnpm')`, 'knowledge node filled')
 

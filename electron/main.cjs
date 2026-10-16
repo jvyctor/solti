@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, powerSaveBlocker, shell, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, powerSaveBlocker, shell, dialog, webContents } = require('electron')
 const http = require('http')
 const path = require('path')
 const fs = require('fs')
@@ -29,6 +29,39 @@ const peersOf = (id) => {
   return graph.nodes.filter((n) => ids.has(n.id))
 }
 
+const portals = new Map() // portal node id -> webContents id of its <webview>
+
+// What a connected node holds, as the agent sees it: terminal output, note text, page text, folder listing, diff.
+async function readNode(n, j) {
+  const cap = Math.min(Math.max(Number(j.bytes) || 8000, 200), 100000)
+  if (n.type === 'terminal') return { type: 'terminal', output: (ptys.get(n.id)?.buf || '').slice(-(j.bytes || 4000)) }
+  if (['note', 'text', 'knowledge'].includes(n.type)) return { type: n.type, title: n.name, text: (n.text || '').slice(0, cap) }
+  if (n.type === 'files') {
+    const root = n.path || ''
+    const dir = path.resolve(root, j.path || '')
+    if (!root || path.relative(root, dir).startsWith('..')) throw new Error('path outside the connected folder')
+    const entries = fs.readdirSync(dir, { withFileTypes: true }).slice(0, 300).map((e) => e.name + (e.isDirectory() ? '/' : ''))
+    return { type: 'files', path: dir, entries }
+  }
+  if (n.type === 'portal') {
+    const wc = portals.has(n.id) ? webContents.fromId(portals.get(n.id)) : null
+    if (!wc || wc.isDestroyed()) return { type: 'portal', url: n.url, note: 'page not loaded yet' }
+    const text = await wc.executeJavaScript('document.body ? document.body.innerText : ""')
+    const links = await wc.executeJavaScript('[...document.querySelectorAll("a[href]")].slice(0, 40).map(a => ({ text: a.innerText.trim().slice(0, 80), href: a.href }))')
+    return { type: 'portal', url: wc.getURL(), title: wc.getTitle(), text: String(text).slice(0, cap), links }
+  }
+  if (n.type === 'diff') {
+    const ids = graph.edges.filter((e) => e.source === n.id || e.target === n.id).map((e) => (e.source === n.id ? e.target : e.source))
+    const agent = graph.nodes.find((x) => ids.includes(x.id) && x.git?.worktree)
+    if (!agent) return { type: 'diff', note: 'not connected to an agent working in a worktree' }
+    const files = await gitx.changes(agent.cwd, agent.git.base)
+    const patches = {}
+    for (const f of files.slice(0, 6)) patches[f.file] = (await gitx.patch(agent.cwd, agent.git.base, f.file, f.status === 'N')).slice(0, 4000)
+    return { type: 'diff', branch: agent.git.branch, base: agent.git.base, files, patches }
+  }
+  return { type: n.type, name: n.name }
+}
+
 const waiting = new Map() // asker id -> { from (target id), resolve, timer }
 
 // TUIs (Claude, Codex…) treat one fast write as a paste: a trailing \r is then a newline, not "submit".
@@ -54,7 +87,7 @@ function startBridge() {
       let j = {}
       try { j = body ? JSON.parse(body) : {} } catch { return reply(400, { error: 'bad json' }) }
       const from = j.from
-      if (req.url === '/peers') return reply(200, { peers: peersOf(from).map((n) => ({ id: n.id, name: n.name, role: n.role })) })
+      if (req.url === '/peers') return reply(200, { peers: peersOf(from).map((n) => ({ id: n.id, name: n.name, type: n.type || 'terminal', role: n.role })) })
       if (req.url === '/send' || req.url === '/ask') {
         const target = peersOf(from).find((n) => n.id === j.to || n.name === j.to)
         if (!target) return reply(403, { error: 'target not connected to caller' })
@@ -95,9 +128,8 @@ function startBridge() {
       }
       if (req.url === '/read') {
         const target = peersOf(from).find((n) => n.id === j.to || n.name === j.to)
-        const t = target && ptys.get(target.id)
-        if (!t) return reply(404, { error: 'target not found' })
-        return reply(200, { output: t.buf.slice(-(j.bytes || 4000)) })
+        if (!target) return reply(404, { error: 'target not found or not connected to you (see canvas_peers)' })
+        return readNode(target, j).then((r) => reply(200, r), (e) => reply(500, { error: e.message }))
       }
       if (req.url === '/spawn') {
         const me = graph.nodes.find((n) => n.id === from)
@@ -251,6 +283,7 @@ ipcMain.handle('settings:reset', () => {
 ipcMain.handle('app:info', () => ({ version: app.getVersion(), electron: process.versions.electron, node: process.versions.node, dataDir: app.getPath('userData') }))
 ipcMain.on('app:open-data', () => shell.openPath(app.getPath('userData')))
 ipcMain.handle('usage:get', () => { try { return require('./usage.cjs').getUsage() } catch { return null } })
+ipcMain.on('portal:register', (_e, id, wcId) => portals.set(id, wcId))
 ipcMain.on('graph:update', (_e, g) => (graph = g))
 ipcMain.handle('ws:load', () => { try { return JSON.parse(fs.readFileSync(wsFile(), 'utf8')) } catch { return null } })
 ipcMain.on('ws:save', (_e, data) => {

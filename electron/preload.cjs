@@ -46,6 +46,7 @@ contextBridge.exposeInMainWorld('api', {
   gitPr: (repo, base, branch) => ipcRenderer.invoke('git:pr', repo, base, branch),
   agentTokens: (sid) => ipcRenderer.invoke('usage:agent', sid),
   interrupt: (id) => ipcRenderer.send('agents:interrupt', id),
+  portalRegister: (id, wcId) => ipcRenderer.send('portal:register', id, wcId),
   pickFolder: () => ipcRenderer.invoke('dialog:folder'),
   termSave: (id, text) => ipcRenderer.send('term:save', id, text),
   termLoad: (id) => ipcRenderer.invoke('term:load', id),

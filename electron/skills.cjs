@@ -15,7 +15,7 @@ const SKILLS = {
 Você roda dentro de um terminal do Agent Canvas. Terminais ligados entre si (ou o maestro do workspace) podem trocar mensagens.
 
 ## 1. Verificar se está conectado
-- Ferramentas MCP: \`canvas_peers\` lista os terminais alcançáveis (nome e papel).
+- Ferramentas MCP: \`canvas_peers\` lista tudo que você alcança (terminais, notas, portais, árvores de arquivos, revisões), com tipo e papel.
 - Shell: \`canvas peers\`.
 - Se a variável \`CANVAS_URL\` estiver vazia, você NÃO está num terminal do canvas: avise o usuário para abrir este agente por um terminal do Agent Canvas. Não invente conexões.
 
@@ -27,7 +27,7 @@ Você roda dentro de um terminal do Agent Canvas. Terminais ligados entre si (ou
 - Escreva mensagens completas: objetivo, contexto, critério de pronto, onde responder.
 
 ## 3. Ler a saída de um agente
-- \`canvas_read\` com \`to\` e opcional \`bytes\`. Shell: \`canvas read <nome> [bytes]\`.
+- \`canvas_read\` com \`to\` e opcional \`bytes\`. Lê saída de terminal, texto de nota, a página aberta de um portal (url, título, texto, links), pasta de uma árvore de arquivos (\`path\` opcional) e o diff de uma revisão. Shell: \`canvas read <nome> [bytes]\`.
 - Use para acompanhar um trabalho sem interromper o agente.
 
 ## 4. Anotar no canvas

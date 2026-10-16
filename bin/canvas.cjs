@@ -10,7 +10,7 @@ const routes = {
   send: ['/send', () => ({ to: args[0], text: args.slice(1).join(' ') })],
   ask: ['/ask', () => ({ to: args[0], text: args.slice(1).join(' ') })],
   spawn: ['/spawn', () => ({ name: args[0], preset: args[1], instructions: args.slice(2).join(' ') })],
-  read: ['/read', () => ({ to: args[0], bytes: Number(args[1]) || 4000 })],
+  read: ['/read', () => ({ to: args[0], bytes: Number(args[1]) || undefined })],
   note: ['/note', () => ({ text: args.join(' ') })],
   knowledge: ['/knowledge', () => ({})],
   remember: ['/remember', () => ({ text: args.join(' ') })],
@@ -24,8 +24,8 @@ const req = http.request(CANVAS_URL + routes[cmd][0], { method: 'POST' }, (res) 
   res.on('end', () => {
     const j = JSON.parse(d)
     if (res.statusCode >= 400) { console.error('canvas:', j.error); process.exit(1) }
-    if (cmd === 'peers') j.peers.forEach((p) => console.log(`${p.name}${p.role ? ' - ' + p.role : ''}`))
-    else if (cmd === 'read') console.log(j.output)
+    if (cmd === 'peers') j.peers.forEach((p) => console.log(`${p.name} [${p.type}]${p.role ? ' - ' + p.role : ''}`))
+    else if (cmd === 'read') console.log(j.output ?? JSON.stringify(j, null, 2))
     else if (cmd === 'knowledge') console.log(j.text || '(vazio)')
     else if (cmd === 'spawn') console.log(`created: ${j.name}`)
     else if (cmd === 'ask') console.log(j.reply ?? j.note ?? 'ok')
