@@ -1,7 +1,7 @@
 {
   "name": "agent-canvas",
   "productName": "Agent Canvas",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Canvas para orquestrar agentes de IA (Maestro e Agentes) em terminais conectados.",
   "author": "Agent Canvas",
   "private": true,
