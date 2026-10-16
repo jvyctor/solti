@@ -3,6 +3,7 @@
 // random device credential that is stored only as a SHA-256 hash and can be revoked. The remote can watch terminals,
 // type into them, answer approval requests and interrupt agents. It cannot change settings or create/delete anything.
 const https = require('https')
+const http = require('http')
 const crypto = require('crypto')
 const fs = require('fs')
 const os = require('os')
@@ -38,6 +39,8 @@ function create({ dir, host, version = '' }) {
   const streams = new Set()
   let server = null
   let port = 0
+  let plain = null // optional HTTP server (no encryption), for phones whose browser refuses the self-signed certificate
+  let plainPort = 0
   let fingerprint = ''
 
   const limited = (addr) => (fails.get(addr) || []).filter((t) => Date.now() - t < FAIL_WINDOW).length >= MAX_FAILS
@@ -192,21 +195,29 @@ function create({ dir, host, version = '' }) {
   }
 
   return {
-    async start(wantedPort) {
+    // allowHttp: also listen without TLS on wantedPort + 1 (opt-in, trusted networks only).
+    async start(wantedPort, { allowHttp = false } = {}) {
       if (server) return this.status()
       const c = await cert()
       fingerprint = c.fingerprint
-      server = https.createServer({ key: c.key, cert: c.cert }, (req, res) => { handle(req, res).catch(() => { try { json(res, 500, { error: 'internal' }) } catch {} }) })
+      const onReq = (req, res) => { handle(req, res).catch(() => { try { json(res, 500, { error: 'internal' }) } catch {} }) }
+      server = https.createServer({ key: c.key, cert: c.cert }, onReq)
       await new Promise((resolve, reject) => { server.once('error', reject); server.listen(wantedPort, '0.0.0.0', resolve) })
       port = server.address().port
+      if (allowHttp) {
+        plain = http.createServer(onReq)
+        await new Promise((resolve, reject) => { plain.once('error', reject); plain.listen(wantedPort ? wantedPort + 1 : 0, '0.0.0.0', resolve) })
+        plainPort = plain.address().port
+      }
       return this.status()
     },
     stop() {
       for (const s of [...streams]) s.close()
       pairing = null
-      const s = server
-      server = null
-      return new Promise((r) => (s ? s.close(() => r()) : r()))
+      const all = [server, plain].filter(Boolean)
+      server = plain = null
+      plainPort = 0
+      return Promise.all(all.map((s) => new Promise((r) => s.close(() => r()))))
     },
     // Called before pairing: if the Wi-Fi/IP changed since the server started, issue a certificate that covers the new address.
     async refreshCert() {
@@ -215,7 +226,7 @@ function create({ dir, host, version = '' }) {
       fingerprint = c.fingerprint
       server.setSecureContext({ key: c.key, cert: c.cert })
     },
-    status: () => ({ listening: !!server, port, addresses: lanAddresses(), fingerprint }),
+    status: () => ({ listening: !!server, port, httpPort: plain ? plainPort : 0, addresses: lanAddresses(), fingerprint }),
     // One-time pairing code: shown as a QR code on the desktop.
     startPairing() {
       const token = rand(16)

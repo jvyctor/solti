@@ -1,6 +1,7 @@
 // Phone remote server against a fake host: pairing, auth, permissions, approvals, streaming, rate limit, revocation.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import http from 'node:http'
 import https from 'node:https'
 import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -156,4 +157,24 @@ test('certificate meets iOS Safari rules: SAN with the IPs, serverAuth, not a CA
     assert.ok(days > 300 && days < 398, `validity ${days} days`)
     assert.equal(x.checkIP('127.0.0.1') !== undefined, true)
   } finally { await t.srv.stop() }
+})
+
+test('optional plain HTTP: off by default, same auth when on', async () => {
+  const t1 = await setup()
+  try { assert.equal(t1.srv.status().httpPort, 0) } finally { await t1.srv.stop() }
+  const dir = mkdtempSync(join(tmpdir(), 'ac-remote-'))
+  activity.init(dir, () => {})
+  const host = { terminals: () => [], buffer: () => '', write() {}, onOutput: () => () => {}, interrupt() {}, activity, assets: { html: 'plain page', xtermJs: '', xtermCss: '' } }
+  const srv = create({ dir, host })
+  const st = await srv.start(0, { allowHttp: true })
+  try {
+    assert.ok(st.httpPort > 0 && st.httpPort !== st.port)
+    const get = (path, headers = {}) => new Promise((resolve, reject) => http.get({ host: '127.0.0.1', port: st.httpPort, path, headers }, (res) => { let b = ''; res.on('data', (c) => (b += c)); res.on('end', () => resolve({ status: res.statusCode, body: b })) }).on('error', reject))
+    assert.equal((await get('/')).body, 'plain page')
+    assert.equal((await get('/api/state')).status, 401)
+    const { token } = srv.startPairing()
+    const r = await new Promise((resolve, reject) => { const q = http.request({ host: '127.0.0.1', port: st.httpPort, path: '/api/pair', method: 'POST', headers: { 'content-type': 'application/json' } }, (res) => { let b = ''; res.on('data', (c) => (b += c)); res.on('end', () => resolve({ status: res.statusCode, body: b })) }); q.on('error', reject); q.end(JSON.stringify({ token, name: 'iphone' })) })
+    assert.equal(r.status, 200)
+    assert.equal((await get('/api/state', { authorization: 'Bearer ' + JSON.parse(r.body).credential })).status, 200)
+  } finally { await srv.stop() }
 })

@@ -26,7 +26,10 @@ export default function RemoteTab({ s, set, ui: { Section, Row, Switch } }) {
         <Row title="Ativar" desc="Abre um servidor seguro (HTTPS) na sua rede Wi-Fi para controlar os agentes pelo celular: ver terminais, digitar, aprovar pedidos e interromper. Só celulares pareados entram.">
           <Switch label="Ativar controle remoto" checked={s.remoteEnabled} onChange={(v) => set({ remoteEnabled: v })} />
         </Row>
-        <Row title="Porta" desc="Vale ao ligar o controle remoto.">
+        <Row title="Aceitar também HTTP (sem criptografia)" desc="Use só se o navegador do celular recusar o HTTPS (o Safari do iPhone costuma recusar certificados autoassinados). Quem estiver no mesmo Wi-Fi poderia ler o que passa; ligue só em rede de confiança, pareie e desligue.">
+          <Switch label="Aceitar HTTP" checked={s.remoteHttp} onChange={(v) => set({ remoteHttp: v })} />
+        </Row>
+        <Row title="Porta" desc="Vale ao ligar o controle remoto. O HTTP usa a porta seguinte.">
           <input className="set-input" type="number" min="1024" max="65535" aria-label="Porta" value={s.remotePort} disabled={s.remoteEnabled} onChange={(e) => set({ remotePort: Number(e.target.value) || 7443 })} />
         </Row>
         {st?.error && <p className="err" style={{ margin: '0 0 8px' }}>{st.error}</p>}
@@ -45,12 +48,12 @@ export default function RemoteTab({ s, set, ui: { Section, Row, Switch } }) {
                 <p>Expira em <b>{Math.max(left, 0)} s</b>.</p>
                 <p className="set-note-left">Se a câmera não abrir sozinha, digite no navegador do celular:</p>
                 {pair.urls.map((u) => <code key={u} className="remote-url">{u}</code>)}
-                <p className="set-note-left">O navegador vai avisar que o certificado não é confiável: é esperado, o app cria o próprio certificado. Confira que a impressão digital (SHA-256) mostrada na página de detalhes do certificado é <code className="remote-url">{st.fingerprint}</code></p>
+                <p className="set-note-left">{pair.urls[0].startsWith('http:') ? 'O QR code aponta para o endereço HTTP (sem criptografia). ' : ''}O navegador vai avisar que o certificado não é confiável: é esperado, o app cria o próprio certificado. Confira que a impressão digital (SHA-256) mostrada na página de detalhes do certificado é <code className="remote-url">{st.fingerprint}</code></p>
               </div>
             </div>
           )}
           <Row title="Endereços" desc="Acesso depois de pareado.">
-            <span className="set-note">{st.addresses.map((ip) => `https://${ip}:${st.port}`).join('  ·  ') || 'sem rede'}</span>
+            <span className="set-note">{st.addresses.flatMap((ip) => [`https://${ip}:${st.port}`, ...(st.httpPort ? [`http://${ip}:${st.httpPort}`] : [])]).join('  ·  ') || 'sem rede'}</span>
           </Row>
         </Section>
       )}

@@ -19,6 +19,7 @@ const DEFAULTS = {
   // Controle remoto (celular)
   remoteEnabled: false,
   remotePort: 7443,
+  remoteHttp: false, // also serve plain HTTP (opt-in)
   // Terminal
   fontSize: 14,
   fontFamily: 'JetBrains Mono',

@@ -302,7 +302,7 @@ async function applyRemote() {
   const S = settings.get()
   remoteError = ''
   if (S.remoteEnabled) {
-    try { await getRemote().start(S.remotePort) } catch (e) {
+    try { await getRemote().start(S.remotePort, { allowHttp: S.remoteHttp }) } catch (e) {
       remoteError = e.code === 'EADDRINUSE' ? `Porta ${S.remotePort} em uso. Escolha outra.` : e.message
       await getRemote().stop()
       settings.set({ remoteEnabled: false })
@@ -310,6 +310,7 @@ async function applyRemote() {
     }
   } else await getRemote().stop()
 }
+async function restartRemote() { await getRemote().stop(); await applyRemote() }
 ipcMain.handle('remote:status', () => ({ ...getRemote().status(), error: remoteError, devices: getRemote().devices() }))
 ipcMain.handle('remote:revoke', (_e, id) => { getRemote().revoke(id); return getRemote().devices() })
 ipcMain.handle('remote:pair', async () => {
@@ -317,7 +318,7 @@ ipcMain.handle('remote:pair', async () => {
   if (!st.listening) return { error: 'Ative o controle remoto primeiro.' }
   await getRemote().refreshCert()
   const { token, expires } = getRemote().startPairing()
-  const urls = st.addresses.map((ip) => `https://${ip}:${st.port}/#pair=${token}`)
+  const urls = st.addresses.flatMap((ip) => [...(st.httpPort ? [`http://${ip}:${st.httpPort}/#pair=${token}`] : []), `https://${ip}:${st.port}/#pair=${token}`])
   if (!urls.length) return { error: 'Nenhuma rede local encontrada (conecte o computador ao Wi-Fi).' }
   return { urls, qr: await QRCode.toDataURL(urls[0], { margin: 1, width: 320 }), expires }
 })
@@ -377,7 +378,8 @@ ipcMain.handle('settings:get', () => settings.get())
 ipcMain.handle('settings:set', (_e, patch) => {
   const s = settings.set(patch)
   applyPower()
-  if ('remoteEnabled' in patch || 'remotePort' in patch) applyRemote()
+  if ('remoteHttp' in patch) restartRemote()
+  else if ('remoteEnabled' in patch || 'remotePort' in patch) applyRemote()
   win?.webContents.send('settings', s)
   return s
 })

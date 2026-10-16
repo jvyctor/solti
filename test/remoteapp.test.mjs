@@ -1,6 +1,7 @@
 // Phone remote inside the real app: pair with the QR token, list terminals, type into a real shell, load the page and xterm.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import http from 'node:http'
 import https from 'node:https'
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -21,7 +22,7 @@ test('remote: pair, list, type into a real terminal', async () => {
   const prof = mkdtempSync(join(tmpdir(), 'ac-remapp-'))
   const term = { id: 't1', type: 'terminal', position: { x: 0, y: 0 }, style: { width: 700, height: 260 }, data: { name: 'agente-x', preset: 'shell' } }
   writeFileSync(join(prof, 'workspace.json'), JSON.stringify({ list: [{ id: 'w1', name: 'SAT', nodes: [term], edges: [] }], active: 'w1' }))
-  writeFileSync(join(prof, 'settings.json'), JSON.stringify({ remoteEnabled: true, remotePort: 0 }))
+  writeFileSync(join(prof, 'settings.json'), JSON.stringify({ remoteEnabled: true, remotePort: 0, remoteHttp: true }))
   const app = await launch(prof, 9450)
   try {
     await app.ready()
@@ -29,9 +30,14 @@ test('remote: pair, list, type into a real terminal', async () => {
     assert.equal(st.listening, true)
     assert.ok(st.port > 0 && st.fingerprint, 'listening with a certificate')
 
+    assert.ok(st.httpPort > 0, 'plain HTTP listener is on')
+    const plain = await new Promise((resolve, reject) => http.get({ host: '127.0.0.1', port: st.httpPort, path: '/' }, (res) => { let b = ''; res.on('data', (c) => (b += c)); res.on('end', () => resolve(b)) }).on('error', reject))
+    assert.match(plain, /Agent Canvas/)
+
     const pair = await app.ev(`window.api.remotePair()`)
     if (pair.error) return console.log('skipped (no LAN interface on this machine):', pair.error)
     assert.match(pair.qr, /^data:image\/png/)
+    assert.ok(pair.urls.some((u) => u.startsWith('http://')) && pair.urls.some((u) => u.startsWith('https://')), 'both URL kinds offered')
     const token = /#pair=([0-9a-f]+)/.exec(pair.urls[0])[1]
 
     const page = await call(st.port, 'GET', '/')
