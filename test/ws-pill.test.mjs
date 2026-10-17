@@ -7,7 +7,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
-import { treeKill } from './helpers.mjs'
+import { prepareProfile, treeKill } from './helpers.mjs'
 
 const PORT = 9334
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -16,6 +16,7 @@ test('workspace pill shows only the active workspace', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'ac-pill-'))
   const ws = (id, name) => ({ id, name, nodes: [], edges: [] })
   writeFileSync(join(dir, 'workspace.json'), JSON.stringify({ list: [ws('w1', 'SAT'), ws('w2', 'consulta TCE')], active: 'w1' }))
+  prepareProfile(dir)
   const app = spawn(electron, ['.', `--user-data-dir=${dir}`, `--remote-debugging-port=${PORT}`], { stdio: 'ignore' })
   try {
     let page
@@ -51,6 +52,7 @@ test('terminal screen is restored and saved', async () => {
   writeFileSync(join(dir, 'workspace.json'), JSON.stringify({ list: [{ id: 'w1', name: 'A', nodes: [node], edges: [] }], active: 'w1' }))
   mkdirSync(join(dir, 'terms'))
   writeFileSync(join(dir, 'terms', 'n1.txt'), 'HELLO-SAVED-SCREEN')
+  prepareProfile(dir)
   const app = spawn(electron, ['.', `--user-data-dir=${dir}`, `--remote-debugging-port=${PORT + 1}`], { stdio: 'ignore' })
   try {
     let page

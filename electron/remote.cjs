@@ -8,6 +8,7 @@ const crypto = require('crypto')
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
+const { tr } = require('./i18n.cjs')
 
 const PAIR_TTL = 2 * 60 * 1000
 const MAX_FAILS = 10 // per address, per window
@@ -123,7 +124,7 @@ function create({ dir, host, version = '' }) {
       const device = { id: rand(6), name: String(b.name || 'celular').slice(0, 40), hash: sha(cred), created: Date.now(), lastSeen: Date.now() }
       devices.push(device)
       saveDevices()
-      host.activity.record({ kind: 'remote', from: device.name, to: '', text: 'celular pareado', outcome: 'ok' })
+      host.activity.record({ kind: 'remote', from: device.name, to: '', text: tr('celular pareado'), outcome: 'ok' })
       return json(res, 200, { credential: cred, device: { id: device.id, name: device.name } })
     }
 
@@ -167,7 +168,7 @@ function create({ dir, host, version = '' }) {
         }
         if (req.method === 'POST' && action === 'interrupt') {
           host.interrupt(id)
-          host.activity.record({ kind: 'remote', from: dev.name, to: t.name, text: 'interrompeu', outcome: 'ok' })
+          host.activity.record({ kind: 'remote', from: dev.name, to: t.name, text: tr('interrompeu'), outcome: 'ok' })
           return json(res, 200, { ok: true })
         }
       }
@@ -179,13 +180,13 @@ function create({ dir, host, version = '' }) {
         const info = host.activity.pendingList().find((x) => x.id === id)
         if (!info) return json(res, 404, { error: 'request already answered' })
         host.activity.answer(id, !!b.ok)
-        host.activity.record({ kind: 'remote', from: dev.name, to: info.from, text: (b.ok ? 'permitiu: ' : 'negou: ') + (info.text || info.kind), outcome: b.ok ? 'ok' : 'denied' })
+        host.activity.record({ kind: 'remote', from: dev.name, to: info.from, text: (b.ok ? tr('permitiu: ') : tr('negou: ')) + (info.text || info.kind), outcome: b.ok ? 'ok' : 'denied' })
         return json(res, 200, { ok: true })
       }
 
       if (req.method === 'POST' && p === '/api/interrupt-all') {
         host.interrupt()
-        host.activity.record({ kind: 'remote', from: dev.name, to: '', text: 'interrompeu todos os agentes', outcome: 'ok' })
+        host.activity.record({ kind: 'remote', from: dev.name, to: '', text: tr('interrompeu todos os agentes'), outcome: 'ok' })
         return json(res, 200, { ok: true })
       }
     } catch (e) {

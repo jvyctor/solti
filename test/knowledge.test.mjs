@@ -7,7 +7,7 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
-import { treeKill } from './helpers.mjs'
+import { prepareProfile, treeKill } from './helpers.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -15,6 +15,8 @@ test('canvas remember / knowledge round trip', async () => {
   const prof = mkdtempSync(join(tmpdir(), 'ac-know-'))
   const term = { id: 't1', type: 'terminal', position: { x: 0, y: 0 }, style: { width: 800, height: 300 }, data: { name: 'ag', preset: 'shell' } }
   writeFileSync(join(prof, 'workspace.json'), JSON.stringify({ list: [{ id: 'w1', name: 'A', nodes: [term], edges: [] }], active: 'w1' }))
+
+  prepareProfile(prof)
 
   const app = spawn(electron, ['.', `--user-data-dir=${prof}`, '--remote-debugging-port=9396'], { stdio: 'ignore' })
   try {
@@ -41,7 +43,7 @@ test('canvas remember / knowledge round trip', async () => {
     await ev(`window.api.write('t1', ${JSON.stringify(`canvas knowledge | Out-File -Encoding utf8 '${out}'`)})`)
     await sleep(500) // Enter apart from the text, or PSReadLine treats the burst as a paste
     await ev(`window.api.write('t1', '\\r')`)
-    for (let i = 0; i < 40 && !existsSync(out); i++) await sleep(250)
+    for (let i = 0; i < 80 && !(existsSync(out) && readFileSync(out).length > 3); i++) await sleep(250) // Out-File creates the file before the command prints
     assert.match(readFileSync(out, 'utf8'), /- Usamos pnpm no projeto/)
     cdp.close()
   } finally {

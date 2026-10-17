@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import { ScrollText, X, ShieldAlert } from 'lucide-react'
+import { getLang, tr } from './i18n.js'
 
 const api = window.api
-const KIND = { send: 'mensagem', ask: 'pergunta', spawn: 'criou agente', portal: 'navegador', done: 'concluiu', remote: 'celular', routine: 'rotina' }
-const hhmm = (t) => new Date(t).toLocaleTimeString('pt-BR')
+const KIND = { send: tr('mensagem'), ask: tr('pergunta'), spawn: tr('criou agente'), portal: tr('navegador'), done: tr('concluiu'), remote: tr('celular'), routine: tr('rotina') }
+const hhmm = (t) => new Date(t).toLocaleTimeString(getLang() === 'en' ? 'en-US' : 'pt-BR')
 
 // Timeline of what agents did to each other; opens from a dock button.
 export function ActivityDock() {
@@ -24,21 +25,21 @@ export function ActivityDock() {
   return (
     <div ref={root} className="usage-root">
       {open && (
-        <div className="usage activity" role="log" aria-label="Atividade dos agentes">
-          <h4>Atividade <span><button onClick={() => setOpen(false)} aria-label="Fechar"><X size={16} /></button></span></h4>
+        <div className="usage activity" role="log" aria-label={tr("Atividade dos agentes")}>
+          <h4>{tr("Atividade")} <span><button onClick={() => setOpen(false)} aria-label={tr("Fechar")}><X size={16} /></button></span></h4>
           <div className="usage-scroll">
-            {items.length === 0 && <p className="act-empty">Nada ainda. Mensagens, criação de agentes e uso do navegador aparecem aqui.</p>}
+            {items.length === 0 && <p className="act-empty">{tr("Nada ainda. Mensagens, criação de agentes e uso do navegador aparecem aqui.")}</p>}
             {[...items].reverse().map((e, i) => (
               <div key={i} className={'act-row' + (e.outcome === 'denied' ? ' denied' : '')}>
                 <div className="act-head"><b>{e.from}</b> {KIND[e.kind] || e.kind}{e.to ? <> → <b>{e.to}</b></> : null}<time>{hhmm(e.t)}</time></div>
                 {e.text && <div className="act-text">{e.text}</div>}
-                {e.outcome === 'denied' && <div className="act-flag">negado por você</div>}
+                {e.outcome === 'denied' && <div className="act-flag">{tr("negado por você")}</div>}
               </div>
             ))}
           </div>
         </div>
       )}
-      <button className={'mapbtn' + (open ? ' on' : '')} onClick={() => setOpen((o) => !o)} aria-label="Atividade dos agentes" title="Atividade dos agentes"><ScrollText size={18} /></button>
+      <button className={'mapbtn' + (open ? ' on' : '')} onClick={() => setOpen((o) => !o)} aria-label={tr("Atividade dos agentes")} title={tr("Atividade dos agentes")}><ScrollText size={18} /></button>
     </div>
   )
 }
@@ -58,19 +59,19 @@ export function AwayDigest() {
     <div className="toast digest" role="status">
       <ScrollText size={18} />
       <div className="toast-main">
-        <b>Enquanto você estava fora, {items.length} {items.length === 1 ? 'agente concluiu' : 'agentes concluíram'}</b>
+        <b>{tr("Enquanto você estava fora,")} {items.length} {items.length === 1 ? tr("agente concluiu") : tr("agentes concluíram")}</b>
         {items.slice(-5).map((d, i) => <span key={i}>{d.name ? d.name + ': ' : ''}{d.summary}</span>)}
       </div>
-      <button className="toast-x" aria-label="Fechar" onClick={() => setItems([])}><X size={14} /></button>
+      <button className="toast-x" aria-label={tr("Fechar")} onClick={() => setItems([])}><X size={14} /></button>
     </div>
   )
 }
 
 const WHAT = {
-  spawn: (r) => `quer criar o agente “${r.to}”.`,
-  send: (r) => `quer enviar uma mensagem para “${r.to}”.`,
-  ask: (r) => `quer fazer uma pergunta a “${r.to}”.`,
-  portal: (r) => `quer controlar o navegador “${r.to}”.`,
+  spawn: (r) => tr('quer criar o agente “{0}”.', [r.to]),
+  send: (r) => tr('quer enviar uma mensagem para “{0}”.', [r.to]),
+  ask: (r) => tr('quer fazer uma pergunta a “{0}”.', [r.to]),
+  portal: (r) => tr('quer controlar o navegador “{0}”.', [r.to]),
 }
 
 // One request at a time; the rest wait in the queue. No answer in 2 minutes counts as "Negar" (main side).
@@ -91,17 +92,17 @@ export function ApprovalDialog() {
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="dlg-back" />
         <AlertDialog.Content className="dlg wide">
-          <AlertDialog.Title className="dlg-title"><ShieldAlert size={16} /> Pedido de um agente</AlertDialog.Title>
+          <AlertDialog.Title className="dlg-title"><ShieldAlert size={16} /> {tr("Pedido de um agente")}</AlertDialog.Title>
           <AlertDialog.Description asChild>
             <div>
               <p><b>{cur?.from}</b> {cur && (WHAT[cur.kind] || (() => 'quer agir.'))(cur)}</p>
               {cur?.text && <pre className="upd-notes">{cur.text}</pre>}
-              {queue.length > 1 && <p className="hint">Mais {queue.length - 1} pedido(s) na fila.</p>}
+              {queue.length > 1 && <p className="hint">{tr("Mais")} {queue.length - 1} {tr("pedido(s) na fila.")}</p>}
             </div>
           </AlertDialog.Description>
           <div className="dlg-actions">
-            <AlertDialog.Cancel asChild><button onClick={() => answer(false)}>Negar</button></AlertDialog.Cancel>
-            <AlertDialog.Action asChild><button className="primary" onClick={() => answer(true)}>Permitir</button></AlertDialog.Action>
+            <AlertDialog.Cancel asChild><button onClick={() => answer(false)}>{tr("Negar")}</button></AlertDialog.Cancel>
+            <AlertDialog.Action asChild><button className="primary" onClick={() => answer(true)}>{tr("Permitir")}</button></AlertDialog.Action>
           </div>
         </AlertDialog.Content>
       </AlertDialog.Portal>

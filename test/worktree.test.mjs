@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
-import { treeKill } from './helpers.mjs'
+import { prepareProfile, treeKill } from './helpers.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const sh = (cwd, ...a) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { cwd, encoding: 'utf8' }).trim()
@@ -23,6 +23,8 @@ test('new terminal in a git folder gets an isolated worktree', async () => {
   const prof = join(root, 'profile')
   mkdirSync(prof)
   writeFileSync(join(prof, 'workspace.json'), JSON.stringify({ list: [{ id: 'w1', name: 'A', nodes: [], edges: [] }], active: 'w1' }))
+
+  prepareProfile(prof)
 
   const app = spawn(electron, ['.', `--user-data-dir=${prof}`, '--remote-debugging-port=9380'], { stdio: 'ignore' })
   try {
@@ -57,7 +59,8 @@ test('new terminal in a git folder gets an isolated worktree', async () => {
       await sleep(200)
     }
 
-    await sleep(1500)
+    for (let i = 0; i < 60 && !(await ev(`!!document.querySelector('.react-flow__pane')`)); i++) await sleep(250) // the app loads its code after reading settings
+    await sleep(800)
     await mouse(700, 500, 'right') // empty canvas
     await sleep(300)
     await clickText('.mi', 'Adicionar')

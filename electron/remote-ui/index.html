@@ -45,30 +45,30 @@
 </style>
 </head>
 <body>
-<header><h1>Agent Canvas</h1><span id="dot" class="dot" title="Conexão"></span></header>
+<header><h1>Agent Canvas</h1><span id="dot" class="dot" title="Conexão" data-ta="title:Conexão"></span></header>
 
 <section id="pair" class="center" hidden>
-  <h2>Sem pareamento</h2>
-  <p>Abra o app no computador, vá em <b>Configurações → Controle remoto</b> e escaneie o QR code com a câmera do celular.</p>
+  <h2 data-t="Sem pareamento">Sem pareamento</h2>
+  <p data-th="Abra o app no computador, vá em <b>Configurações → Controle remoto</b> e escaneie o QR code com a câmera do celular.">Abra o app no computador, vá em <b>Configurações → Controle remoto</b> e escaneie o QR code com a câmera do celular.</p>
 </section>
 
 <section id="app" hidden>
   <nav role="tablist" id="tabs">
-    <button role="tab" data-tab="terms" aria-selected="true">Terminais</button>
-    <button role="tab" data-tab="asks" aria-selected="false">Pedidos<span id="askbadge" class="badge" hidden>0</span></button>
-    <button role="tab" data-tab="log" aria-selected="false">Atividade</button>
+    <button role="tab" data-tab="terms" aria-selected="true" data-t="Terminais">Terminais</button>
+    <button role="tab" data-tab="asks" aria-selected="false"><span data-t="Pedidos">Pedidos</span><span id="askbadge" class="badge" hidden>0</span></button>
+    <button role="tab" data-tab="log" aria-selected="false" data-t="Atividade">Atividade</button>
   </nav>
   <main>
     <div id="terms">
       <div id="list"></div>
-      <button class="btn danger" id="stopall" style="width:100%;margin-top:8px">Interromper todos os agentes</button>
+      <button class="btn danger" id="stopall" style="width:100%;margin-top:8px" data-t="Interromper todos os agentes">Interromper todos os agentes</button>
     </div>
     <div id="term" hidden>
-      <div class="row" style="margin-bottom:10px"><button class="btn" id="back">← Terminais</button><button class="btn danger" id="stop1">Interromper</button></div>
+      <div class="row" style="margin-bottom:10px"><button class="btn" id="back" data-t="← Terminais">← Terminais</button><button class="btn danger" id="stop1" data-t="Interromper">Interromper</button></div>
       <b id="termname"></b>
       <div class="term-wrap"><div id="xt"></div></div>
       <div class="keys" id="keys"></div>
-      <form class="bar" id="form"><input id="msg" autocomplete="off" autocapitalize="off" placeholder="Digite e envie" aria-label="Mensagem para o terminal"><button class="btn primary" type="submit">Enviar</button></form>
+      <form class="bar" id="form"><input id="msg" autocomplete="off" autocapitalize="off" placeholder="Digite e envie" aria-label="Mensagem para o terminal" data-ta="placeholder:Digite e envie;aria-label:Mensagem para o terminal"><button class="btn primary" type="submit" data-t="Enviar">Enviar</button></form>
     </div>
     <div id="asks" hidden></div>
     <div id="log" hidden></div>
@@ -78,6 +78,25 @@
 <script src="/xterm.js"></script>
 <script>
 'use strict'
+const EN = {
+  'Conexão': 'Connection', 'Sem pareamento': 'Not paired',
+  'Abra o app no computador, vá em <b>Configurações → Controle remoto</b> e escaneie o QR code com a câmera do celular.': 'Open the app on your computer, go to <b>Settings → Remote control</b> and scan the QR code with your phone camera.',
+  'Terminais': 'Terminals', 'Pedidos': 'Requests', 'Atividade': 'Activity', 'Interromper todos os agentes': 'Interrupt all agents', '← Terminais': '← Terminals', 'Interromper': 'Interrupt',
+  'Digite e envie': 'Type and send', 'Mensagem para o terminal': 'Message to the terminal', 'Enviar': 'Send',
+  'Código inválido ou expirado. Gere outro no computador.': 'Invalid or expired code. Generate another on the computer.',
+  'Nenhum terminal em execução. Abra um workspace no computador.': 'No terminals running. Open a workspace on the computer.',
+  'sem saída': 'no output', 'ativo': 'active', 'parado há': 'idle for', 'Nenhum pedido pendente.': 'No pending requests.', 'Negar': 'Deny', 'Permitir': 'Allow', 'para': 'to',
+  'Interromper todos os agentes agora?': 'Interrupt all agents now?',
+  'mensagem': 'message', 'pergunta': 'question', 'criou agente': 'created agent', 'navegador': 'browser', 'concluiu': 'finished', 'celular': 'phone', 'rotina': 'routine',
+}
+const EN_ON = !/^pt/i.test(navigator.language || 'pt')
+const T = (s) => (EN_ON ? EN[s] || s : s)
+if (EN_ON) {
+  document.documentElement.lang = 'en'
+  document.querySelectorAll('[data-t]').forEach((e) => { e.textContent = T(e.dataset.t) })
+  document.querySelectorAll('[data-th]').forEach((e) => { e.innerHTML = T(e.dataset.th) }) // static markup written above, never user data
+  document.querySelectorAll('[data-ta]').forEach((e) => e.dataset.ta.split(';').forEach((pair) => { const [a, v] = pair.split(':'); e.setAttribute(a, T(v)) }))
+}
 const $ = (id) => document.getElementById(id)
 const KEY = 'ac_cred'
 let cred = localStorage.getItem(KEY) || ''
@@ -102,7 +121,7 @@ async function pairFromHash() {
   const name = (navigator.userAgentData?.platform || (/iPhone|iPad/.test(navigator.userAgent) ? 'iPhone' : /Android/.test(navigator.userAgent) ? 'Android' : 'celular')) + ' ' + new Date().toLocaleDateString('pt-BR')
   const r = await fetch('/api/pair', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token: m[1], name }) })
   if (r.ok) { cred = (await r.json()).credential; localStorage.setItem(KEY, cred) }
-  else $('pair').querySelector('p').textContent = 'Código inválido ou expirado. Gere outro no computador.'
+  else $('pair').querySelector('p').textContent = T('Código inválido ou expirado. Gere outro no computador.')
 }
 
 // ---- terminal list
@@ -110,10 +129,10 @@ function renderTerms(list) {
   const box = $('list')
   box.replaceChildren(...(list.length ? list.map((t) => {
     const age = t.last ? Math.max(0, Math.round((Date.now() - t.last) / 1000)) : null
-    const c = el('button', { className: 'card' }, el('span', { className: 'dot' + (age !== null && age < 6 ? ' on' : '') }), el('span', { className: 'grow' }, el('b', { textContent: t.name }), el('small', { textContent: `${t.wsName} · ${age === null ? 'sem saída' : age < 6 ? 'ativo' : 'parado há ' + (age < 90 ? age + ' s' : Math.round(age / 60) + ' min')}` })))
+    const c = el('button', { className: 'card' }, el('span', { className: 'dot' + (age !== null && age < 6 ? ' on' : '') }), el('span', { className: 'grow' }, el('b', { textContent: t.name }), el('small', { textContent: `${t.wsName} · ${age === null ? T('sem saída') : age < 6 ? T('ativo') : T('parado há') + ' ' + (age < 90 ? age + ' s' : Math.round(age / 60) + ' min')}` })))
     c.onclick = () => openTerm(t)
     return c
-  }) : [el('p', { className: 'dim', textContent: 'Nenhum terminal em execução. Abra um workspace no computador.' })]))
+  }) : [el('p', { className: 'dim', textContent: T('Nenhum terminal em execução. Abra um workspace no computador.') })]))
 }
 
 async function refresh() {
@@ -166,7 +185,7 @@ $('stop1').onclick = () => termId && post(`/api/term/${termId}/interrupt`)
 $('form').onsubmit = (e) => { e.preventDefault(); const v = $('msg').value; if (!v || !termId) return; post(`/api/term/${termId}/input`, { data: v, enter: true }); $('msg').value = '' }
 const KEYS = [['Enter', '\r'], ['Esc', '\x1b'], ['Tab', '\t'], ['↑', '\x1b[A'], ['↓', '\x1b[B'], ['←', '\x1b[D'], ['→', '\x1b[C'], ['Ctrl+C', '\x03']]
 $('keys').append(...KEYS.map(([label, seq]) => { const b = el('button', { className: 'btn', textContent: label, type: 'button' }); b.onclick = () => termId && post(`/api/term/${termId}/input`, { data: seq }); return b }))
-$('stopall').onclick = () => confirm('Interromper todos os agentes agora?') && post('/api/interrupt-all')
+$('stopall').onclick = () => confirm(T('Interromper todos os agentes agora?')) && post('/api/interrupt-all')
 
 // ---- approvals + activity
 function renderAsks(list) {
@@ -174,20 +193,20 @@ function renderAsks(list) {
   $('asks').replaceChildren(...(list.length ? list.map((r) => {
     const card = el('div', { className: 'card', style: 'display:block' },
       el('b', { textContent: `${r.from} → ${r.kind}` }),
-      el('span', { className: 'dim', textContent: r.to ? `para ${r.to}` : '' }),
+      el('span', { className: 'dim', textContent: r.to ? `${T('para')} ${r.to}` : '' }),
       r.text ? el('pre', { className: 'ask', textContent: r.text }) : '')
     const row = el('div', { className: 'row' })
-    const deny = el('button', { className: 'btn danger', textContent: 'Negar' }); deny.onclick = () => post(`/api/approval/${r.id}`, { ok: false }).then(refresh)
-    const allow = el('button', { className: 'btn primary', textContent: 'Permitir' }); allow.onclick = () => post(`/api/approval/${r.id}`, { ok: true }).then(refresh)
+    const deny = el('button', { className: 'btn danger', textContent: T('Negar') }); deny.onclick = () => post(`/api/approval/${r.id}`, { ok: false }).then(refresh)
+    const allow = el('button', { className: 'btn primary', textContent: T('Permitir') }); allow.onclick = () => post(`/api/approval/${r.id}`, { ok: true }).then(refresh)
     row.append(deny, allow); card.append(row)
     return card
-  }) : [el('p', { className: 'dim', textContent: 'Nenhum pedido pendente.' })]))
+  }) : [el('p', { className: 'dim', textContent: T('Nenhum pedido pendente.') })]))
 }
-const KIND = { send: 'mensagem', ask: 'pergunta', spawn: 'criou agente', portal: 'navegador', done: 'concluiu', remote: 'celular', routine: 'rotina' }
+const KIND = Object.fromEntries(Object.entries({ send: 'mensagem', ask: 'pergunta', spawn: 'criou agente', portal: 'navegador', done: 'concluiu', remote: 'celular', routine: 'rotina' }).map(([k, v]) => [k, T(v)]))
 function renderLog(list) {
   $('log').replaceChildren(...[...list].reverse().map((e) => {
     const d = el('div', { className: 'act' + (e.outcome === 'denied' ? ' denied' : '') })
-    d.append(el('time', { textContent: new Date(e.t).toLocaleTimeString('pt-BR') }), el('b', { textContent: e.from }), ` ${KIND[e.kind] || e.kind}${e.to ? ' → ' + e.to : ''}`, e.text ? el('div', { className: 'dim', textContent: e.text }) : '')
+    d.append(el('time', { textContent: new Date(e.t).toLocaleTimeString(EN_ON ? 'en-US' : 'pt-BR') }), el('b', { textContent: e.from }), ` ${KIND[e.kind] || e.kind}${e.to ? ' → ' + e.to : ''}`, e.text ? el('div', { className: 'dim', textContent: e.text }) : '')
     return d
   }))
 }

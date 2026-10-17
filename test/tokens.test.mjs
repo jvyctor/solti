@@ -6,7 +6,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
-import { treeKill } from './helpers.mjs'
+import { prepareProfile, treeKill } from './helpers.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -20,6 +20,8 @@ test('token badge shows usage and turns red over the limit', async () => {
   const node = { id: 'n1', type: 'terminal', position: { x: 0, y: 0 }, style: { width: 600, height: 300 }, data: { name: 'x', preset: 'claude', sid, ran: true } }
   writeFileSync(join(prof, 'workspace.json'), JSON.stringify({ list: [{ id: 'w1', name: 'A', nodes: [node], edges: [] }], active: 'w1' }))
   writeFileSync(join(prof, 'settings.json'), JSON.stringify({ sendBriefing: false, tokenLimit: 1000, commands: { claude: 'echo CMD' } }))
+
+  prepareProfile(prof)
 
   const app = spawn(electron, ['.', `--user-data-dir=${prof}`, '--remote-debugging-port=9398'], { stdio: 'ignore', env: { ...process.env, USERPROFILE: home, HOME: home } })
   try {

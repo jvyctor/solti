@@ -1,10 +1,11 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { Check, ChevronRight } from 'lucide-react'
+import { tr } from './i18n.js'
 
 // Items: { label, run, sub:[…], checked, danger, disabled } or '-'. Radix gives keyboard nav, typeahead,
 // collision-aware submenus and focus handling.
 export function MenuItems({ items }) {
-  if (items.length === 0) return <div className="mi disabled">vazio</div>
+  if (items.length === 0) return <div className="mi disabled">{tr("vazio")}</div>
   return items.map((it, i) =>
     it === '-' ? (
       <DropdownMenu.Separator key={i} className="menu-sep" />

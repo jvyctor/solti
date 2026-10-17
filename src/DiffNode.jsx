@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Handle, NodeResizer, Position, useEdges, useNodes, useReactFlow } from '@xyflow/react'
 import { GitCompare, X, RefreshCw } from 'lucide-react'
+import { tr } from './i18n.js'
 
 const api = window.api
 const LETTER = { M: 'M', A: 'A', D: 'D', R: 'R', N: 'N' }
@@ -41,27 +42,27 @@ export default function DiffNode({ id, selected }) {
     if (r.error) setNote({ text: r.error, error: true })
     else { setNote({ text: ok(r) }); refresh() }
   }
-  const approve = () => run('Salvando…', () => api.gitCommit(cwd, msg), (r) => (r.committed ? 'Alterações salvas (commit) na branch do agente.' : 'Nada para salvar.')).then(() => setMsg(''))
-  const merge = () => run('Fazendo merge…', () => api.gitMerge(g.repo, g.base, g.branch), () => `Merge de ${g.branch} em ${g.base} concluído.`)
-  const pr = () => run('Enviando branch…', () => api.gitPr(g.repo, g.base, g.branch), () => 'Branch enviada; página do PR aberta no navegador.')
+  const approve = () => run(tr('Salvando…'), () => api.gitCommit(cwd, msg), (r) => (r.committed ? tr('Alterações salvas (commit) na branch do agente.') : tr('Nada para salvar.'))).then(() => setMsg(''))
+  const merge = () => run(tr('Fazendo merge…'), () => api.gitMerge(g.repo, g.base, g.branch), () => tr('Merge de {0} em {1} concluído.', [g.branch, g.base]))
+  const pr = () => run(tr('Enviando branch…'), () => api.gitPr(g.repo, g.base, g.branch), () => tr('Branch enviada; página do PR aberta no navegador.'))
 
   return (
     <div className={'tnode diff' + (selected ? ' selected' : '')}>
       <NodeResizer minWidth={360} minHeight={260} isVisible={selected} />
       <Handle type="target" position={Position.Left} />
       <div className="thead">
-        <GitCompare size={15} aria-label="Revisão" />
-        <span className="diff-title">{g ? `${g.branch} → ${g.base}` : 'Revisão'}</span>
+        <GitCompare size={15} aria-label={tr("Revisão")} />
+        <span className="diff-title">{g ? `${g.branch} → ${g.base}` : tr("Revisão")}</span>
         <span className="spacer" />
-        {g && <button className="x on" aria-label="Atualizar" title="Atualizar" onClick={refresh}><RefreshCw size={13} /></button>}
-        <button className="x" aria-label="Excluir" onClick={() => deleteElements({ nodes: [{ id }] })}><X size={14} /></button>
+        {g && <button className="x on" aria-label={tr("Atualizar")} title={tr("Atualizar")} onClick={refresh}><RefreshCw size={13} /></button>}
+        <button className="x" aria-label={tr("Excluir")} onClick={() => deleteElements({ nodes: [{ id }] })}><X size={14} /></button>
       </div>
       {!g ? (
-        <p className="diff-empty">Ligue este nó, com uma corda, a um terminal criado com “Isolar em worktree”.</p>
+        <p className="diff-empty">{tr("Ligue este nó, com uma corda, a um terminal criado com “Isolar em worktree”.")}</p>
       ) : (
         <div className="diff-body nodrag nowheel">
           <ul className="diff-files">
-            {files.length === 0 && <li className="diff-none">Sem alterações em relação a {g.base}.</li>}
+            {files.length === 0 && <li className="diff-none">{tr("Sem alterações em relação a")} {g.base}.</li>}
             {files.map((f) => (
               <li key={f.file} className={sel?.file === f.file ? 'on' : ''} onClick={() => setSel(f)} title={f.file}>
                 <b className={'st-' + f.status}>{LETTER[f.status] || f.status}</b> {f.file}
@@ -69,7 +70,7 @@ export default function DiffNode({ id, selected }) {
             ))}
           </ul>
           <pre className="diff-patch">
-            {patch ? patch.split('\n').map((l, i) => <span key={i} className={l[0] === '+' ? 'add' : l[0] === '-' ? 'del' : l[0] === '@' ? 'hunk' : ''}>{l + '\n'}</span>) : sel ? '' : 'Escolha um arquivo.'}
+            {patch ? patch.split('\n').map((l, i) => <span key={i} className={l[0] === '+' ? 'add' : l[0] === '-' ? 'del' : l[0] === '@' ? 'hunk' : ''}>{l + '\n'}</span>) : sel ? '' : tr("Escolha um arquivo.")}
           </pre>
         </div>
       )}
@@ -77,10 +78,10 @@ export default function DiffNode({ id, selected }) {
         <div className="diff-foot nodrag">
           {note && <p className={note.error ? 'err' : 'ok'}>{note.text}</p>}
           <div className="row">
-            <input value={msg} placeholder="Mensagem do commit (opcional)" onChange={(e) => setMsg(e.target.value)} />
-            <button disabled={!!busy} onClick={approve}>{busy === 'Salvando…' ? busy : 'Aprovar'}</button>
-            <button disabled={!!busy} onClick={merge}>{busy === 'Fazendo merge…' ? busy : `Merge em ${g.base}`}</button>
-            <button disabled={!!busy} onClick={pr}>{busy === 'Enviando branch…' ? busy : 'PR'}</button>
+            <input value={msg} placeholder={tr("Mensagem do commit (opcional)")} onChange={(e) => setMsg(e.target.value)} />
+            <button disabled={!!busy} onClick={approve}>{busy === tr('Salvando…') ? busy : tr("Aprovar")}</button>
+            <button disabled={!!busy} onClick={merge}>{busy === tr('Fazendo merge…') ? busy : tr("Merge em {0}", [g.base])}</button>
+            <button disabled={!!busy} onClick={pr}>{busy === tr('Enviando branch…') ? busy : tr("PR")}</button>
           </div>
         </div>
       )}

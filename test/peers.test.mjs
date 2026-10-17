@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
-import { treeKill } from './helpers.mjs'
+import { prepareProfile, treeKill } from './helpers.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -27,6 +27,8 @@ test('canvas peers/read cover notes, portals and file trees', async () => {
   ]
   const edges = ['n1', 'p1', 'f1'].map((t) => ({ id: 'e' + t, source: 't1', target: t, type: 'floating' }))
   writeFileSync(join(prof, 'workspace.json'), JSON.stringify({ list: [{ id: 'w1', name: 'A', nodes, edges }], active: 'w1' }))
+
+  prepareProfile(prof)
 
   const app = spawn(electron, ['.', `--user-data-dir=${prof}`, '--remote-debugging-port=9399'], { stdio: 'ignore' })
   try {

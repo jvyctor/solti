@@ -1,6 +1,7 @@
 // Git helpers for per-agent worktrees. Uses the system `git` and the user's own credentials (no secrets stored here).
 const { execFile } = require('child_process')
 const fs = require('fs')
+const { tr } = require('./i18n.cjs')
 const path = require('path')
 
 const ENV = { ...process.env, GIT_TERMINAL_PROMPT: '0' } // never hang on a console prompt
@@ -38,7 +39,7 @@ async function clone(url, destDir) {
   const dest = path.join(destDir, repoName(url))
   if (fs.existsSync(path.join(dest, '.git'))) {
     const origin = await git(['remote', 'get-url', 'origin'], dest).catch(() => '')
-    if (origin !== url) throw new Error(`A pasta ${dest} já existe com outro repositório.`)
+    if (origin !== url) throw new Error(tr('A pasta {0} já existe com outro repositório.', [dest]))
     await git(['fetch', '--prune', 'origin'], dest).catch(() => {})
     return dest
   }
@@ -106,20 +107,20 @@ async function patch(wt, base, file, isNew) {
 async function commit(wt, message) {
   await git(['add', '-A'], wt)
   if (!(await dirty(wt))) return { committed: false }
-  await git(['commit', '-m', message || 'Alterações do agente'], wt)
+  await git(['commit', '-m', message || tr('Alterações do agente')], wt)
   return { committed: true }
 }
 
 // Merge the agent branch into its base inside the main checkout; refuses on a dirty checkout, aborts on conflict.
 async function merge(repo, base, branch) {
-  if (await dirty(repo)) throw new Error('A pasta principal tem alterações não salvas. Salve ou descarte antes de fazer o merge.')
+  if (await dirty(repo)) throw new Error(tr('A pasta principal tem alterações não salvas. Salve ou descarte antes de fazer o merge.'))
   const current = await git(['rev-parse', '--abbrev-ref', 'HEAD'], repo)
   if (current !== base) await git(['checkout', base], repo)
   try {
     await git(['merge', '--no-ff', branch, '-m', `Merge ${branch}`], repo)
   } catch (e) {
     await git(['merge', '--abort'], repo).catch(() => {})
-    throw new Error('Conflitos no merge; nada foi alterado. Resolva no terminal do agente. ' + e.message)
+    throw new Error(tr('Conflitos no merge; nada foi alterado. Resolva no terminal do agente. ') + e.message)
   }
   return { merged: true }
 }
@@ -128,7 +129,7 @@ async function merge(repo, base, branch) {
 async function pushForPr(repo, base, branch) {
   await git(['push', '-u', 'origin', branch], repo)
   const m = (await git(['remote', 'get-url', 'origin'], repo)).match(/github\.com[:/](.+?)(\.git)?$/)
-  if (!m) throw new Error('O remoto não é do GitHub: abra o PR manualmente.')
+  if (!m) throw new Error(tr('O remoto não é do GitHub: abra o PR manualmente.'))
   return { url: `https://github.com/${m[1]}/compare/${encodeURIComponent(base)}...${encodeURIComponent(branch)}?expand=1` }
 }
 

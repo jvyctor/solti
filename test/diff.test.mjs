@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createRequire } from 'node:module'
 import electron from 'electron'
-import { treeKill } from './helpers.mjs'
+import { prepareProfile, treeKill } from './helpers.mjs'
 
 const g = createRequire(import.meta.url)('../electron/git.cjs')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -29,6 +29,8 @@ test('diff node shows changes, approves and merges', async () => {
   const term = { id: 't1', type: 'terminal', position: { x: 0, y: 0 }, style: { width: 400, height: 260 }, data: { name: 'rev', preset: 'shell', cwd: w.cwd, git: w.git, sid: 's', ran: true } }
   const diff = { id: 'd1', type: 'diff', position: { x: 450, y: 0 }, style: { width: 560, height: 400 }, data: {} }
   writeFileSync(join(prof, 'workspace.json'), JSON.stringify({ list: [{ id: 'w1', name: 'A', nodes: [term, diff], edges: [{ id: 'e1', source: 't1', target: 'd1', type: 'floating' }] }], active: 'w1' }))
+
+  prepareProfile(prof)
 
   const app = spawn(electron, ['.', `--user-data-dir=${prof}`, '--remote-debugging-port=9395'], { stdio: 'ignore' })
   try {

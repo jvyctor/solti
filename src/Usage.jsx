@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { RefreshCw, Square, X } from 'lucide-react'
 import { AGENT_COLORS, api, fmt } from './shared.js'
+import { tr } from './i18n.js'
 
 export const resetText = (ts) => {
   const m = Math.max(0, Math.round((ts * 1000 - Date.now()) / 60000))
-  const plural = (v, u) => `${v} ${u}${v === 1 ? '' : 's'}`
-  if (ts * 1000 < Date.now()) return 'Janela reiniciada (sem dado novo)'
-  if (m >= 2880) return `Redefine em ${Math.round(m / 1440)} dias`
-  if (m >= 1440) return 'Redefine amanhã'
-  if (m >= 60) return `Redefine em ${plural(Math.round(m / 60), 'hora')}`
-  return `Redefine em ${plural(m, 'minuto')}`
+  if (ts * 1000 < Date.now()) return tr('Janela reiniciada (sem dado novo)')
+  if (m >= 2880) return tr('Redefine em {0} dias', [Math.round(m / 1440)])
+  if (m >= 1440) return tr('Redefine amanhã')
+  if (m >= 60) { const h = Math.round(m / 60); return h === 1 ? tr('Redefine em 1 hora') : tr('Redefine em {0} horas', [h]) }
+  return m === 1 ? tr('Redefine em 1 minuto') : tr('Redefine em {0} minutos', [m])
 }
 
 // Two concentric rings: outer = session, inner = weekly.
@@ -55,12 +55,12 @@ export function AgentUsage({ name, plan, color, session, weekly, note }) {
       </header>
       {session ? (
         <>
-          <div className="urow"><span>Sessão</span><b>{Math.round(session.pct)}%</b></div>
+          <div className="urow"><span>{tr("Sessão")}</span><b>{Math.round(session.pct)}%</b></div>
           <SegBar color={color} pct={session.pct} />
           <small>{session.resets_at ? resetText(session.resets_at) : ''}</small>
           {weekly && (
             <>
-              <div className="urow"><span>Semanal</span><b>{Math.round(weekly.pct)}%</b></div>
+              <div className="urow"><span>{tr("Semanal")}</span><b>{Math.round(weekly.pct)}%</b></div>
               <SegBar color={color} pct={weekly.pct} />
               <small>{weekly.resets_at ? resetText(weekly.resets_at) : ''}</small>
             </>
@@ -89,15 +89,15 @@ export function useAgents() {
       key: 'claude', name: 'Claude Code', plan: cq?.plan ? cq.plan[0].toUpperCase() + cq.plan.slice(1) : '',
       session: cq?.session && { pct: cq.session.utilization, resets_at: Date.parse(cq.session.resets_at) / 1000 },
       weekly: cq?.weekly && { pct: cq.weekly.utilization, resets_at: Date.parse(cq.weekly.resets_at) / 1000 },
-      note: u?.claude ? `${cq?.error || 'sem dados'} · ${fmt(u.claude.h5)} tokens em 5 h, ${fmt(u.claude.d7)} em 7 dias` : 'carregando…',
+      note: u?.claude ? tr("{0} · {1} tokens em 5 h, {2} em 7 dias", [cq?.error || 'sem dados', fmt(u.claude.h5), fmt(u.claude.d7)]) : tr("carregando…"),
     },
     {
       key: 'codex', name: 'Codex', plan: cx?.plan ? cx.plan[0].toUpperCase() + cx.plan.slice(1) : '',
       session: cx?.session && { pct: cx.session.used_percent, resets_at: cx.session.resets_at },
       weekly: cx?.weekly && { pct: cx.weekly.used_percent, resets_at: cx.weekly.resets_at },
-      note: u ? 'sem dados locais' : 'carregando…',
+      note: u ? tr("sem dados locais") : tr("carregando…"),
     },
-    { key: 'gemini', name: 'Gemini / Antigravity', plan: '', note: 'cota não disponível localmente' },
+    { key: 'gemini', name: 'Gemini / Antigravity', plan: '', note: tr("cota não disponível localmente") },
   ]
   return { agents, load }
 }
@@ -118,14 +118,14 @@ export function UsageDock() {
     <div ref={root} className="usage-root">
       {open && (
         <div className="usage">
-          <h4>Uso dos agentes <span><button onClick={load} aria-label="Atualizar" title="Atualizar"><RefreshCw size={15} /></button><button onClick={() => setOpen(false)} aria-label="Fechar" title="Fechar"><X size={16} /></button></span></h4>
+          <h4>{tr("Uso dos agentes")} <span><button onClick={load} aria-label={tr("Atualizar")} title={tr("Atualizar")}><RefreshCw size={15} /></button><button onClick={() => setOpen(false)} aria-label={tr("Fechar")} title={tr("Fechar")}><X size={16} /></button></span></h4>
           <div className="usage-scroll">
             {agents.map((a) => <AgentUsage key={a.key} color={AGENT_COLORS[a.key]} {...a} />)}
           </div>
-          <button className="stop-all" onClick={() => api.interrupt()} title="Envia Esc e Ctrl+C para todos os terminais"><Square size={13} /> Interromper todos os agentes</button>
+          <button className="stop-all" onClick={() => api.interrupt()} title={tr("Envia Esc e Ctrl+C para todos os terminais")}><Square size={13} /> {tr("Interromper todos os agentes")}</button>
         </div>
       )}
-      <button className="dock" onClick={() => setOpen((o) => !o)} aria-label="Uso dos agentes" aria-expanded={open} title="Uso dos agentes">
+      <button className="dock" onClick={() => setOpen((o) => !o)} aria-label={tr("Uso dos agentes")} aria-expanded={open} title={tr("Uso dos agentes")}>
         {agents.map((a) => (
           <Rings key={a.key} size={26} stroke={10} color={AGENT_COLORS[a.key]} session={a.session?.pct ?? 0} weekly={a.weekly?.pct ?? 0} />
         ))}

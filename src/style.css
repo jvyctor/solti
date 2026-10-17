@@ -555,3 +555,7 @@ svg { flex: none; }
 .look-ctl input[type=color] { width: 32px; height: 26px; padding: 0; border: 1px solid var(--border); border-radius: var(--r-sm); background: none; }
 .look-ctl code { font: 12px 'JetBrains Mono', monospace; color: var(--text-2); }
 .dlg .look-row select, .dlg .look-row > input { width: 190px; }
+
+/* the empty-state card must not eat right-clicks meant for the canvas menu */
+.empty-canvas { pointer-events: none; }
+.empty-canvas button { pointer-events: auto; }

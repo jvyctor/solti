@@ -11,12 +11,16 @@ export function treeKill(app) {
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-export async function launch(prof, port, { onboarded = true } = {}) {
-  // The first-run welcome would cover the UI in every test: mark it as seen unless a test wants it.
+// Marks the first-run welcome as seen (it would cover the UI) and pins Portuguese labels, keeping any settings the test wrote.
+export function prepareProfile(prof, { onboarded = true } = {}) {
   const sf = join(prof, 'settings.json')
   let s = {}
   try { s = JSON.parse(readFileSync(sf, 'utf8')) } catch {}
-  if (onboarded && s.onboarded === undefined) writeFileSync(sf, JSON.stringify({ ...s, onboarded: true }))
+  writeFileSync(sf, JSON.stringify({ ...s, ...(onboarded && s.onboarded === undefined ? { onboarded: true } : {}), ...(s.language === undefined ? { language: 'pt' } : {}) }))
+}
+
+export async function launch(prof, port, { onboarded = true } = {}) {
+  prepareProfile(prof, { onboarded })
   const app = spawn(electron, ['.', `--user-data-dir=${prof}`, `--remote-debugging-port=${port}`], { stdio: 'ignore' })
   let page
   for (let i = 0; i < 40 && !page; i++) {

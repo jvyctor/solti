@@ -15,6 +15,7 @@ import { FilesNode, GroupNode, KnowledgeNode, NoteNode, PortalNode, TextNode } f
 import { edgeTypes } from './edges.jsx'
 import { UsageDock } from './Usage.jsx'
 import { PRESET_LABELS, SettingsCtx, api, ask, fresh, mem, randomName, terms, uid } from './shared.js'
+import { tr } from './i18n.js'
 
 export const GRID_VARIANT = { lines: BackgroundVariant.Lines, dots: BackgroundVariant.Dots, cross: BackgroundVariant.Cross }
 
@@ -30,15 +31,15 @@ export function Zoom({ children }) {
       {map && (
         <div className="mapbox">
           <MiniMap pannable zoomable nodeColor={color} nodeStrokeWidth={0} maskColor="rgba(15,17,21,.6)" style={{ position: 'static', margin: 0, width: 260, height: 150, background: 'transparent' }} />
-          <button onClick={() => setMap(false)} aria-label="Fechar mapa"><X size={12} /></button>
+          <button onClick={() => setMap(false)} aria-label={tr("Fechar mapa")}><X size={12} /></button>
         </div>
       )}
       {children}
-      <button className={'mapbtn' + (map ? ' on' : '')} onClick={() => setMap((m) => !m)} aria-label="Navegação" title="Navegação"><MapIcon size={18} /></button>
+      <button className={'mapbtn' + (map ? ' on' : '')} onClick={() => setMap((m) => !m)} aria-label={tr("Navegação")} title={tr("Navegação")}><MapIcon size={18} /></button>
       <div className="zoompill">
-        <button onClick={() => zoomOut({ duration: 150 })} aria-label="Diminuir zoom"><Minus size={16} /></button>
+        <button onClick={() => zoomOut({ duration: 150 })} aria-label={tr("Diminuir zoom")}><Minus size={16} /></button>
         <button onClick={() => setViewport({ x: 0, y: 0, zoom: 1 }, { duration: 150 })} title="100%">{Math.round(zoom * 100)}%</button>
-        <button onClick={() => zoomIn({ duration: 150 })} aria-label="Aumentar zoom"><Plus size={16} /></button>
+        <button onClick={() => zoomIn({ duration: 150 })} aria-label={tr("Aumentar zoom")}><Plus size={16} /></button>
       </div>
     </div>
   )
@@ -92,8 +93,8 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
     if (!t.length) return { nodes, edges }
     const wt = t.filter((n) => n.data.git?.worktree)
     const dirty = await Promise.all(wt.map(async (n) => (await api.gitDirty(n.data.cwd)).dirty))
-    const note = !wt.length ? '' : dirty.some(Boolean) ? ' Há worktree com alterações não salvas: ele será mantido.' : ' O worktree será removido (a branch continua no repositório).'
-    const msg = (t.length === 1 ? `Excluir o terminal "${t[0].data.name}"?` : `Excluir ${t.length} terminais?`) + note
+    const note = !wt.length ? '' : dirty.some(Boolean) ? tr(' Há worktree com alterações não salvas: ele será mantido.') : tr(' O worktree será removido (a branch continua no repositório).')
+    const msg = (t.length === 1 ? tr('Excluir o terminal "{0}"?', [t[0].data.name]) : tr('Excluir {0} terminais?', [t.length])) + note
     if (!(await ask(msg))) return false
     // The pty must die first or Windows keeps the folder locked.
     wt.forEach((n, i) => { if (!dirty[i]) { api.kill(n.id); setTimeout(() => api.gitRemoveWorktree(n.data.cwd), 500) } })
@@ -185,64 +186,64 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
     return [
       ...(t
         ? [
-            { label: 'Copiar', run: () => navigator.clipboard.writeText(terms.get(n.id)?.getSelection() || ''), disabled: !terms.get(n.id)?.hasSelection() },
-            { label: 'Colar', run: () => navigator.clipboard.readText().then((s) => api.write(n.id, s)) },
-            { label: 'Selecionar tudo', run: () => terms.get(n.id)?.selectAll() },
+            { label: tr("Copiar"), run: () => navigator.clipboard.writeText(terms.get(n.id)?.getSelection() || ''), disabled: !terms.get(n.id)?.hasSelection() },
+            { label: tr("Colar"), run: () => navigator.clipboard.readText().then((s) => api.write(n.id, s)) },
+            { label: tr("Selecionar tudo"), run: () => terms.get(n.id)?.selectAll() },
             '-',
           ]
         : []),
-      ...(n.type !== 'note' && n.type !== 'text' ? [{ label: 'Renomear', run: () => focusInput('data-rename', n.id) }] : []),
-      ...(t ? [{ label: 'Reenviar briefing do papel', run: () => api.brief(n.id, { name: d.name, maestro: !!d.maestro, instructions: d.instructions, knowledge: ws.nodes.find((x) => x.type === 'knowledge')?.data.text || '' }) }, { label: 'Monitorar atividade', checked: d.monitor, run: () => patch(n.id, { monitor: !d.monitor }) }, '-'] : []),
+      ...(n.type !== 'note' && n.type !== 'text' ? [{ label: tr("Renomear"), run: () => focusInput('data-rename', n.id) }] : []),
+      ...(t ? [{ label: tr("Reenviar briefing do papel"), run: () => api.brief(n.id, { name: d.name, maestro: !!d.maestro, instructions: d.instructions, knowledge: ws.nodes.find((x) => x.type === 'knowledge')?.data.text || '' }) }, { label: tr("Monitorar atividade"), checked: d.monitor, run: () => patch(n.id, { monitor: !d.monitor }) }, '-'] : []),
       ...(t
         ? [
-            { label: 'Aparência…', run: () => setLookId(n.id) },
-            { label: d.blur ? 'Focar' : 'Desfocar', run: () => patch(n.id, { blur: !d.blur }) },
-            { label: 'Recarregar (retoma a conversa)', run: () => { api.kill(n.id); patch(n.id, { rev: (d.rev || 0) + 1, unloaded: false }) } },
-            { label: 'Nova conversa', run: () => { api.kill(n.id); patch(n.id, { rev: (d.rev || 0) + 1, unloaded: false, sid: undefined, ran: false }) } },
-            { label: 'Descarregar', run: () => { api.kill(n.id); patch(n.id, { unloaded: true }) } },
-            { label: d.maestro ? 'Papel: Maestro → Agente' : 'Papel: Agente → Maestro', run: () => setNodes((ns) => ns.map((x) => (x.type === 'terminal' ? { ...x, data: { ...x.data, maestro: x.id === n.id ? !d.maestro : false } } : x))) },
+            { label: tr("Aparência…"), run: () => setLookId(n.id) },
+            { label: d.blur ? tr("Focar") : tr("Desfocar"), run: () => patch(n.id, { blur: !d.blur }) },
+            { label: tr("Recarregar (retoma a conversa)"), run: () => { api.kill(n.id); patch(n.id, { rev: (d.rev || 0) + 1, unloaded: false }) } },
+            { label: tr("Nova conversa"), run: () => { api.kill(n.id); patch(n.id, { rev: (d.rev || 0) + 1, unloaded: false, sid: undefined, ran: false }) } },
+            { label: tr("Descarregar"), run: () => { api.kill(n.id); patch(n.id, { unloaded: true }) } },
+            { label: d.maestro ? tr("Papel: Maestro → Agente") : tr("Papel: Agente → Maestro"), run: () => setNodes((ns) => ns.map((x) => (x.type === 'terminal' ? { ...x, data: { ...x.data, maestro: x.id === n.id ? !d.maestro : false } } : x))) },
             '-',
           ]
         : []),
-      { label: 'Copiar elemento', run: () => (mem.clip = { ...n, data: fresh(n.data) }) },
-      { label: 'Duplicar', run: () => spawnCopy(n) },
-      { label: d.locked ? 'Desbloquear' : 'Bloquear', run: () => setNodes((ns) => ns.map((x) => (x.id === n.id ? { ...x, draggable: !!d.locked, deletable: !!d.locked, data: { ...x.data, locked: !d.locked } } : x))) },
-      { label: 'Apagar', danger: true, disabled: d.locked, run: () => deleteElements({ nodes: [{ id: n.id }] }) },
+      { label: tr("Copiar elemento"), run: () => (mem.clip = { ...n, data: fresh(n.data) }) },
+      { label: tr("Duplicar"), run: () => spawnCopy(n) },
+      { label: d.locked ? tr("Desbloquear") : tr("Bloquear"), run: () => setNodes((ns) => ns.map((x) => (x.id === n.id ? { ...x, draggable: !!d.locked, deletable: !!d.locked, data: { ...x.data, locked: !d.locked } } : x))) },
+      { label: tr("Apagar"), danger: true, disabled: d.locked, run: () => deleteElements({ nodes: [{ id: n.id }] }) },
       '-',
-      { label: 'Partituras', sub: scoreMenu() },
+      { label: tr("Partituras"), sub: scoreMenu() },
     ]
   }
   const scoreMenu = () => [
-    { label: 'Salvar workspace como partitura', run: saveScore },
-    ...scores.map((s) => ({ label: `Inserir: ${s.name}`, run: () => insertScore(s) })),
+    { label: tr("Salvar workspace como partitura"), run: saveScore },
+    ...scores.map((s) => ({ label: tr("Inserir: {0}", [s.name]), run: () => insertScore(s) })),
   ]
   const paneMenu = (pos) => [
     {
-      label: 'Adicionar',
+      label: tr("Adicionar"),
       sub: [
         {
-          label: 'Terminal',
+          label: tr("Terminal"),
           sub: [
-            { label: 'Novo Terminal…', run: () => setDlg({ pos }) },
-            { label: 'Time pronto…', run: () => setTeamDlg({ pos }) },
+            { label: tr("Novo Terminal…"), run: () => setDlg({ pos }) },
+            { label: tr("Time pronto…"), run: () => setTeamDlg({ pos }) },
             '-',
             ...Object.entries(PRESET_LABELS).map(([k, label]) => ({ label, run: () => addTerminal(k, pos) })),
           ],
         },
-        { label: 'Nota', run: () => add('note', { text: '' }, pos) },
-        { label: 'Árvore de Arquivos', run: () => add('files', {}, pos) },
-        { label: 'Revisão (Diff)', run: () => add('diff', {}, pos) },
-        { label: 'Fluxo (pipeline)', run: () => add('pipeline', { steps: [], input: '' }, pos) },
-        { label: 'Conhecimento do projeto', disabled: ws.nodes.some((n) => n.type === 'knowledge'), run: () => add('knowledge', { text: '' }, pos) },
-        { label: 'Portal', run: () => add('portal', { url: 'https://www.google.com' }, pos) },
-        { label: 'Texto', run: () => add('text', { text: '' }, pos) },
-        { label: 'Grupo', run: () => add('group', { name: 'Grupo' }, pos) },
+        { label: tr("Nota"), run: () => add('note', { text: '' }, pos) },
+        { label: tr("Árvore de Arquivos"), run: () => add('files', {}, pos) },
+        { label: tr("Revisão (Diff)"), run: () => add('diff', {}, pos) },
+        { label: tr("Fluxo (pipeline)"), run: () => add('pipeline', { steps: [], input: '' }, pos) },
+        { label: tr("Conhecimento do projeto"), disabled: ws.nodes.some((n) => n.type === 'knowledge'), run: () => add('knowledge', { text: '' }, pos) },
+        { label: tr("Portal"), run: () => add('portal', { url: 'https://www.google.com' }, pos) },
+        { label: tr("Texto"), run: () => add('text', { text: '' }, pos) },
+        { label: tr("Grupo"), run: () => add('group', { name: 'Grupo' }, pos) },
       ],
     },
-    { label: 'Desfazer', run: () => travel(-1) },
-    { label: 'Refazer', run: () => travel(1) },
-    { label: 'Colar', disabled: !mem.clip, run: () => mem.clip && setNodes((ns) => [...ns, { ...mem.clip, id: uid('n'), selected: false, position: pos }]) },
-    { label: 'Partituras', sub: scoreMenu() },
+    { label: tr("Desfazer"), run: () => travel(-1) },
+    { label: tr("Refazer"), run: () => travel(1) },
+    { label: tr("Colar"), disabled: !mem.clip, run: () => mem.clip && setNodes((ns) => [...ns, { ...mem.clip, id: uid('n'), selected: false, position: pos }]) },
+    { label: tr("Partituras"), sub: scoreMenu() },
   ]
   const openMenu = (e, items) => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY, items }) }
 
@@ -271,14 +272,14 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
       )}
       </Suspense>
       {ws.nodes.length === 0 && (
-        <div className="empty-canvas" role="region" aria-label="Canvas vazio">
-          <h2>Este canvas está vazio</h2>
-          <p>Crie um time de agentes já ligados entre si, ou comece com um terminal.</p>
+        <div className="empty-canvas" role="region" aria-label={tr("Canvas vazio")}>
+          <h2>{tr("Este canvas está vazio")}</h2>
+          <p>{tr("Crie um time de agentes já ligados entre si, ou comece com um terminal.")}</p>
           <div className="empty-actions">
-            <button className="primary" onClick={() => setTeamDlg({ pos: { x: 80, y: 80 } })}>Criar um time</button>
-            <button onClick={() => setDlg({ pos: { x: 80, y: 80 } })}>Novo terminal</button>
+            <button className="primary" onClick={() => setTeamDlg({ pos: { x: 80, y: 80 } })}>{tr("Criar um time")}</button>
+            <button onClick={() => setDlg({ pos: { x: 80, y: 80 } })}>{tr("Novo terminal")}</button>
           </div>
-          <small>Dica: clique com o botão direito no fundo para adicionar qualquer coisa, ou use Ctrl+K.</small>
+          <small>{tr("Dica: clique com o botão direito no fundo para adicionar qualquer coisa, ou use Ctrl+K.")}</small>
         </div>
       )}
       <ReactFlow deleteKeyCode={['Backspace', 'Delete']} onNodeDragStart={onNodeDragStart} onNodeDrag={onNodeDrag} nodes={ws.nodes} edges={shownEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} connectionMode={ConnectionMode.Loose} connectionRadius={48} onBeforeDelete={onBeforeDelete} onConnectEnd={onConnectEnd} defaultEdgeOptions={{ type: 'floating' }} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeContextMenu={(e, n) => openMenu(e, nodeMenu(n))} onPaneContextMenu={(e) => openMenu(e, paneMenu(screenToFlowPosition({ x: e.clientX, y: e.clientY })))} colorMode={cfg.mode} snapToGrid={cfg.eff.snap} snapGrid={[cfg.eff.snapSize, cfg.eff.snapSize]} className={cfg.eff.edgeFlow ? 'flow' : undefined} minZoom={0.1} fitView proOptions={{ hideAttribution: true }}>

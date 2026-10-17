@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { Search, SquareTerminal, Folder, Zap, FileText } from 'lucide-react'
+import { tr } from './i18n.js'
 
 const api = window.api
 const norm = (s) => String(s).toLowerCase()
@@ -22,14 +23,14 @@ export default function Palette({ open, onClose, state, goTo, actions }) {
   const items = useMemo(() => {
     const all = []
     for (const w of state.list) {
-      all.push({ icon: Folder, label: w.name, hint: 'workspace', run: () => goTo(w.id) })
-      for (const n of w.nodes) if (n.type === 'terminal') all.push({ icon: SquareTerminal, label: n.data.name, hint: `terminal · ${w.name}`, run: () => goTo(w.id, n.id) })
+      all.push({ icon: Folder, label: w.name, hint: tr("workspace"), run: () => goTo(w.id) })
+      for (const n of w.nodes) if (n.type === 'terminal') all.push({ icon: SquareTerminal, label: n.data.name, hint: tr("terminal · {0}", [w.name]), run: () => goTo(w.id, n.id) })
     }
-    for (const a of actions) all.push({ icon: Zap, label: a.label, hint: 'ação', run: a.run })
+    for (const a of actions) all.push({ icon: Zap, label: a.label, hint: tr("ação"), run: a.run })
     const f = norm(q.trim())
     const base = f ? all.filter((i) => norm(i.label).includes(f)) : all
     const where = new Map(state.list.flatMap((w) => w.nodes.map((n) => [n.id, w])))
-    const found = hits.map((h) => ({ icon: FileText, label: h.line, hint: `saída de ${h.name}`, run: () => goTo(where.get(h.id)?.id, h.id) }))
+    const found = hits.map((h) => ({ icon: FileText, label: h.line, hint: tr("saída de {0}", [h.name]), run: () => goTo(where.get(h.id)?.id, h.id) }))
     return [...base.slice(0, 40), ...found]
   }, [q, hits, state, actions, goTo])
 
@@ -48,10 +49,10 @@ export default function Palette({ open, onClose, state, goTo, actions }) {
       <Dialog.Portal>
         <Dialog.Overlay className="dlg-back" />
         <Dialog.Content className="dlg palette" aria-describedby={undefined} onKeyDown={onKey}>
-          <Dialog.Title className="sr-only">Paleta de comandos</Dialog.Title>
-          <label className="pal-input"><Search size={16} /><input autoFocus value={q} placeholder="Ir para workspace ou terminal, buscar na saída, executar ação…" onChange={(e) => setQ(e.target.value)} /></label>
+          <Dialog.Title className="sr-only">{tr("Paleta de comandos")}</Dialog.Title>
+          <label className="pal-input"><Search size={16} /><input autoFocus value={q} placeholder={tr("Ir para workspace ou terminal, buscar na saída, executar ação…")} onChange={(e) => setQ(e.target.value)} /></label>
           <ul ref={list} className="pal-list" role="listbox">
-            {items.length === 0 && <li className="pal-none">Nada encontrado.</li>}
+            {items.length === 0 && <li className="pal-none">{tr("Nada encontrado.")}</li>}
             {items.map((i, k) => (
               <li key={k} role="option" aria-selected={k === sel} className={k === sel ? 'on' : ''} onMouseMove={() => setSel(k)} onClick={() => pick(i)}>
                 <i.icon size={14} /> <span className="pal-label">{i.label}</span> <small>{i.hint}</small>

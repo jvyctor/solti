@@ -3,6 +3,7 @@ import { Handle, NodeResizer, Position, useReactFlow } from '@xyflow/react'
 import { ArrowLeft, BookOpen, ChevronDown, ChevronRight, FileText, Folder, FolderOpen, FolderTree, RefreshCw, X } from 'lucide-react'
 import { api } from './shared.js'
 import { Ring } from './Ring.jsx'
+import { tr } from './i18n.js'
 
 // Tiny markdown view: #/## headings, "- " bullets, "1. " items, everything else monospace text.
 export function MdLite({ text }) {
@@ -26,11 +27,11 @@ export function KnowledgeNode({ id, data, selected }) {
       <NodeResizer minWidth={240} minHeight={160} isVisible={selected} />
       <Handle type="target" position={Position.Left} />
       <div className="note-head">
-        <BookOpen size={14} aria-label="Conhecimento" />
-        <span className="k-title">Conhecimento do projeto</span>
-        <button aria-label="Excluir" onClick={() => deleteElements({ nodes: [{ id }] })}><X size={12} /></button>
+        <BookOpen size={14} aria-label={tr("Conhecimento")} />
+        <span className="k-title">{tr("Conhecimento do projeto")}</span>
+        <button aria-label={tr("Excluir")} onClick={() => deleteElements({ nodes: [{ id }] })}><X size={12} /></button>
       </div>
-      <textarea className="note-body nodrag nowheel" value={data.text || ''} placeholder="Fatos que todos os agentes devem saber: stack, comandos, decisões…" onChange={(e) => updateNodeData(id, { text: e.target.value })} />
+      <textarea className="note-body nodrag nowheel" value={data.text || ''} placeholder={tr("Fatos que todos os agentes devem saber: stack, comandos, decisões…")} onChange={(e) => updateNodeData(id, { text: e.target.value })} />
       <Handle type="source" position={Position.Right} /><Ring />
     </div>
   )
@@ -44,13 +45,13 @@ export function NoteNode({ id, data, selected }) {
       <NodeResizer minWidth={180} minHeight={110} isVisible={selected} />
       <Handle type="target" position={Position.Left} />
       <div className="note-head">
-        <input className="nodrag" value={data.title || ''} placeholder="Nota" onChange={(e) => updateNodeData(id, { title: e.target.value })} />
-        <button aria-label="Excluir" onClick={() => deleteElements({ nodes: [{ id }] })}><X size={12} /></button>
+        <input className="nodrag" value={data.title || ''} placeholder={tr("Nota")} onChange={(e) => updateNodeData(id, { title: e.target.value })} />
+        <button aria-label={tr("Excluir")} onClick={() => deleteElements({ nodes: [{ id }] })}><X size={12} /></button>
       </div>
       {edit ? (
         <textarea className="note-body nodrag nowheel" autoFocus value={data.text || ''} onChange={(e) => updateNodeData(id, { text: e.target.value })} onBlur={() => setEdit(false)} />
       ) : (
-        <div className="note-body view nowheel" onDoubleClick={() => setEdit(true)} title="Duplo clique para editar">
+        <div className="note-body view nowheel" onDoubleClick={() => setEdit(true)} title={tr("Duplo clique para editar")}>
           <MdLite text={data.text || ''} />
         </div>
       )}
@@ -65,14 +66,14 @@ export function GroupNode({ id, data, selected }) {
   return (
     <div className="group">
       <NodeResizer minWidth={200} minHeight={120} isVisible={selected} />
-      <input value={data.name || ''} placeholder="Grupo" onChange={(e) => updateNodeData(id, { name: e.target.value })} />
+      <input value={data.name || ''} placeholder={tr("Grupo")} onChange={(e) => updateNodeData(id, { name: e.target.value })} />
     </div>
   )
 }
 
 export function TextNode({ id, data }) {
   const { updateNodeData } = useReactFlow()
-  return <textarea className="textnode nodrag" value={data.text || ''} placeholder="Texto" onChange={(e) => updateNodeData(id, { text: e.target.value })} />
+  return <textarea className="textnode nodrag" value={data.text || ''} placeholder={tr("Texto")} onChange={(e) => updateNodeData(id, { text: e.target.value })} />
 }
 
 // Browser portal: an embedded webview with a URL bar.
@@ -98,10 +99,10 @@ export function PortalNode({ id, data, selected }) {
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} /><Ring />
       <div className="thead">
-        <button className="x on" aria-label="Voltar" onClick={() => view.current?.goBack?.()}><ArrowLeft size={14} /></button>
-        <button className="x on" aria-label="Recarregar" onClick={() => view.current?.reload?.()}><RefreshCw size={14} /></button>
+        <button className="x on" aria-label={tr("Voltar")} onClick={() => view.current?.goBack?.()}><ArrowLeft size={14} /></button>
+        <button className="x on" aria-label={tr("Recarregar")} onClick={() => view.current?.reload?.()}><RefreshCw size={14} /></button>
         <input className="role" value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && go()} />
-        <button className="x" aria-label="Excluir" onClick={() => deleteElements({ nodes: [{ id }] })}><X size={14} /></button>
+        <button className="x" aria-label={tr("Excluir")} onClick={() => deleteElements({ nodes: [{ id }] })}><X size={14} /></button>
       </div>
       <webview ref={view} src={data.url || 'https://www.google.com'} className="tbody nodrag nowheel" style={{ flex: 1, background: '#fff' }} partition="persist:portal" />
     </div>
@@ -153,9 +154,9 @@ export function FilesNode({ id, data, selected }) {
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} /><Ring />
       <div className="thead">
-        <FolderTree size={15} aria-label="Árvore de arquivos" />
+        <FolderTree size={15} aria-label={tr("Árvore de arquivos")} />
         <input className="pathin" value={path} onChange={(e) => setPath(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && load(path)} />
-        <button className="x" aria-label="Excluir" onClick={() => deleteElements({ nodes: [{ id }] })}><X size={14} /></button>
+        <button className="x" aria-label={tr("Excluir")} onClick={() => deleteElements({ nodes: [{ id }] })}><X size={14} /></button>
       </div>
       <div className="tbody ftree nodrag nowheel">{root && <Dir key={root} path={root} name={root.split(/[\\/]/).pop() || root} tick={tick} />}</div>
     </div>

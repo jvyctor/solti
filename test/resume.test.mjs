@@ -7,11 +7,12 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
-import { treeKill } from './helpers.mjs'
+import { prepareProfile, treeKill } from './helpers.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 async function session(prof, port, body) {
+  prepareProfile(prof)
   const app = spawn(electron, ['.', `--user-data-dir=${prof}`, `--remote-debugging-port=${port}`], { stdio: 'ignore' })
   try {
     let page

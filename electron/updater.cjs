@@ -1,5 +1,6 @@
 // Auto-update from the public GitHub Releases repo (electron-updater); no credentials involved.
 const { app, ipcMain, shell } = require('electron')
+const { tr } = require('./i18n.cjs')
 const { autoUpdater } = require('electron-updater')
 
 const CHECK_EVERY = 4 * 60 * 60 * 1000
@@ -20,9 +21,9 @@ const notesText = (n) => {
 
 const friendly = (e) => {
   const m = String(e?.message || e)
-  if (/404|Not Found|Cannot find latest/i.test(m)) return 'Nenhuma versão publicada encontrada.'
-  if (/403|rate limit/i.test(m)) return 'Limite de consultas do GitHub atingido. Tente mais tarde.'
-  if (/ENOTFOUND|ETIMEDOUT|ECONNREFUSED|ERR_INTERNET|ERR_NETWORK|net::/i.test(m)) return 'Sem conexão com a internet.'
+  if (/404|Not Found|Cannot find latest/i.test(m)) return tr('Nenhuma versão publicada encontrada.')
+  if (/403|rate limit/i.test(m)) return tr('Limite de consultas do GitHub atingido. Tente mais tarde.')
+  if (/ENOTFOUND|ETIMEDOUT|ECONNREFUSED|ERR_INTERNET|ERR_NETWORK|net::/i.test(m)) return tr('Sem conexão com a internet.')
   return m.split('\n')[0].slice(0, 200)
 }
 

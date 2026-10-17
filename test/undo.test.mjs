@@ -21,7 +21,13 @@ test('undo and redo a deleted note', async () => {
     await app.until(`document.querySelectorAll('.react-flow__node').length === 1`, 'note shown')
     await sleep(800) // history baseline
     // select the note by clicking its body (not the title input), then Delete
-    const p = await app.ev(`(() => { const r = document.querySelector('.note-body').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
+    // the canvas may still be settling (fit-to-view): click only once the note really is under that point
+    let p
+    for (let i = 0; i < 40; i++) {
+      p = await app.ev(`(() => { const r = document.querySelector('.note-body').getBoundingClientRect(); const x = r.x + r.width / 2, y = r.y + r.height / 2; return { x, y, hit: !!document.elementFromPoint(x, y)?.closest('.react-flow__node') } })()`)
+      if (p.hit) break
+      await sleep(300)
+    }
     for (const type of ['mousePressed', 'mouseReleased']) await app.send('Input.dispatchMouseEvent', { type, x: p.x, y: p.y, button: 'left', clickCount: 1 })
     await sleep(300)
     await key('Delete')

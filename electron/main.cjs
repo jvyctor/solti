@@ -9,6 +9,8 @@ const backup = require('./backup.cjs')
 const remote = require('./remote.cjs')
 const routines = require('./routines.cjs')
 const { diagnose, CLIS } = require('./diagnose.cjs')
+const i18n = require('./i18n.cjs')
+const { tr } = i18n
 const QRCode = require('qrcode')
 const portal = require('./portal.cjs')
 
@@ -296,16 +298,16 @@ const getRoutines = () => routinesInst ||= routines.create({
   run: async (r) => {
     const name = nameOf(r.target.id) || r.target.id
     if (r.target.type === 'pipeline') {
-      if (!win) throw new Error('janela fechada')
+      if (!win) throw new Error(tr('janela fechada'))
       win.webContents.send('routine:pipeline', { id: r.target.id })
-      activity.record({ kind: 'routine', from: r.name, to: 'fluxo', text: 'iniciou o fluxo', outcome: 'ok' })
-      return 'fluxo iniciado'
+      activity.record({ kind: 'routine', from: r.name, to: tr('fluxo'), text: tr('iniciou o fluxo'), outcome: 'ok' })
+      return tr('fluxo iniciado')
     }
     const t = ptys.get(r.target.id)
-    if (!t) throw new Error('agente não está rodando (abra o workspace dele)')
+    if (!t) throw new Error(tr('agente não está rodando (abra o workspace dele)'))
     typeInto(t, r.prompt)
     activity.record({ kind: 'routine', from: r.name, to: name, text: r.prompt, outcome: 'ok' })
-    return `enviado a ${name}`
+    return tr('enviado a {0}', [name])
   },
 })
 ipcMain.handle('routines:list', () => getRoutines().list())
@@ -340,7 +342,7 @@ async function applyRemote() {
   remoteError = ''
   if (S.remoteEnabled) {
     try { await getRemote().start(S.remotePort, { allowHttp: S.remoteHttp }) } catch (e) {
-      remoteError = e.code === 'EADDRINUSE' ? `Porta ${S.remotePort} em uso. Escolha outra.` : e.message
+      remoteError = e.code === 'EADDRINUSE' ? tr('Porta {0} em uso. Escolha outra.', [S.remotePort]) : e.message
       await getRemote().stop()
       settings.set({ remoteEnabled: false })
       win?.webContents.send('settings', settings.get())
@@ -352,11 +354,11 @@ ipcMain.handle('remote:status', () => ({ ...getRemote().status(), error: remoteE
 ipcMain.handle('remote:revoke', (_e, id) => { getRemote().revoke(id); return getRemote().devices() })
 ipcMain.handle('remote:pair', async () => {
   const st = getRemote().status()
-  if (!st.listening) return { error: 'Ative o controle remoto primeiro.' }
+  if (!st.listening) return { error: tr('Ative o controle remoto primeiro.') }
   await getRemote().refreshCert()
   const { token, expires } = getRemote().startPairing()
   const urls = st.addresses.flatMap((ip) => [...(st.httpPort ? [`http://${ip}:${st.httpPort}/#pair=${token}`] : []), `https://${ip}:${st.port}/#pair=${token}`])
-  if (!urls.length) return { error: 'Nenhuma rede local encontrada (conecte o computador ao Wi-Fi).' }
+  if (!urls.length) return { error: tr('Nenhuma rede local encontrada (conecte o computador ao Wi-Fi).') }
   return { urls, qr: await QRCode.toDataURL(urls[0], { margin: 1, width: 320 }), expires }
 })
 
@@ -414,6 +416,7 @@ ipcMain.on('pty:kill', (_e, id) => { ptys.get(id)?.p.kill(); ptys.delete(id); ap
 ipcMain.handle('settings:get', () => settings.get())
 ipcMain.handle('settings:set', (_e, patch) => {
   const s = settings.set(patch)
+  if ('language' in patch) i18n.init(s.language, app.getLocale())
   applyPower()
   if ('remoteHttp' in patch) restartRemote()
   else if ('remoteEnabled' in patch || 'remotePort' in patch) applyRemote()
@@ -454,7 +457,7 @@ ipcMain.handle('ws:export', async (_e, data) => {
 ipcMain.handle('ws:import', async () => {
   const r = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'JSON', extensions: ['json'] }] })
   if (r.canceled) return { canceled: true }
-  try { return { data: JSON.parse(fs.readFileSync(r.filePaths[0], 'utf8')) } } catch { return { error: 'Não foi possível ler o arquivo.' } }
+  try { return { data: JSON.parse(fs.readFileSync(r.filePaths[0], 'utf8')) } } catch { return { error: tr('Não foi possível ler o arquivo.') } }
 })
 ipcMain.on('ws:save', (_e, data) => {
   try { backup.rotate(wsFile()); backup.writeAtomic(wsFile(), JSON.stringify(data)) } catch {}
@@ -470,8 +473,11 @@ const termFile = (id) => path.join(termDir(), String(id).replace(/[^\w-]/g, '_')
 ipcMain.on('term:save', (_e, id, text) => { try { fs.mkdirSync(termDir(), { recursive: true }); fs.writeFileSync(termFile(id), text) } catch {} })
 ipcMain.handle('term:load', (_e, id) => { try { return fs.readFileSync(termFile(id), 'utf8') } catch { return '' } })
 
+app.commandLine.appendSwitch('disable-renderer-backgrounding')
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows') // a covered window must keep rendering too
 app.whenReady().then(() => {
   settings.init(app.getPath('userData'))
+  i18n.init(settings.get().language, app.getLocale())
   applyRemote()
   getRoutines().start()
   activity.init(app.getPath('userData'), (ch, d) => win?.webContents.send(ch, d))
@@ -491,12 +497,12 @@ app.whenReady().then(() => {
     const ask = (cmd) => () => win?.webContents.send('menu', cmd)
     Menu.setApplicationMenu(Menu.buildFromTemplate([
       { role: 'appMenu' },
-      { label: 'Arquivo', submenu: [{ label: 'Configurações…', accelerator: 'CmdOrCtrl+,', click: ask('settings') }, { label: 'Paleta de comandos', click: ask('palette') }, { role: 'close' }] },
+      { label: tr('Arquivo'), submenu: [{ label: tr('Configurações…'), accelerator: 'CmdOrCtrl+,', click: ask('settings') }, { label: tr('Paleta de comandos'), click: ask('palette') }, { role: 'close' }] },
       // Undo/redo are ours: the canvas has its own history, text fields keep theirs (the renderer decides).
-      { label: 'Editar', submenu: [{ label: 'Desfazer', accelerator: 'CmdOrCtrl+Z', click: ask('undo') }, { label: 'Refazer', accelerator: 'Shift+CmdOrCtrl+Z', click: ask('redo') }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
+      { label: tr('Editar'), submenu: [{ label: tr('Desfazer'), accelerator: 'CmdOrCtrl+Z', click: ask('undo') }, { label: tr('Refazer'), accelerator: 'Shift+CmdOrCtrl+Z', click: ask('redo') }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
       { role: 'viewMenu' },
       { role: 'windowMenu' },
-      { role: 'help', submenu: [{ label: 'Versões e downloads', click: () => shell.openExternal('https://github.com/jvyctor/agent-canvas-releases/releases') }] },
+      { role: 'help', submenu: [{ label: tr('Versões e downloads'), click: () => shell.openExternal('https://github.com/jvyctor/agent-canvas-releases/releases') }] },
     ]))
   }
   win =new BrowserWindow({
@@ -505,7 +511,8 @@ app.whenReady().then(() => {
     backgroundColor: '#0f1115',
     autoHideMenuBar: true,
     icon: path.join(__dirname, '..', 'build', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
-    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, webviewTag: true }, // webviewTag: browser portals
+    // backgroundThrottling off: agents keep running while the window is minimised or covered, and pipelines/status timers live in the renderer.
+    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, webviewTag: true, backgroundThrottling: false }, // webviewTag: browser portals
   })
   // "Pedir confirmação para sair": ask before closing while agents may be running.
   let confirmed = false
@@ -513,7 +520,7 @@ app.whenReady().then(() => {
     if (confirmed || !settings.get().confirmQuit) return
     e.preventDefault()
     dialog
-      .showMessageBox(win, { type: 'question', buttons: ['Sair', 'Cancelar'], defaultId: 1, cancelId: 1, message: 'Sair do Agent Canvas?', detail: 'Os agentes em execução serão encerrados.' })
+      .showMessageBox(win, { type: 'question', buttons: [tr('Sair'), tr('Cancelar')], defaultId: 1, cancelId: 1, message: tr('Sair do Agent Canvas?'), detail: tr('Os agentes em execução serão encerrados.') })
       .then((r) => { if (r.response === 0) { confirmed = true; win.close() } })
   })
   require('./updater.cjs').init(() => win, { beforeInstall: () => win.removeAllListeners('close') })

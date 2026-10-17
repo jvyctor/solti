@@ -13,6 +13,7 @@ import { Sidebar } from './Sidebar.jsx'
 import { runPipeline, stopPipeline } from './pipelineRunner.js'
 const Onboarding = lazy(() => import('./Diagnostics.jsx').then((m) => ({ default: m.Onboarding })))
 import { CommCtx, PipeCtx, PRESET_LABELS, SettingsCtx, api, ask, describe, fresh, mem, uid } from './shared.js'
+import { tr } from './i18n.js'
 
 export default function App() {
   const [state, setState] = useState(null) // { list:[{id,name,nodes,edges}], active }
@@ -75,7 +76,7 @@ export default function App() {
     })
   const remove = async (id) => {
     const w = state.list.find((x) => x.id === id)
-    if (!(await ask(`Excluir o workspace "${w?.name}" e seus terminais?`))) return
+    if (!(await ask(tr("Excluir o workspace \"{0}\" e seus terminais?", [w?.name])))) return
     w?.nodes.forEach((n) => n.type === 'terminal' && api.kill(n.id))
     setState((s) => {
       const list = s.list.filter((x) => x.id !== id)
@@ -229,12 +230,12 @@ export default function App() {
     })
 
   const paletteActions = useMemo(() => [
-    { label: 'Novo workspace', run: () => setState((s) => { const w = { id: uid('w'), name: `Workspace ${s.list.length + 1}`, nodes: [], edges: [] }; return { ...s, list: [...s.list, w], active: w.id } }) },
-    { label: 'Criar time pronto', run: () => window.dispatchEvent(new Event('ac:team')) },
-    { label: 'Configurações', run: () => setSettingsOpen(true) },
-    { label: 'Verificar atualizações', run: () => { setUpdOpen(true); api.updateCheck() } },
-    { label: 'Mostrar/ocultar barra lateral', run: toggleSide },
-    { label: 'Interromper todos os agentes', run: () => api.interrupt() },
+    { label: tr("Novo workspace"), run: () => setState((s) => { const w = { id: uid('w'), name: `Workspace ${s.list.length + 1}`, nodes: [], edges: [] }; return { ...s, list: [...s.list, w], active: w.id } }) },
+    { label: tr("Criar time pronto"), run: () => window.dispatchEvent(new Event('ac:team')) },
+    { label: tr("Configurações"), run: () => setSettingsOpen(true) },
+    { label: tr("Verificar atualizações"), run: () => { setUpdOpen(true); api.updateCheck() } },
+    { label: tr("Mostrar/ocultar barra lateral"), run: toggleSide },
+    { label: tr("Interromper todos os agentes"), run: () => api.interrupt() },
   ], [])
 
   const [confirm, setConfirm] = useState(null) // { msg, done }
@@ -263,11 +264,11 @@ export default function App() {
         <AlertDialog.Portal>
           <AlertDialog.Overlay className="dlg-back" />
           <AlertDialog.Content className="dlg">
-            <AlertDialog.Title className="dlg-title">Confirmar exclusão</AlertDialog.Title>
+            <AlertDialog.Title className="dlg-title">{tr("Confirmar exclusão")}</AlertDialog.Title>
             <AlertDialog.Description>{confirm?.msg}</AlertDialog.Description>
             <div className="dlg-actions">
-              <AlertDialog.Cancel asChild><button>Não</button></AlertDialog.Cancel>
-              <AlertDialog.Action asChild><button className="primary danger" onClick={() => answer(true)}>Sim</button></AlertDialog.Action>
+              <AlertDialog.Cancel asChild><button>{tr("Não")}</button></AlertDialog.Cancel>
+              <AlertDialog.Action asChild><button className="primary danger" onClick={() => answer(true)}>{tr("Sim")}</button></AlertDialog.Action>
             </div>
           </AlertDialog.Content>
         </AlertDialog.Portal>
@@ -276,7 +277,7 @@ export default function App() {
         <Sidebar state={state} setState={setState} onRemove={remove} onSettings={() => setSettingsOpen(true)} />
       </div>
       <main>
-        <button className={"burger" + (sideOpen ? "" : " closed")} aria-label={sideOpen ? 'Ocultar workspaces' : 'Mostrar workspaces'} title={sideOpen ? 'Ocultar workspaces' : 'Mostrar workspaces'} onClick={toggleSide}>
+        <button className={"burger" + (sideOpen ? "" : " closed")} aria-label={sideOpen ? tr("Ocultar workspaces") : tr("Mostrar workspaces")} title={sideOpen ? tr("Ocultar workspaces") : tr("Mostrar workspaces")} onClick={toggleSide}>
           <MenuIcon size={18} />
         </button>
         <span className="ws-pill">{active.name}</span>

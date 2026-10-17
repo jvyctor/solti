@@ -1,3 +1,4 @@
+import { tr } from './i18n.js'
 // Export / import of workspaces as a JSON file. Imported terminals start fresh: no worktree, conversation or "done" state.
 const FORMAT = 'agent-canvas-workspaces'
 
@@ -10,7 +11,7 @@ const fresh = (d) => {
 
 // New ids everywhere (nodes become pty ids, so they must not collide with existing ones).
 export function mergeImport(state, file, uid) {
-  if (file?.format !== FORMAT || !Array.isArray(file.list)) throw new Error('Arquivo não é uma exportação do Agent Canvas.')
+  if (file?.format !== FORMAT || !Array.isArray(file.list)) throw new Error(tr("Arquivo não é uma exportação do Agent Canvas."))
   const names = new Set(state.list.map((w) => w.name))
   const added = file.list.map((w) => {
     const ids = new Map((w.nodes || []).map((n) => [n.id, uid('n')]))

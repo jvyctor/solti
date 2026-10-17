@@ -9,7 +9,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
-import { treeKill } from './helpers.mjs'
+import { prepareProfile, treeKill } from './helpers.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -24,6 +24,7 @@ async function run(version, port, body) {
   await new Promise((r) => feed.listen(0, '127.0.0.1', r))
   const dir = mkdtempSync(join(tmpdir(), 'ac-upd-'))
   writeFileSync(join(dir, 'workspace.json'), JSON.stringify({ list: [{ id: 'w1', name: 'A', nodes: [], edges: [] }], active: 'w1' }))
+  prepareProfile(dir)
   const app = spawn(electron, ['.', `--user-data-dir=${dir}`, `--remote-debugging-port=${port}`], { stdio: 'ignore', env: { ...process.env, AC_UPDATE_URL: `http://127.0.0.1:${feed.address().port}` } })
   try {
     let page

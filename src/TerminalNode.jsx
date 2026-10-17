@@ -8,6 +8,7 @@ import { termOptions } from './themes.js'
 import { classify, STATUS } from './status.js'
 import { AGENT_COLORS, PRESET_COLOR, SettingsCtx, api, fmt, shortPath, sinks, terms } from './shared.js'
 import { Ring } from './Ring.jsx'
+import { tr } from './i18n.js'
 
 export function TerminalNode({ id, data, selected }) {
   const host = useRef(null)
@@ -66,13 +67,13 @@ export function TerminalNode({ id, data, selected }) {
           for (let i = Math.max(0, b.length - 6); i < b.length; i++) lines.push(b.getLine(i)?.translateToString(true) || '')
           cur = classify(lines)
           setStatus(cur)
-          if (cur === 'input' && !document.hasFocus() && cfgRef.current.notifyIdle) new Notification(dataRef.current.name, { body: 'Está esperando você.' })
+          if (cur === 'input' && !document.hasFocus() && cfgRef.current.notifyIdle) new Notification(dataRef.current.name, { body: tr("Está esperando você.") })
         }, 2500)
       }
       if (dataRef.current.monitor && cfgRef.current.notifyIdle) {
         clearTimeout(idle)
         const secs = cfgRef.current.idleSeconds
-        idle = setTimeout(() => new Notification(dataRef.current.name, { body: `Atividade parou (${secs} s sem saída).` }), secs * 1000)
+        idle = setTimeout(() => new Notification(dataRef.current.name, { body: tr("Atividade parou ({0} s sem saída).", [secs]) }), secs * 1000)
       }
     }
     sinks.set(id, (d) => (ready ? show(d) : held.push(d)))
@@ -85,7 +86,7 @@ export function TerminalNode({ id, data, selected }) {
       setCwd(r.cwd)
       if (r.buf) { term.write(r.buf); setBooting(false) } // pty still alive (reload): its buffer is newer than the file
       // Pushed into scrollback: the shell's startup clear only wipes the visible screen.
-      else if (saved) term.write(saved + '\r\n\x1b[2m--- sessão anterior ---\x1b[0m' + '\r\n'.repeat(term.rows))
+      else if (saved) term.write(saved + '\r\n\x1b[2m--- ' + tr('sessão anterior') + ' ---\x1b[0m' + '\r\n'.repeat(term.rows))
       ready = true
       held.forEach(show)
       dirty = false
@@ -110,7 +111,7 @@ export function TerminalNode({ id, data, selected }) {
         limitHit.current = true
         api.interrupt(id)
         setStatus('limit')
-        new Notification(data.name, { body: `Limite de ${fmt(max)} tokens atingido; agente interrompido.` })
+        new Notification(data.name, { body: tr("Limite de {0} tokens atingido; agente interrompido.", [fmt(max)]) })
       }
       if (!(max > 0 && r.tokens >= max)) limitHit.current = false
     })
@@ -142,22 +143,22 @@ export function TerminalNode({ id, data, selected }) {
         <input data-rename={id} value={data.name} onChange={(e) => updateNodeData(id, { name: e.target.value })} />
         <span className="spacer" />
         {status && <span className={'stat ' + status} title={STATUS[status].label}><i style={{ background: STATUS[status].color }} />{STATUS[status].label}</span>}
-        {tokens > 0 && <span className={'tok' + (cfg.tokenLimit > 0 && tokens >= cfg.tokenLimit ? ' over' : '')} title="Tokens usados por este agente (entrada + cache novo + saída)">{fmt(tokens)} tok</span>}
-        {data.monitor && <Activity className="mon" size={13} aria-label="Monitorando atividade" />}
-        <select className={'rolepill' + (data.maestro ? ' maestro' : '')} value={data.maestro ? 'maestro' : 'agent'} onChange={(e) => setRole(e.target.value === 'maestro')} title="Papel (use Reenviar briefing no menu para aplicar)">
-          <option value="agent">Agente</option>
-          <option value="maestro">Maestro</option>
+        {tokens > 0 && <span className={'tok' + (cfg.tokenLimit > 0 && tokens >= cfg.tokenLimit ? ' over' : '')} title={tr("Tokens usados por este agente (entrada + cache novo + saída)")}>{fmt(tokens)} {tr("tok")}</span>}
+        {data.monitor && <Activity className="mon" size={13} aria-label={tr("Monitorando atividade")} />}
+        <select className={'rolepill' + (data.maestro ? ' maestro' : '')} value={data.maestro ? 'maestro' : 'agent'} onChange={(e) => setRole(e.target.value === 'maestro')} title={tr("Papel (use Reenviar briefing no menu para aplicar)")}>
+          <option value="agent">{tr("Agente")}</option>
+          <option value="maestro">{tr("Maestro")}</option>
         </select>
-        <button className="x" aria-label="Excluir" onClick={() => deleteElements({ nodes: [{ id }] })}><X size={14} /></button>
+        <button className="x" aria-label={tr("Excluir")} onClick={() => deleteElements({ nodes: [{ id }] })}><X size={14} /></button>
       </div>
       <div className="tbody nodrag nowheel" ref={host} style={{ background: opts.theme.background, padding: `4px ${cfg.termPadding}px`, ...(data.blur ? { filter: 'blur(6px)' } : {}) }} />
-      <div className="tfoot" title={cwd}><Folder size={12} /> {shortPath(cwd)}{data.git && <span className="branch" title={data.git.worktree ? `worktree de ${data.git.base}` : 'branch da pasta'}><GitBranch size={12} /> {data.git.branch}</span>}</div>
+      <div className="tfoot" title={cwd}><Folder size={12} /> {shortPath(cwd)}{data.git && <span className="branch" title={data.git.worktree ? tr("worktree de {0}", [data.git.base]) : tr("branch da pasta")}><GitBranch size={12} /> {data.git.branch}</span>}</div>
       {booting && !data.unloaded && (
-        <div className="booting" role="status"><i />{slow ? 'O terminal está demorando para iniciar (o computador pode estar ocupado). Use Recarregar no menu do nó se não abrir.' : 'Iniciando terminal…'}</div>
+        <div className="booting" role="status"><i />{slow ? tr("O terminal está demorando para iniciar (o computador pode estar ocupado). Use Recarregar no menu do nó se não abrir.") : tr("Iniciando terminal…")}</div>
       )}
       {data.unloaded && (
         <div className="unloaded">
-          <button onClick={() => updateNodeData(id, { unloaded: false })}>Descarregado: carregar</button>
+          <button onClick={() => updateNodeData(id, { unloaded: false })}>{tr("Descarregado: carregar")}</button>
         </div>
       )}
       <Handle type="source" position={Position.Right} /><Ring />

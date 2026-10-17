@@ -16,6 +16,7 @@ const DEFAULTS = {
   notifyIdle: true,
   idleSeconds: 6,
   autoUpdate: true,
+  language: 'auto', // auto | pt | en
   onboarded: false, // first-run welcome already shown
   // Controle remoto (celular)
   remoteEnabled: false,

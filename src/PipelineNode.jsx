@@ -4,6 +4,7 @@ import { Workflow, X, Play, Square, Plus, Trash2 } from 'lucide-react'
 import { settle } from './pipeline.js'
 import { isRunning } from './pipelineRunner.js'
 import { PipeCtx } from './shared.js'
+import { tr } from './i18n.js'
 
 const MARK = { ok: '✓', stopped: '■', timeout: '⏱', running: '…' }
 
@@ -30,41 +31,41 @@ export default function PipelineNode({ id, data, selected }) {
       <NodeResizer minWidth={340} minHeight={240} isVisible={selected} />
       <Handle type="target" position={Position.Left} />
       <div className="thead">
-        <Workflow size={15} aria-label="Fluxo" />
-        <span className="diff-title">Fluxo</span>
+        <Workflow size={15} aria-label={tr("Fluxo")} />
+        <span className="diff-title">{tr("Fluxo")}</span>
         <span className="spacer" />
-        <button className="x" aria-label="Excluir" onClick={() => deleteElements({ nodes: [{ id }] })}><X size={14} /></button>
+        <button className="x" aria-label={tr("Excluir")} onClick={() => deleteElements({ nodes: [{ id }] })}><X size={14} /></button>
       </div>
       <div className="pipe-body nodrag nowheel">
-        <label className="pipe-lab"><span>Entrada (usada como <code>{'{{input}}'}</code>)</span>
-          <textarea rows={2} value={data.input || ''} placeholder="O que este fluxo deve produzir" disabled={running} onChange={(e) => set({ input: e.target.value })} />
+        <label className="pipe-lab"><span>{tr("Entrada (usada como")} <code>{tr("{{input}}")}</code>)</span>
+          <textarea rows={2} value={data.input || ''} placeholder={tr("O que este fluxo deve produzir")} disabled={running} onChange={(e) => set({ input: e.target.value })} />
         </label>
         {steps.map((s, i) => (
           <div key={i} className={'pipe-step ' + (data.results?.[i]?.state || '')}>
             <div className="pipe-row">
               <b>{i + 1}</b>
               <select value={s.agent || ''} disabled={running} onChange={(e) => setStep(i, { agent: e.target.value })}>
-                <option value="">— agente —</option>
+                <option value="">{tr("— agente —")}</option>
                 {agents.map((a) => <option key={a.id} value={a.id}>{a.data.name}</option>)}
               </select>
               <span className="pipe-mark" title={data.results?.[i]?.state}>{MARK[data.results?.[i]?.state] || ''}</span>
-              <button className="x" aria-label="Remover passo" disabled={running} onClick={() => set({ steps: steps.filter((_, k) => k !== i) })}><Trash2 size={13} /></button>
+              <button className="x" aria-label={tr("Remover passo")} disabled={running} onClick={() => set({ steps: steps.filter((_, k) => k !== i) })}><Trash2 size={13} /></button>
             </div>
-            <textarea rows={2} value={s.prompt || ''} placeholder="Instrução. Use {{input}}, {{prev}} ou {{step1}}…" disabled={running} onChange={(e) => setStep(i, { prompt: e.target.value })} />
-            <input value={s.stopIf || ''} placeholder="Parar se o resumo contiver… (opcional)" disabled={running} onChange={(e) => setStep(i, { stopIf: e.target.value })} />
+            <textarea rows={2} value={s.prompt || ''} placeholder={tr("Instrução. Use {{input}}, {{prev}} ou {{step1}}…")} disabled={running} onChange={(e) => setStep(i, { prompt: e.target.value })} />
+            <input value={s.stopIf || ''} placeholder={tr("Parar se o resumo contiver… (opcional)")} disabled={running} onChange={(e) => setStep(i, { stopIf: e.target.value })} />
             {data.results?.[i]?.summary && <p className="pipe-sum">{data.results[i].summary}</p>}
           </div>
         ))}
-        <button className="set-btn" disabled={running} onClick={() => set({ steps: [...steps, { agent: '', prompt: '', stopIf: '' }] })}><Plus size={13} /> Passo</button>
+        <button className="set-btn" disabled={running} onClick={() => set({ steps: [...steps, { agent: '', prompt: '', stopIf: '' }] })}><Plus size={13} /> {tr("Passo")}</button>
       </div>
       <div className="diff-foot nodrag">
         {data.note && <p className="err">{data.note}</p>}
-        {data.state === 'done' && <p className="ok">Fluxo concluído.</p>}
+        {data.state === 'done' && <p className="ok">{tr("Fluxo concluído.")}</p>}
         <div className="row">
-          <label className="pipe-hint"><input type="checkbox" checked={data.hint !== false} disabled={running} onChange={(e) => set({ hint: e.target.checked })} /> lembrar o agente de chamar <code>canvas_done</code></label>
+          <label className="pipe-hint"><input type="checkbox" checked={data.hint !== false} disabled={running} onChange={(e) => set({ hint: e.target.checked })} /> {tr("lembrar o agente de chamar")} <code>{tr("canvas_done")}</code></label>
           {running
-            ? <button onClick={() => stop(id)}><Square size={12} /> Parar</button>
-            : <button disabled={!steps.length} onClick={() => start(id)}><Play size={12} /> Executar</button>}
+            ? <button onClick={() => stop(id)}><Square size={12} /> {tr("Parar")}</button>
+            : <button disabled={!steps.length} onClick={() => start(id)}><Play size={12} /> {tr("Executar")}</button>}
         </div>
       </div>
       <Handle type="source" position={Position.Right} />
