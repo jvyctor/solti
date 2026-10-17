@@ -1,127 +1,184 @@
+<div align="center">
+
+<img src="build/icon.svg" width="112" alt="Agent Canvas logo" />
+
 # Agent Canvas
 
-Canvas para orquestrar agentes de IA (Claude Code, Codex, Gemini, Antigravity, OpenCode) em terminais conectados.
-Um **Maestro** delega e agentes executam, trocando mensagens por ferramentas MCP (`canvas_send`, `canvas_ask`, `canvas_spawn`…).
+**Run a team of AI coding agents side by side on one canvas.** Claude Code, Codex, Gemini CLI, OpenCode and Antigravity work in real terminals, roped together. A maestro delegates, agents message each other, and you watch, approve and steer.
 
-Stack: Electron + React + Vite + xterm.js + node-pty + React Flow.
+[![CI](https://github.com/jvyctor/agent-canvas/actions/workflows/ci.yml/badge.svg)](https://github.com/jvyctor/agent-canvas/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/jvyctor/agent-canvas?label=download&color=f2c230)](https://github.com/jvyctor/agent-canvas/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/jvyctor/agent-canvas/total?color=4cc38a)](https://github.com/jvyctor/agent-canvas/releases)
+[![Platforms](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-7c9cff)](#download)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/jvyctor/agent-canvas?style=social)](https://github.com/jvyctor/agent-canvas/stargazers)
 
-## Rodar em desenvolvimento
+**[Download](#download)** · **[What it does](#what-it-does)** · **[Quick start](#quick-start)** · **[How it works](#how-it-works)** · **[Changelog](CHANGELOG.md)** · **[Português](README.pt-BR.md)**
 
-Requisitos: Windows, Node.js 22+ e os CLIs de agente que quiser usar (já logados).
+<img src="docs/screenshots/canvas.png" alt="A maestro and three agents (dev, tester, reviewer) working on one canvas, with a pipeline and shared project knowledge" width="100%" />
 
+</div>
+
+---
+
+## Why
+
+Running one AI coding agent is easy. Running **four** gets messy: separate terminal windows, copy-pasting outputs from one to another, no idea who is waiting for you, and no way to say "when the dev finishes, have the reviewer check it, and loop until it passes".
+
+Agent Canvas puts every agent on one infinite canvas and lets them **work as a team**:
+
+- 🎼 **A maestro delegates** to specialists, who report back with `canvas_done`.
+- 🔗 **Ropes are permissions.** An agent can only message, read or hand work to what it is roped to.
+- 🔁 **Pipelines** chain agents: run steps in parallel, loop back when the reviewer says "REJECTED", and pause for your approval before shipping.
+- 💸 **Budgets** stop a workspace or a pipeline before it burns through your tokens.
+- 🌿 **Git worktree per agent**, so three agents never fight over the same files.
+
+Agent Canvas uses the agent CLIs you already have, logged in to your own accounts. It needs no API keys, has no backend and sends no telemetry.
+
+## Download
+
+| | Installer | Notes |
+|---|---|---|
+| <img src="https://cdn.simpleicons.org/windows11/0078D4" width="16" /> **Windows** 10/11 | [**Agent-Canvas-Setup.exe**](https://github.com/jvyctor/agent-canvas/releases/latest) | Not code-signed yet: on the SmartScreen warning, click **More info → Run anyway**. Auto-updates. |
+| <img src="https://cdn.simpleicons.org/apple/999999" width="16" /> **macOS** | [**.dmg** (Apple Silicon / Intel)](https://github.com/jvyctor/agent-canvas/releases/latest) | Not notarized yet: the first time, **right-click the app → Open**. You can also run `xattr -dr com.apple.quarantine "/Applications/Agent Canvas.app"`. |
+| <img src="https://cdn.simpleicons.org/linux/FCC624" width="16" /> **Linux** x64 | [**.deb** or **.AppImage**](https://github.com/jvyctor/agent-canvas/releases/latest) | Prefer the `.deb` on Ubuntu 23.10+. For the AppImage: `chmod +x Agent-Canvas-*.AppImage`. It auto-updates. |
+
+👉 The **[download page](https://jvyctor.github.io/agent-canvas/)** picks the right file for your system. Every version and its changes are on **[Releases](https://github.com/jvyctor/agent-canvas/releases)** and in the **[Changelog](CHANGELOG.md)**.
+
+You also need at least one agent CLI installed and logged in: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex), [Gemini CLI](https://github.com/google-gemini/gemini-cli), [OpenCode](https://opencode.ai) or Antigravity. On first launch, the welcome screen checks each one and connects the canvas to it with one click.
+
+## What it does
+
+### Teams of agents, roped together
+
+Create a ready-made team (maestro + dev + reviewer + tester) or drop terminals anywhere and rope them together. Each agent gets a short role briefing and a handful of tools:
+
+| Tool | What it does |
+|---|---|
+| `canvas_send` / `canvas_ask` | Message a roped agent, or ask it a question and wait for the answer |
+| `canvas_spawn` | The maestro creates a new specialist, already roped to it |
+| `canvas_done` | Report a result. It drives the **Done** badge, pipelines and notifications |
+| `canvas_read` / `canvas_peers` | Read what is roped to you: another terminal, a note, a web page, a file tree, a diff |
+| `canvas_portal` | Drive a browser node: open, click, type, screenshot |
+| `canvas_knowledge` / `canvas_remember` | Shared project notes for the whole workspace |
+
+Live status on every agent (**working**, **waiting for you**, **idle**, **done**), tokens and estimated cost on each one, and conversations that **resume** after a restart.
+
+### Pipelines: parallel, loops and human approval
+
+<img src="docs/screenshots/pipeline.png" align="right" width="330" alt="A pipeline: dev and tester in parallel, a reviewer that loops back on REJECTED, and a human approval step" />
+
+Chain agents into a pipeline. Each step types an instruction into an agent and waits for its `canvas_done`. A step can use these placeholders:
+
+- `{{input}}`: the pipeline's input;
+- `{{prev}}`: what the previous step concluded;
+- `{{step1}}`, `{{step2}}`…: the result of each step.
+
+- **Parallel**: dev and tester work at the same time, and the next step gets both results.
+- **Loops**: "if the summary contains `REJECTED`, go back to step 1, at most 3 times". The dev gets the review as `{{prev}}`.
+- **Human approval**: pause before shipping. Approve from the app or from your phone.
+- **Timeouts, budget in US$, recent runs**, and a restore point before every run.
+- **Routines**: start a pipeline every day at 9:00, or every N minutes.
+
+<br clear="right"/>
+
+### Costs you can see, and budgets that stop the spend
+
+<img src="docs/screenshots/costs-panel.png" align="right" width="300" alt="Estimated cost per agent and model, a workspace budget and spend per day" />
+
+Each agent shows its tokens and an **estimated cost**, worked out from the model in its own CLI log. Set a **budget** per workspace or per pipeline: when it is reached, the agents are interrupted and pipelines stop. The prices table is editable. On subscription plans (Claude Pro/Max, ChatGPT Plus) the figure is what the same usage would cost on the API.
+
+<br clear="right"/>
+
+### History of every agent, and restore points
+
+<img src="docs/screenshots/history-dialog.png" alt="Searchable history of the reviewer: requests from the pipeline and its verdicts" width="100%" />
+
+Each agent has a searchable timeline:
+
+- what you typed;
+- what pipelines and routines asked it;
+- messages it exchanged;
+- every `canvas_done`.
+
+**Restore points** snapshot every workspace, by hand or automatically before each pipeline. Restoring keeps running the terminals that exist in both versions.
+
+### And also
+
+- **Review (Diff) node**: see the agent's changes, approve (commit), merge or open a PR.
+- **Portals**: a real browser on the canvas that agents can read and drive.
+- **Phone remote**: watch terminals, type, approve requests and interrupt, over your Wi-Fi with QR pairing.
+- **Notifications** when an agent finishes or needs you. Clicking one jumps to that terminal.
+- **Approval gate**: ask before agents create agents, message each other or drive a browser.
+- **Command palette** (`Ctrl/⌘+K`): jump to any terminal, search everything agents printed, run actions.
+- Undo/redo, automatic backups, export/import, per-terminal themes, English and Portuguese UI.
+
+## Quick start
+
+1. Install Agent Canvas ([Download](#download)) and at least one agent CLI, logged in.
+2. Open it. The welcome screen checks your CLIs; click **Fix** if the canvas is not connected yet.
+3. Click **Create a team** → **Development**. A maestro and three specialists appear, already roped.
+4. Tell the maestro what you want ("add OAuth login with tests"). It splits the work, the specialists report back with `canvas_done`, and you get a notification when they are done.
+5. Right-click the canvas → **Add → Pipeline** to automate the loop: dev ∥ tester → reviewer (loops on `REJECTED`) → your approval.
+
+## How it works
+
+```mermaid
+flowchart LR
+  subgraph App["Agent Canvas (Electron)"]
+    UI["Canvas UI (React)"]
+    Bridge["Local bridge<br/>127.0.0.1 + secret token"]
+    PTY["Real terminals<br/>(node-pty)"]
+  end
+  subgraph Agents["Your agent CLIs"]
+    A1["Claude Code"]
+    A2["Codex"]
+    A3["Gemini CLI"]
+  end
+  MCP["canvas MCP server<br/>canvas_send · canvas_done · …"]
+  UI <--> Bridge
+  UI <--> PTY
+  PTY --> A1 & A2 & A3
+  A1 & A2 & A3 -- "MCP tools" --> MCP
+  MCP -- "HTTP" --> Bridge
+  Phone["📱 Phone remote"] -. "HTTPS, paired" .-> Bridge
 ```
+
+- Each terminal node is a real pseudo-terminal running your shell. The agent CLI is typed into it, so it behaves exactly as in your own terminal.
+- The app registers a small **MCP server** with each CLI. Its tools call the app's local bridge, which only accepts calls with the secret token and only reaches nodes the agent is **roped** to.
+- Everything stays on your machine. The app only makes network calls for update checks, the Claude quota display (with Claude Code's own login), and what you ask for (cloning a repository, a PR, the pages in Portals).
+
+## Build from source
+
+```bash
+git clone https://github.com/jvyctor/agent-canvas.git && cd agent-canvas
 npm install
-npm run dev
+npm run dev                 # development, hot reload
+npm run dist                # Windows installer (see package.json for --mac / --linux)
 ```
 
-`npm install` baixa o binário do Electron; se o script de instalação for bloqueado, rode `node node_modules/electron/install.js`.
+Tests: `npm run test:unit` (any OS, seconds), `npm run test:smoke` (the built app on any OS) and `npm test` (the full UI suite, on Windows). CI runs the unit and smoke tests on Windows, macOS and Linux for every push. Project layout and conventions are in **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
-## Gerar o instalador (Windows)
+## Roadmap
 
-```
-npm run dist
-```
+- [ ] Code-signed and notarized builds
+- [ ] Inline comments on the Diff node that go back to the agent as instructions
+- [ ] Warning when two agents change the same files in different worktrees
+- [ ] Shareable team and pipeline templates
+- [ ] Briefings and skills in English
 
-Saída: `%LOCALAPPDATA%\agent-canvas-release\Agent-Canvas-Setup-<versão>.exe`.
-O instalador não é assinado; o SmartScreen mostra um aviso na primeira execução.
+Have an idea? [Open a feature request](https://github.com/jvyctor/agent-canvas/issues/new/choose).
 
-## Windows, macOS e Linux
+## Contributing
 
-O app roda nos três sistemas. O instalador de cada um sai do GitHub Actions (aba Actions → "Build installers" → Run workflow, com os arquivos como artefato por 3 dias) ou, ao criar uma tag, vai direto para a Release.
+Issues and pull requests are welcome. Read **[CONTRIBUTING.md](CONTRIBUTING.md)** first, and report security issues privately (see **[SECURITY.md](SECURITY.md)**).
 
-- **Windows**: instalador `.exe` (não assinado; o SmartScreen avisa na primeira execução).
-- **macOS**: `.dmg` / `.zip` (Intel e Apple Silicon), **não assinado**: na primeira abertura use botão direito → Abrir (ou `xattr -dr com.apple.quarantine "/Applications/Agent Canvas.app"`). A atualização automática do Mac não funciona sem assinatura: o botão abre a página de download.
-- **Linux**: `.AppImage` (`chmod +x` e executar) ou `.deb`. O AppImage se atualiza sozinho.
-- No Mac/Linux o terminal usa o seu `$SHELL` (no Mac, como shell de login, igual ao Terminal). O app carrega o PATH do seu shell de login ao abrir, para achar CLIs instalados via Homebrew, nvm ou `~/.local/bin` mesmo quando aberto pelo Dock ou pelo menu. O comando `canvas` funciona dentro dos terminais (script `bin/canvas`).
-- Ao fechar, o app encerra a árvore inteira de processos de cada terminal: `taskkill /T` no Windows, descendentes via `ps` no Mac/Linux.
-- **Linux, AppImage no Ubuntu 23.10+**: o AppArmor do Ubuntu bloqueia o sandbox do Chromium em AppImages, e o app pode não abrir. Prefira o `.deb`, que instala o `chrome-sandbox` com as permissões certas. Se precisar do AppImage, rode com `--no-sandbox`, sabendo que isso desliga o isolamento das páginas web dos Portais.
-- Os testes de interface completos (`npm test`) são do Windows (PowerShell). Em Mac e Linux, o CI roda os testes unitários e o teste de fumaça.
+## Support the project
 
-**O que foi verificado no Linux** (Debian 12 em container, Node 22): `npm ci` compila o node-pty, os testes unitários passam, e o teste de fumaça passa sob tela virtual (o app abre, o bash roda o `canvas` e fechar encerra os processos do terminal). O `.AppImage` e o `.deb` são gerados. O Mac é verificado pelo CI no GitHub (macOS), mas ainda não foi aberto numa máquina Mac real.
+If Agent Canvas saves you time, **[give it a ⭐ on GitHub](https://github.com/jvyctor/agent-canvas/stargazers)**. It is the simplest way to help, and it helps other developers find the project.
 
-## Publicar uma versão
+[![Star History Chart](https://api.star-history.com/svg?repos=jvyctor/agent-canvas&type=Date)](https://star-history.com/#jvyctor/agent-canvas&Date)
 
-O app confere atualizações no repositório público de releases `jvyctor/agent-canvas-releases` (só instaladores; o código fica neste repositório privado). Não precisa de token no app.
+## License
 
-1. Suba `"version"` no `package.json` (ex.: `0.2.2` → `0.2.3`) e faça commit/push.
-2. Rode, com um token do GitHub com permissão de escrita no repositório de releases em `GH_TOKEN`:
-   ```
-   npm run release
-   ```
-   Com o Git Credential Manager (Git Bash):
-   ```
-   GH_TOKEN=$(printf 'protocol=https\nhost=github.com\n\n' | git credential fill | sed -n 's/^password=//p') npm run release
-   ```
-3. Se falhar com `422 ... valid tag`, rode o mesmo comando de novo: ele reaproveita a Release e envia o que faltou. Leva alguns minutos (o instalador tem ~110 MB).
-4. Confira na Release `vX.Y.Z` os 3 arquivos: `Agent-Canvas-Setup-X.Y.Z.exe`, `.exe.blockmap` e `latest.yml`.
-
-**Automático (recomendado):** com o segredo `RELEASES_TOKEN` configurado no repositório (Settings → Secrets → Actions; token com escrita em `jvyctor/agent-canvas-releases`), basta subir a versão no `package.json`, fazer commit/push e criar a tag:
-
-```
-git tag v0.6.0
-git push origin v0.6.0
-```
-
-O GitHub Actions (`.github/workflows/release.yml`) confere se a tag bate com o `package.json`, roda os testes unitários, cria a Release e publica os instaladores de Windows, macOS e Linux, sem o erro 422.
-
-Quem tem uma versão anterior (a partir da 0.2.1) recebe o aviso ao abrir o app, ou em Configurações → Atualizações → Verificar atualizações.
-
-Testes: `npm run build` e depois `npm test` (abre o app em perfil temporário; inclui o fluxo de atualização com um feed falso). `npm run test:unit` roda só os testes sem interface (segundos) e `npm run test:smoke` o teste de fumaça que funciona em Windows, macOS e Linux.
-
-**CI** (`.github/workflows/ci.yml`): a cada push e pull request, testes unitários e o teste de fumaça do app compilado em Windows, macOS e Linux (este com tela virtual). O workflow de release roda o mesmo CI antes de publicar.
-
-## Recursos de orquestração
-
-- **Worktree por agente**: em "Novo terminal…" escolha uma pasta ou um link do Git, a branch de partida e (marcado por padrão) "Isolar em worktree". Cada agente trabalha na própria branch `canvas/<nome>`, numa pasta separada.
-- **Revisão (Diff)**: nó ligado por corda a um agente em worktree. Lista os arquivos alterados, mostra o diff e tem **Aprovar** (commit), **Merge** na branch-base e **PR** (envia a branch e abre a página de PR do GitHub).
-- **Retomar conversa**: ao reabrir o app (ou "Recarregar"), Claude, Codex, Gemini, OpenCode e Antigravity retomam a conversa anterior (Antigravity, Codex e OpenCode pela conversa mais recente da pasta). "Nova conversa" começa do zero.
-- **Status ao vivo** em cada agente: trabalhando, esperando você, ocioso, encerrado (detectado pela saída do terminal).
-- **Conhecimento do projeto**: nó de memória compartilhada por workspace. Os agentes leem no início e usam `canvas_knowledge` / `canvas_remember`.
-- **Fluxos (pipeline)**: nó "Fluxo" com passos (agente + instrução). Executa em sequência: digita a instrução no agente, espera ele chamar `canvas_done` e passa o resumo ao próximo (`{{input}}`, `{{prev}}`, `{{step1}}`). "Parar se o resumo contiver…" encerra o fluxo. O fluxo só roda enquanto o app está aberto.
-  - **Paralelo**: o botão de colunas num passo faz ele rodar ao mesmo tempo que o passo de cima (agentes diferentes); o fluxo espera todos, e o `{{prev}}` seguinte traz uma linha `nome: resumo` por agente.
-  - **Repetição**: "Se o resumo contiver X, voltar ao passo N, no máximo M vezes" (ex.: revisor reprovou → volta ao dev com a revisão em `{{prev}}`). Esgotadas as repetições, o fluxo segue e avisa.
-  - **Tempo limite** por passo (15 min por padrão) e **orçamento** do fluxo em US$ (gasto dos agentes do fluxo desde o início; ao atingir, para e interrompe os agentes).
-  - **Aprovação humana**: um passo "Aprovação" pausa o fluxo até você permitir, no diálogo do app ou pelo celular (o texto pode usar `{{prev}}`). Sem resposta no prazo (60 min por padrão) ou negado, o fluxo para.
-  - Cada execução fica registrada (estado, rodadas, duração e gasto) em "Últimas execuções" e no histórico.
-  - Antes de cada execução o app cria um **ponto de restauração**.
-- **Notificações do sistema** (Configurações → Geral → Notificações): agente concluiu (com o resumo), agente esperando você, fluxo terminou ou parou, orçamento atingido. Só aparecem com a janela fora de foco; clicar traz o app e centraliza o terminal.
-- **Custo e orçamento**: cada agente mostra tokens e o custo estimado pelo preço de API do modelo que aparece no log do CLI (Claude, Codex, Gemini). O painel de uso soma o gasto do workspace e aceita um **orçamento em US$**: ao atingir, os agentes do workspace são interrompidos, os fluxos param e novos fluxos ficam bloqueados até você aumentar o valor. A tabela de preços (US$ por 1M de tokens, por prefixo do modelo) fica em Configurações → Agentes e pode ser editada. Em planos por assinatura não há cobrança por token: o valor é o que custaria pela API.
-- **Histórico por agente**: botão direito num terminal → Histórico… (ou Ctrl+K → "Histórico dos agentes"). É uma linha do tempo, com busca e filtro por tipo, que reúne:
-  - o que você digitou;
-  - o que foi pedido ao agente (fluxos, rotinas);
-  - as mensagens e perguntas trocadas;
-  - os resumos de `canvas_done`.
-
-  O registro do que você digita pode ser desligado em Configurações → Agentes. Ele não vale para terminais de shell simples nem para uma linha digitada logo após um pedido de senha ou token.
-- **Gasto por dia**: o painel de uso mostra um gráfico dos últimos 14 dias do workspace (`costs.json` na pasta de dados), a partir do crescimento do custo de cada conversa.
-- **Pontos de restauração** (Configurações → Dados, ou Ctrl+K): cópias nomeadas de todos os workspaces, feitas por você, antes de cada fluxo e antes de restaurar (as 30 mais recentes). Restaurar mantém rodando os terminais que existem nas duas versões.
-- **Estabilidade**: fechar o app (ou um terminal) encerra a árvore inteira de processos de cada terminal (agente, servidores MCP, servidores de dev). Erros internos vão para `logs/main.log` na pasta de dados e aparecem como um aviso discreto; Configurações → Diagnóstico → **Copiar diagnóstico** junta versões, estado dos agentes e o log recente para relatar problemas.
-- **Concluído**: agentes chamam `canvas_done(resumo)` ao terminar; o terminal mostra "Concluído" e, se você estava fora da janela, ao voltar aparece o resumo de quem terminou.
-- **Segurança do trabalho**: backup automático a cada 10 min (20 últimos, em `%APPDATA%gent-canvasackups`), gravação atômica, restauração automática se o arquivo estragar, exportar/importar workspaces (Configurações → Dados) e desfazer/refazer (Ctrl+Z / Ctrl+Shift+Z).
-- **Paleta (Ctrl+K)**: ir para workspace ou terminal, buscar na saída dos terminais e executar ações.
-- **Primeira execução e diagnóstico**: ao abrir pela primeira vez, uma tela de boas-vindas mostra se cada agente (Claude, Codex, Gemini, Antigravity, OpenCode) está instalado, logado (estimativa a partir dos arquivos do CLI) e com o canvas registrado, com botão **Consertar**. Fica em Configurações → Diagnóstico. Um canvas vazio oferece "Criar um time".
-- **Times prontos**: Desenvolvimento (maestro + dev + revisor + testador), Dupla e Revisão, já ligados por cordas, com instruções de papel e worktree por especialista (menu Adicionar → Time pronto…, ou Ctrl+K).
-- **Rotinas agendadas** (Configurações → Rotinas): mandam uma instrução a um agente, ou iniciam um fluxo, todo dia em horário fixo, a cada N minutos ou uma vez. Só funcionam com o app aberto; um horário diário perdido é pulado.
-- **Fluxos** continuam rodando se você abrir outro workspace.
-- **Aparência por terminal**: botão direito num terminal → Aparência… (esquema, cores, fonte), sobrepondo as configurações globais só naquele terminal.
-- **Idioma**: Português e English (Configurações → Geral → Idioma; automático por padrão, segue o idioma do sistema). A página do celular segue o idioma do navegador e as instruções dos times prontos são traduzidas; os briefings e skills que o app instala nos agentes continuam em português.
-- **macOS**: menu nativo e atalhos com Cmd (⌘K paleta, ⌘, configurações, ⌘Z desfazer no canvas).
-- **Controle de uso**: tokens por agente (Claude Code, Codex e Gemini; no Codex é a sessão mais recente da pasta do agente), limite configurável em Configurações → Agentes, e "Interromper todos os agentes" no painel de uso.
-- **Controle remoto (celular)**: Configurações → Controle remoto. Liga um servidor HTTPS na sua rede Wi-Fi; você escaneia um QR code (uso único, 2 minutos) e o celular passa a ver os terminais ao vivo, digitar, aprovar pedidos dos agentes e interromper. Cada celular tem credencial própria, revogável; nada de configuração ou criação/exclusão pelo celular; 10 tentativas inválidas bloqueiam o endereço por 10 minutos. O certificado é autoassinado (o navegador avisa na primeira vez). Use só em redes de confiança.
-- **Atividade e aprovação**: o botão de pergaminho (canto inferior direito) mostra a linha do tempo do que os agentes fizeram entre si. Em Configurações → Agentes → Segurança você escolhe pedir aprovação ao criar agentes (padrão), em tudo ou nunca; sem resposta em 2 minutos o pedido é negado.
-- **Portal controlável**: o agente ligado a um Portal usa `canvas_portal` para abrir URLs (http/https), clicar, digitar, rolar e tirar capturas de tela. `canvas_peers` / `canvas_read` mostram e leem tudo que está ligado ao agente (notas, portais, árvores de arquivos, revisões).
-
-## Estrutura
-
-- `electron/` processo principal. `main.cjs` só inicializa; o resto fica em módulos:
-  - `state.cjs`: estado compartilhado (terminais, grafo, janela).
-  - `terminals.cjs`: PTYs, comando de cada agente, o que você digita.
-  - `bridge.cjs`: API local que os agentes usam.
-  - `window.cjs`: janela e menu do Mac.
-  - `ipc.cjs`: configurações, rotinas, celular, git, histórico, pontos, custos.
-  - Também: `proc.cjs` (encerra árvores de processos), `ledger.cjs` (gasto por dia), `inputlog.cjs`, `pricing.cjs`, registro do MCP, briefings e skills.
-- `bin/` CLI `canvas` e servidor MCP (`canvas-mcp.cjs`), usados pelos agentes dentro dos terminais.
-- `src/` interface React (canvas, sidebar, configurações, temas).
-- `build/` ícone (`icon.svg` → `npm run icons`).
-
-Dados do usuário (workspaces, configurações) ficam em `%APPDATA%\agent-canvas`, fora do repositório.
+[MIT](LICENSE) © João Vyctor

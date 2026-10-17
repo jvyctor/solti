@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agent Canvas · AI coding agents, as a team</title>
+<meta name="description" content="Run Claude Code, Codex, Gemini CLI and OpenCode side by side on one canvas. A maestro delegates, agents talk to each other, pipelines with loops and human approval. Free and open source for Windows, macOS and Linux." />
+<meta property="og:title" content="Agent Canvas · AI coding agents, as a team" />
+<meta property="og:description" content="A maestro delegates, agents talk to each other, pipelines loop until the reviewer approves. Windows, macOS, Linux. Open source." />
+<meta property="og:image" content="https://jvyctor.github.io/agent-canvas/screenshots/canvas.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0d0f14; --surface: #151922; --surface-2: #1b202b; --border: #262c39; --text: #eef0f5; --text-2: #b4bac7; --text-3: #818899;
+    --accent: #7c9cff; --gold: #f2c230; --green: #4cc38a; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 Inter, system-ui, -apple-system, Segoe UI, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+  header { position: sticky; top: 0; z-index: 10; background: rgba(13, 15, 20, .82); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+  header .wrap { display: flex; align-items: center; gap: 14px; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; }
+  .brand img { width: 28px; height: 28px; }
+  nav { margin-left: auto; display: flex; align-items: center; gap: 18px; font-size: 14px; color: var(--text-2); }
+  nav a { text-decoration: none; }
+  nav a:hover { color: var(--text); }
+  .gh { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text); text-decoration: none; font-weight: 600; }
+  .gh:hover { border-color: var(--gold); }
+  .gh .count { color: var(--gold); font-variant-numeric: tabular-nums; }
+  .hero { padding: 72px 0 36px; text-align: center; }
+  .pill { display: inline-block; padding: 4px 12px; margin-bottom: 18px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-2); font-size: 13px; }
+  h1 { margin: 0 auto; max-width: 820px; font-size: clamp(34px, 5.4vw, 60px); line-height: 1.08; letter-spacing: -.02em; font-weight: 800; }
+  h1 em { font-style: normal; background: linear-gradient(90deg, var(--gold), #ff9a4a 45%, var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lead { max-width: 720px; margin: 20px auto 0; color: var(--text-2); font-size: clamp(16px, 2vw, 19px); }
+  .cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 32px; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-weight: 600; text-decoration: none; transition: transform .12s ease, border-color .12s ease; }
+  .btn:hover { transform: translateY(-1px); border-color: var(--text-3); }
+  .btn.primary { background: var(--gold); border-color: var(--gold); color: #1a1406; }
+  .btn.primary:hover { border-color: #fff3c4; }
+  .btn small { display: block; font-weight: 500; font-size: 12px; opacity: .75; }
+  .btn svg { flex: none; }
+  .meta { margin-top: 12px; font-size: 13px; color: var(--text-3); }
+  .meta a { color: var(--text-2); }
+  .shot { margin: 44px auto 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.03); }
+  .shot img { display: block; width: 100%; height: auto; }
+  section { padding: 64px 0; }
+  h2 { margin: 0 0 8px; font-size: clamp(26px, 3.4vw, 36px); letter-spacing: -.01em; }
+  .sub { margin: 0 0 32px; color: var(--text-2); max-width: 680px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  .card { padding: 22px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+  .card h3 { margin: 10px 0 6px; font-size: 17px; }
+  .card p { margin: 0; color: var(--text-2); font-size: 14.5px; }
+  .ico { font-size: 22px; }
+  .feature { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; padding: 28px 0; }
+  .feature.flip .copy { order: 2; }
+  .feature img { width: 100%; border: 1px solid var(--border); border-radius: var(--radius); }
+  .feature ul { padding-left: 20px; color: var(--text-2); }
+  .feature li { margin: 6px 0; }
+  code { padding: 1px 6px; border-radius: 6px; background: var(--surface-2); font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--text); }
+  .dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .dl .card a.btn { margin-top: 14px; width: 100%; justify-content: center; }
+  .dl .card .alt { display: flex; gap: 8px; margin-top: 8px; }
+  .dl .card .alt a { flex: 1; text-align: center; padding: 9px; font-size: 13.5px; border: 1px solid var(--border); border-radius: 10px; text-decoration: none; color: var(--text-2); }
+  .dl .card .alt a:hover { color: var(--text); border-color: var(--text-3); }
+  .note { margin-top: 12px; font-size: 13px; color: var(--text-3); }
+  .star-band { text-align: center; padding: 56px 20px; border: 1px solid var(--border); border-radius: var(--radius); background: radial-gradient(600px 200px at 50% 0%, rgba(242,194,48,.12), transparent), var(--surface); }
+  footer { padding: 36px 0 60px; color: var(--text-3); font-size: 14px; border-top: 1px solid var(--border); }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 18px; justify-content: space-between; }
+  @media (max-width: 780px) {
+    nav .hide-sm { display: none; }
+    .feature { grid-template-columns: 1fr; gap: 18px; }
+    .feature.flip .copy { order: 0; }
+    .hero { padding-top: 48px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="brand" href="#"><img src="icon.svg" alt="" />Agent Canvas</a>
+    <nav>
+      <a class="hide-sm" href="#features">Features</a>
+      <a class="hide-sm" href="#download">Download</a>
+      <a class="hide-sm" href="https://github.com/jvyctor/agent-canvas/blob/main/CHANGELOG.md">Changelog</a>
+      <a class="gh" href="https://github.com/jvyctor/agent-canvas" aria-label="Star Agent Canvas on GitHub">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Star <span class="count" id="stars">★</span>
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <span class="pill">Free &amp; open source · Windows · macOS · Linux</span>
+    <h1>Your AI coding agents, <em>working as a team</em></h1>
+    <p class="lead">Run Claude Code, Codex, Gemini CLI and OpenCode side by side on one canvas. A maestro delegates, agents message each other, and pipelines loop until the reviewer approves. You watch, approve and steer.</p>
+    <div class="cta" id="cta">
+      <a class="btn primary" id="primary" href="https://github.com/jvyctor/agent-canvas/releases/latest">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M5 21h14"/></svg>
+        <span><span id="primary-label">Download</span><small id="primary-sub">latest release</small></span>
+      </a>
+      <a class="btn" href="#download">Other platforms</a>
+    </div>
+    <p class="meta" id="meta">Uses the agent CLIs you already have, logged in to your own accounts. No API keys, no backend, no telemetry.</p>
+    <div class="shot"><img src="screenshots/canvas.png" alt="A maestro and three agents (dev, tester, reviewer) on one canvas, with a pipeline and shared project knowledge" width="1680" height="1050" /></div>
+  </div>
+
+  <section id="features">
+    <div class="wrap">
+      <h2>One canvas. A whole team.</h2>
+      <p class="sub">Running four agents in four terminal windows is chaos. Here they share one canvas, talk through ropes, and hand work to each other.</p>
+      <div class="grid">
+        <div class="card"><div class="ico">🎼</div><h3>A maestro that delegates</h3><p>One agent splits the task and hands it to specialists. They report back with <code>canvas_done</code>.</p></div>
+        <div class="card"><div class="ico">🔗</div><h3>Ropes are permissions</h3><p>An agent only messages, reads or delegates to what it is roped to: terminals, notes, browser portals, diffs.</p></div>
+        <div class="card"><div class="ico">🌿</div><h3>A git worktree per agent</h3><p>Each agent works on its own branch, so no one overwrites anyone. Review, merge or open a PR from the Diff node.</p></div>
+        <div class="card"><div class="ico">📱</div><h3>Approve from your phone</h3><p>Pair your phone with a QR code: watch terminals, type, approve requests, interrupt.</p></div>
+      </div>
+
+      <div class="feature">
+        <div class="copy">
+          <h2>Pipelines that loop until it's right</h2>
+          <ul>
+            <li><b>Parallel</b>: dev and tester at the same time; the next step gets both results.</li>
+            <li><b>Loops</b>: if the reviewer says <code>REJECTED</code>, go back to the dev with the review, at most 3 times.</li>
+            <li><b>Human approval</b>: pause before shipping and approve in the app or on your phone.</li>
+            <li>Timeouts, a budget, recent runs, and a restore point before every run.</li>
+          </ul>
+        </div>
+        <img src="screenshots/pipeline.png" alt="Pipeline with parallel steps, a loop and a human approval step" loading="lazy" />
+      </div>
+      <div class="feature flip">
+        <div class="copy">
+          <h2>See the cost. Cap the spend.</h2>
+          <ul>
+            <li>Tokens and estimated cost per agent, from each CLI's own log.</li>
+            <li>A budget per workspace or pipeline: when it is reached, agents are interrupted and pipelines stop.</li>
+            <li>Spend per day for the last 14 days.</li>
+          </ul>
+        </div>
+        <img src="screenshots/costs-panel.png" alt="Estimated cost per agent and model, a budget and spend per day" loading="lazy" />
+      </div>
+      <div class="feature">
+        <div class="copy">
+          <h2>Know what every agent did</h2>
+          <ul>
+            <li>A searchable timeline per agent: what you typed, what pipelines asked, messages, conclusions.</li>
+            <li>Notifications when an agent finishes or needs you. Clicking one takes you to the terminal.</li>
+            <li>Restore points of every workspace.</li>
+          </ul>
+        </div>
+        <img src="screenshots/history-dialog.png" alt="Searchable history of an agent" loading="lazy" />
+      </div>
+    </div>
+  </section>
+
+  <section id="download">
+    <div class="wrap">
+      <h2>Download</h2>
+      <p class="sub" id="dl-sub">Pick your system. Every version and what changed: <a href="https://github.com/jvyctor/agent-canvas/releases">Releases</a> · <a href="https://github.com/jvyctor/agent-canvas/blob/main/CHANGELOG.md">Changelog</a>.</p>
+      <div class="dl">
+        <div class="card" id="card-win">
+          <h3>Windows 10 / 11</h3>
+          <p>Installer for x64. Updates itself.</p>
+          <a class="btn primary" data-asset="win" href="https://github.com/jvyctor/agent-canvas/releases/latest">Download .exe</a>
+          <p class="note">Not code-signed yet: on the SmartScreen warning, click <b>More info → Run anyway</b>.</p>
+        </div>
+        <div class="card" id="card-mac">
+          <h3>macOS</h3>
+          <p>Apple Silicon (M1–M4) or Intel.</p>
+          <a class="btn primary" data-asset="mac-arm" href="https://github.com/jvyctor/agent-canvas/releases/latest">Download for Apple Silicon</a>
+          <div class="alt"><a data-asset="mac-x64" href="https://github.com/jvyctor/agent-canvas/releases/latest">Intel .dmg</a></div>
+          <p class="note">Not notarized yet: the first time, <b>right-click the app → Open</b>.</p>
+        </div>
+        <div class="card" id="card-linux">
+          <h3>Linux</h3>
+          <p>x64 · <code>.deb</code> for Debian/Ubuntu, <code>.AppImage</code> for everything else.</p>
+          <a class="btn primary" data-asset="deb" href="https://github.com/jvyctor/agent-canvas/releases/latest">Download .deb</a>
+          <div class="alt"><a data-asset="appimage" href="https://github.com/jvyctor/agent-canvas/releases/latest">.AppImage</a></div>
+          <p class="note">AppImage: <code>chmod +x Agent-Canvas-*.AppImage</code>. On Ubuntu 23.10+, prefer the <code>.deb</code>.</p>
+        </div>
+      </div>
+      <p class="note">You also need at least one agent CLI installed and logged in: Claude Code, Codex, Gemini CLI, OpenCode or Antigravity. The welcome screen checks each one and connects it with one click.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="star-band">
+        <h2>Enjoying it? Star it on GitHub ⭐</h2>
+        <p class="sub" style="margin: 8px auto 22px">Stars help other developers find Agent Canvas. Issues, ideas and pull requests are very welcome.</p>
+        <a class="btn primary" href="https://github.com/jvyctor/agent-canvas">★ Star on GitHub</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Agent Canvas · MIT License · made by <a href="https://github.com/jvyctor">João Vyctor</a></span>
+    <span><a href="https://github.com/jvyctor/agent-canvas">GitHub</a> · <a href="https://github.com/jvyctor/agent-canvas/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/jvyctor/agent-canvas/issues/new/choose">Report a bug</a> · <a href="https://github.com/jvyctor/agent-canvas/blob/main/README.pt-BR.md">Português</a></span>
+  </div>
+</footer>
+
+<script>
+// Fills the download buttons with the latest release's files and picks the primary button for this system.
+// Everything works without this script too: every link falls back to the latest release page.
+(async () => {
+  const repo = 'jvyctor/agent-canvas'
+  const ua = navigator.userAgent
+  const os = /Windows/i.test(ua) ? 'win' : /Mac OS X|Macintosh/i.test(ua) ? 'mac' : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? 'linux' : ''
+  let arm = null
+  try { if (navigator.userAgentData?.getHighEntropyValues) arm = (await navigator.userAgentData.getHighEntropyValues(['architecture'])).architecture === 'arm' } catch {}
+  const pick = {
+    win: (a) => /Setup.*\.exe$/i.test(a.name),
+    'mac-arm': (a) => /arm64\.dmg$/i.test(a.name),
+    'mac-x64': (a) => /x64\.dmg$/i.test(a.name),
+    deb: (a) => /\.deb$/i.test(a.name),
+    appimage: (a) => /\.AppImage$/i.test(a.name),
+  }
+  try {
+    const [rel, info] = await Promise.all([
+      fetch(`https://api.github.com/repos/${repo}/releases/latest`).then((r) => (r.ok ? r.json() : null)),
+      fetch(`https://api.github.com/repos/${repo}`).then((r) => (r.ok ? r.json() : null)),
+    ])
+    if (info?.stargazers_count != null) document.getElementById('stars').textContent = info.stargazers_count.toLocaleString('en-US')
+    if (!rel?.assets) return
+    const url = {}
+    for (const [k, test] of Object.entries(pick)) url[k] = rel.assets.find(test)?.browser_download_url
+    document.querySelectorAll('[data-asset]').forEach((a) => { if (url[a.dataset.asset]) a.href = url[a.dataset.asset] })
+    const v = rel.tag_name.replace(/^v/, '')
+    document.getElementById('meta').innerHTML = `Version ${v} · <a href="${rel.html_url}">what's new</a> · <a href="#download">all platforms</a>`
+    const primary = { win: ['win', 'Download for Windows', '.exe installer'], mac: [arm === false ? 'mac-x64' : 'mac-arm', 'Download for macOS', arm === false ? 'Intel .dmg' : arm ? 'Apple Silicon .dmg' : 'Apple Silicon .dmg · Intel below'], linux: ['deb', 'Download for Linux', '.deb · AppImage below'] }[os]
+    if (primary && url[primary[0]]) {
+      document.getElementById('primary').href = url[primary[0]]
+      document.getElementById('primary-label').textContent = primary[1]
+      document.getElementById('primary-sub').textContent = `${primary[2]} · v${v}`
+    }
+  } catch {}
+})()
+</script>
+</body>
+</html>

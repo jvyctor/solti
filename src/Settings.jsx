@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { PRESETS, resolveTheme, TERM_SCHEMES, termOptions } from './themes.js'
-import { SlidersHorizontal, Palette, SquareTerminal, Bot, Keyboard, Database, Info, RefreshCw, Smartphone, CalendarClock, Stethoscope, X } from 'lucide-react'
+import { SlidersHorizontal, Palette, SquareTerminal, Bot, Keyboard, Database, Info, RefreshCw, Smartphone, CalendarClock, Stethoscope, Star, X } from 'lucide-react'
 import { UpdatesTab } from './Updates.jsx'
 import RemoteTab from './RemoteTab.jsx'
 import RoutinesTab from './RoutinesTab.jsx'
@@ -491,6 +491,22 @@ function Sobre({ api }) {
   const [info, setInfo] = useState(null)
   useEffect(() => { api.appInfo().then(setInfo) }, [])
   return (
+    <>
+    <Section title={tr("PROJETO")}>
+      <div className="about-star">
+        <Star size={20} />
+        <div>
+          <b>{tr("Gostou do Agent Canvas?")}</b>
+          <p>{tr("Ele é open source (MIT). Uma estrela no GitHub ajuda outros desenvolvedores a encontrá-lo.")}</p>
+        </div>
+        <button className="set-btn primary" onClick={() => api.openLink('star')}><Star size={13} /> {tr("Dar uma estrela")}</button>
+      </div>
+      <div className="row about-links">
+        <button className="set-btn" onClick={() => api.openLink('changelog')}>{tr("Novidades")}</button>
+        <button className="set-btn" onClick={() => api.openLink('repo')}>{tr("Código-fonte")}</button>
+        <button className="set-btn" onClick={() => api.openLink('issues')}>{tr("Relatar problema ou ideia")}</button>
+      </div>
+    </Section>
     <Section title={tr("AGENT CANVAS")}>
       <Row title={tr("Versão")}>{info?.version || '…'}</Row>
       <Row title={tr("Electron")}>{info?.electron || '…'}</Row>
@@ -499,6 +515,7 @@ function Sobre({ api }) {
         <span className="set-note" title={info?.dataDir}>{info?.dataDir || '…'}</span>
       </Row>
     </Section>
+    </>
   )
 }
 

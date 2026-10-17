@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('api', {
   settingsReset: () => ipcRenderer.invoke('settings:reset'),
   appInfo: () => ipcRenderer.invoke('app:info'),
   openData: () => ipcRenderer.send('app:open-data'),
+  openLink: (key) => ipcRenderer.send('app:open-link', key),
   updateGraph: (g) => ipcRenderer.send('graph:update', g),
   usage: () => ipcRenderer.invoke('usage:get'),
   load: () => ipcRenderer.invoke('ws:load'),

@@ -172,6 +172,10 @@ function register() {
   })
   ipcMain.handle('app:info', () => ({ version: app.getVersion(), electron: process.versions.electron, node: process.versions.node, dataDir: app.getPath('userData'), platform: process.platform }))
   ipcMain.on('app:open-data', () => shell.openPath(app.getPath('userData')))
+  // Project links shown in the app (About, updates). A fixed list: the page names one, it cannot pass a URL.
+  const REPO = 'https://github.com/jvyctor/agent-canvas'
+  const LINKS = { repo: REPO, star: REPO + '/stargazers', changelog: REPO + '/blob/main/CHANGELOG.md', releases: REPO + '/releases', issues: REPO + '/issues/new/choose', site: 'https://jvyctor.github.io/agent-canvas/' }
+  ipcMain.on('app:open-link', (_e, key) => LINKS[key] && shell.openExternal(LINKS[key]))
 
   // Activity, history and approvals
   ipcMain.handle('activity:list', () => activity.list())

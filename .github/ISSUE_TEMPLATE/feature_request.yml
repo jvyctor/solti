@@ -1,0 +1,20 @@
+name: Feature request
+description: An idea that would make Agent Canvas better for you
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The situation or workflow, more than the solution. "When I run three agents on the same repo, I…"
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help
+      description: How you imagine it working. Sketches and screenshots are welcome.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do today instead

@@ -6,7 +6,7 @@ const settings = require('./settings.cjs')
 const errlog = require('./errlog.cjs')
 const { tr } = require('./i18n.cjs')
 
-const RELEASES = 'https://github.com/jvyctor/agent-canvas-releases/releases'
+const RELEASES = 'https://github.com/jvyctor/agent-canvas/releases'
 
 function show() {
   const w = S.win

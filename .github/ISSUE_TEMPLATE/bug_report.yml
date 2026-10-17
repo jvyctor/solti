@@ -1,0 +1,47 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting! The diagnostics text below makes most bugs quick to find.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Create a team…
+        2. Run the pipeline…
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Settings → Diagnostics → **Copy diagnostics**, then paste here (versions, agent checks and the recent error log; nothing from your files).
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Windows, macOS (Apple Silicon), macOS (Intel), Linux (AppImage), Linux (.deb), Other]
+    validations:
+      required: true
+  - type: checkboxes
+    id: agents
+    attributes:
+      label: Agents involved
+      options:
+        - label: Claude Code
+        - label: Codex
+        - label: Gemini CLI
+        - label: OpenCode
+        - label: Antigravity
+        - label: Plain shell

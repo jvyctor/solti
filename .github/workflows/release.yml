@@ -1,10 +1,13 @@
-# Push a tag like v0.6.0 (matching package.json) to test, build for Windows, macOS and Linux, and publish to the public releases repo.
-# One-time setup: add a repository secret RELEASES_TOKEN = a GitHub token with write access to
-# jvyctor/agent-canvas-releases (fine-grained: Contents read/write).
+# Push a tag like v0.8.0 (matching package.json): tests on Windows, macOS and Linux, then builds every installer and
+# publishes a GitHub Release in this repository. The release notes are that version's section of CHANGELOG.md.
+# No secrets needed: the workflow's own GITHUB_TOKEN can write releases here.
 name: Release
 on:
   push:
     tags: ['v*']
+
+permissions:
+  contents: write
 
 jobs:
   version:
@@ -13,6 +16,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Tag must match package.json
         run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+      - name: CHANGELOG must have a section for this version
+        run: grep -q "^## \[${GITHUB_REF_NAME#v}\]" CHANGELOG.md
 
   # Unit tests + smoke test on Windows, macOS and Linux (see ci.yml).
   test:
@@ -23,12 +28,19 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - name: Create the release once (parallel uploads would race to create it and fail with 422)
-        env:
-          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+      - uses: actions/checkout@v4
+      - name: Release notes from CHANGELOG.md
         run: |
-          gh release view "$GITHUB_REF_NAME" --repo jvyctor/agent-canvas-releases >/dev/null 2>&1 \
-            || gh release create "$GITHUB_REF_NAME" --repo jvyctor/agent-canvas-releases --title "${GITHUB_REF_NAME#v}" --notes "Agent Canvas ${GITHUB_REF_NAME#v}"
+          v="${GITHUB_REF_NAME#v}"
+          awk -v v="$v" '$0 ~ "^## \\[" v "\\]" {on=1; next} on && /^## \[/ {exit} on {print}' CHANGELOG.md > notes.md
+          printf '\n---\n**Download:** pick the file for your system below, or use the [download page](https://jvyctor.github.io/agent-canvas/). Installers are not code-signed yet: see [install notes](https://github.com/jvyctor/agent-canvas#download).\n' >> notes.md
+          cat notes.md
+      - name: Create the release once (parallel uploads would race to create it)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --title "Agent Canvas ${GITHUB_REF_NAME#v}" --notes-file notes.md
 
   build:
     needs: prepare
@@ -53,5 +65,5 @@ jobs:
       - run: npx vite build
       - name: Build and publish
         env:
-          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder ${{ matrix.args }} --publish always

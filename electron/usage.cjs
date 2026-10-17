@@ -68,19 +68,26 @@ function claude() {
 
 // Real Claude quota: undocumented endpoint Claude Code itself uses, with the user's own local OAuth token.
 // The token is never refreshed here (refreshing could invalidate Claude Code's login); expired -> local fallback.
+// error is a short code the window translates (never a raw message: those carry file paths with the user name):
+// nocred (no local credential file; on macOS it lives in the Keychain) | unreadable | expired | http-<status> | offline
 async function claudeQuota() {
+  let t
   try {
-    const t = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.claude', '.credentials.json'), 'utf8')).claudeAiOauth
-    if (!t?.accessToken || t.expiresAt < Date.now()) return { error: 'token expirado: abra o Claude Code' }
+    t = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.claude', '.credentials.json'), 'utf8')).claudeAiOauth
+  } catch (e) {
+    return { error: e.code === 'ENOENT' ? 'nocred' : 'unreadable' }
+  }
+  if (!t?.accessToken || t.expiresAt < Date.now()) return { error: 'expired' }
+  try {
     const r = await fetch('https://api.anthropic.com/api/oauth/usage', {
       headers: { Authorization: 'Bearer ' + t.accessToken, 'anthropic-beta': 'oauth-2025-04-20' },
       signal: AbortSignal.timeout(8000),
     })
-    if (!r.ok) return { error: 'HTTP ' + r.status }
+    if (!r.ok) return { error: 'http-' + r.status }
     const j = await r.json()
     return { plan: t.subscriptionType, session: j.five_hour, weekly: j.seven_day }
-  } catch (e) {
-    return { error: String(e.message || e) }
+  } catch {
+    return { error: 'offline' }
   }
 }
 

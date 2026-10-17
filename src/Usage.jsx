@@ -74,6 +74,17 @@ export function AgentUsage({ name, plan, color, session, weekly, note }) {
   )
 }
 
+// Why the Claude quota is unavailable, from the main process's short code.
+const quotaError = (code) => {
+  if (!code) return tr('sem dados')
+  if (code === 'nocred') return tr('cota indisponível (sem credencial local do Claude Code)')
+  if (code === 'expired') return tr('login expirado: abra o Claude Code')
+  if (code === 'offline') return tr('sem conexão')
+  if (code === 'unreadable') return tr('credencial ilegível')
+  if (code.startsWith('http-')) return tr('cota indisponível (HTTP {0})', [code.slice(5)])
+  return tr('sem dados')
+}
+
 // Normalises each provider's payload to { pct, resets_at (unix seconds) }.
 export function useAgents() {
   const [u, setU] = useState(null)
@@ -90,7 +101,7 @@ export function useAgents() {
       key: 'claude', name: 'Claude Code', plan: cq?.plan ? cq.plan[0].toUpperCase() + cq.plan.slice(1) : '',
       session: cq?.session && { pct: cq.session.utilization, resets_at: Date.parse(cq.session.resets_at) / 1000 },
       weekly: cq?.weekly && { pct: cq.weekly.utilization, resets_at: Date.parse(cq.weekly.resets_at) / 1000 },
-      note: u?.claude ? tr("{0} · {1} tokens em 5 h, {2} em 7 dias", [cq?.error || 'sem dados', fmt(u.claude.h5), fmt(u.claude.d7)]) : tr("carregando…"),
+      note: u?.claude ? tr("{0} · {1} tokens em 5 h, {2} em 7 dias", [quotaError(cq?.error), fmt(u.claude.h5), fmt(u.claude.d7)]) : tr("carregando…"),
     },
     {
       key: 'codex', name: 'Codex', plan: cx?.plan ? cx.plan[0].toUpperCase() + cx.plan.slice(1) : '',

@@ -2,8 +2,32 @@
   "name": "agent-canvas",
   "productName": "Agent Canvas",
   "version": "0.8.0",
-  "description": "Canvas para orquestrar agentes de IA (Maestro e Agentes) em terminais conectados.",
-  "author": "Agent Canvas",
+  "description": "Run a team of AI coding agents (Claude Code, Codex, Gemini CLI, OpenCode) side by side on one canvas: a maestro delegates, agents talk to each other, pipelines with loops and human approval.",
+  "author": {
+    "name": "João Vyctor",
+    "url": "https://github.com/jvyctor"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/jvyctor/agent-canvas#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jvyctor/agent-canvas.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jvyctor/agent-canvas/issues"
+  },
+  "keywords": [
+    "ai-agents",
+    "multi-agent",
+    "claude-code",
+    "codex",
+    "gemini-cli",
+    "mcp",
+    "electron",
+    "terminal",
+    "orchestration",
+    "developer-tools"
+  ],
   "private": true,
   "main": "electron/main.cjs",
   "scripts": {
@@ -72,7 +96,7 @@
       {
         "provider": "github",
         "owner": "jvyctor",
-        "repo": "agent-canvas-releases",
+        "repo": "agent-canvas",
         "releaseType": "release"
       }
     ],
@@ -130,7 +154,7 @@
       "category": "Development",
       "icon": "build/icon.png",
       "maintainer": "Agent Canvas",
-      "synopsis": "Canvas para orquestrar agentes de IA"
+      "synopsis": "Run a team of AI coding agents side by side on one canvas"
     },
     "appImage": {
       "artifactName": "Agent-Canvas-${version}.${ext}"
