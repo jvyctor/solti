@@ -4,6 +4,9 @@ export const api = window.api
 export const PipeCtx = createContext({ start() {}, stop() {} }) // pipeline runner (see App)
 export const CommCtx = createContext(new Set()) // 'idA|idB' pairs currently talking
 export const SettingsCtx = createContext(null) // app settings (see electron/settings.cjs) + { mode, eff }
+// Agent usage, polled centrally (see costs.js): byNode id -> { tokens, cost (US$ | null), model }; limited = ids over the token limit.
+export const UsageCtx = createContext({ byNode: {}, limited: new Set() })
+export const money = (v) => (v == null ? '—' : v >= 100 ? `$${Math.round(v)}` : v >= 1 ? `$${v.toFixed(2)}` : `$${v.toFixed(3)}`)
 export const PRESET_LABELS = { claude: 'Claude Code', codex: 'Codex', antigravity: 'Antigravity', opencode: 'OpenCode', gemini: 'Gemini', shell: 'Shell' }
 export const sinks = new Map() // pty id -> xterm.write
 export const terms = new Map() // pty id -> xterm instance (copy/paste/select all)

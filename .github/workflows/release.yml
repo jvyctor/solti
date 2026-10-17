@@ -7,24 +7,17 @@ on:
     tags: ['v*']
 
 jobs:
-  test:
-    runs-on: windows-latest
+  version:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Git identity for the tests that commit and merge
-        run: |
-          git config --global user.name ci
-          git config --global user.email ci@example.com
       - name: Tag must match package.json
-        shell: bash
         run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
-      - name: Unit tests (the UI tests need a desktop session and run locally with npm test)
-        run: node --test test/git.test.mjs test/launch.test.mjs test/status.test.mjs test/agentusage.test.mjs test/activity.test.mjs test/backup.test.mjs test/history.test.mjs test/geometry.test.mjs test/pipeline.test.mjs test/remote.test.mjs
+
+  # Unit tests + smoke test on Windows, macOS and Linux (see ci.yml).
+  test:
+    needs: version
+    uses: ./.github/workflows/ci.yml
 
   prepare:
     needs: test

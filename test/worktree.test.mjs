@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
-import { prepareProfile, treeKill } from './helpers.mjs'
+import { freePort, prepareProfile, treeKill } from './helpers.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const sh = (cwd, ...a) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { cwd, encoding: 'utf8' }).trim()
@@ -26,12 +26,13 @@ test('new terminal in a git folder gets an isolated worktree', async () => {
 
   prepareProfile(prof)
 
-  const app = spawn(electron, ['.', `--user-data-dir=${prof}`, '--remote-debugging-port=9380'], { stdio: 'ignore' })
+  const dbgPort = await freePort()
+  const app = spawn(electron, ['.', `--user-data-dir=${prof}`, `--remote-debugging-port=${dbgPort}`], { stdio: 'ignore' })
   try {
     let page
     for (let i = 0; i < 40 && !page; i++) {
       await sleep(500)
-      try { page = (await (await fetch('http://127.0.0.1:9380/json')).json()).find((t) => t.type === 'page') } catch {}
+      try { page = (await (await fetch(`http://127.0.0.1:${dbgPort}/json`, { signal: AbortSignal.timeout(2000) })).json()).find((t) => t.type === 'page') } catch {}
     }
     assert.ok(page, 'app window did not open')
     const cdp = new WebSocket(page.webSocketDebuggerUrl)

@@ -38,4 +38,38 @@ function restore(file) {
   return null
 }
 
-module.exports = { rotate, writeAtomic, restore, dirOf }
+// ---- Restore points: named snapshots you (or a pipeline about to run) ask for. Kept apart from the rolling backups.
+const POINTS = 30
+const pointNames = (dir) => { try { return fs.readdirSync(dir).filter((f) => /^point-\d+\.json$/.test(f)).sort() } catch { return [] } }
+const POINT_ID = /^point-\d+$/
+
+function pointCreate(file, label, data, now = Date.now()) {
+  if (!Array.isArray(data?.list)) throw new Error('invalid workspaces')
+  const dir = dirOf(file)
+  fs.mkdirSync(dir, { recursive: true })
+  let t = now
+  while (fs.existsSync(path.join(dir, `point-${t}.json`))) t++ // two points in the same millisecond
+  writeAtomic(path.join(dir, `point-${t}.json`), JSON.stringify({ label: String(label || '').slice(0, 120), t, data }))
+  for (const old of pointNames(dir).slice(0, -POINTS)) fs.rmSync(path.join(dir, old), { force: true })
+  return `point-${t}`
+}
+
+// Newest first: { id, label, t, workspaces, nodes }.
+function pointList(file) {
+  const dir = dirOf(file)
+  return pointNames(dir).reverse().flatMap((n) => {
+    try {
+      const j = JSON.parse(fs.readFileSync(path.join(dir, n), 'utf8'))
+      return [{ id: n.replace(/\.json$/, ''), label: j.label, t: j.t, workspaces: j.data.list.length, nodes: j.data.list.reduce((s, w) => s + (w.nodes?.length || 0), 0) }]
+    } catch { return [] }
+  })
+}
+
+function pointLoad(file, id) {
+  if (!POINT_ID.test(String(id))) throw new Error('bad id')
+  const j = JSON.parse(fs.readFileSync(path.join(dirOf(file), `${id}.json`), 'utf8'))
+  if (!Array.isArray(j.data?.list)) throw new Error('invalid restore point')
+  return j.data
+}
+
+module.exports = { rotate, writeAtomic, restore, dirOf, pointCreate, pointList, pointLoad }

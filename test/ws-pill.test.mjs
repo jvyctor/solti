@@ -7,9 +7,8 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
-import { prepareProfile, treeKill } from './helpers.mjs'
+import { freePort, prepareProfile, treeKill } from './helpers.mjs'
 
-const PORT = 9334
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 test('workspace pill shows only the active workspace', async () => {
@@ -17,12 +16,13 @@ test('workspace pill shows only the active workspace', async () => {
   const ws = (id, name) => ({ id, name, nodes: [], edges: [] })
   writeFileSync(join(dir, 'workspace.json'), JSON.stringify({ list: [ws('w1', 'SAT'), ws('w2', 'consulta TCE')], active: 'w1' }))
   prepareProfile(dir)
-  const app = spawn(electron, ['.', `--user-data-dir=${dir}`, `--remote-debugging-port=${PORT}`], { stdio: 'ignore' })
+  const dbgPort = await freePort()
+  const app = spawn(electron, ['.', `--user-data-dir=${dir}`, `--remote-debugging-port=${dbgPort}`], { stdio: 'ignore' })
   try {
     let page
     for (let i = 0; i < 40 && !page; i++) {
       await sleep(500)
-      try { page = (await (await fetch(`http://127.0.0.1:${PORT}/json`)).json()).find((t) => t.type === 'page') } catch {}
+      try { page = (await (await fetch(`http://127.0.0.1:${dbgPort}/json`, { signal: AbortSignal.timeout(2000) })).json()).find((t) => t.type === 'page') } catch {}
     }
     assert.ok(page, 'app window did not open')
     const cdp = new WebSocket(page.webSocketDebuggerUrl)
@@ -53,12 +53,13 @@ test('terminal screen is restored and saved', async () => {
   mkdirSync(join(dir, 'terms'))
   writeFileSync(join(dir, 'terms', 'n1.txt'), 'HELLO-SAVED-SCREEN')
   prepareProfile(dir)
-  const app = spawn(electron, ['.', `--user-data-dir=${dir}`, `--remote-debugging-port=${PORT + 1}`], { stdio: 'ignore' })
+  const dbgPort = await freePort()
+  const app = spawn(electron, ['.', `--user-data-dir=${dir}`, `--remote-debugging-port=${dbgPort}`], { stdio: 'ignore' })
   try {
     let page
     for (let i = 0; i < 40 && !page; i++) {
       await sleep(500)
-      try { page = (await (await fetch(`http://127.0.0.1:${PORT + 1}/json`)).json()).find((t) => t.type === 'page') } catch {}
+      try { page = (await (await fetch(`http://127.0.0.1:${dbgPort}/json`, { signal: AbortSignal.timeout(2000) })).json()).find((t) => t.type === 'page') } catch {}
     }
     assert.ok(page, 'app window did not open')
     const cdp = new WebSocket(page.webSocketDebuggerUrl)

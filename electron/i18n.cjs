@@ -35,6 +35,8 @@ const EN = {
   'negou: ': 'denied: ',
   'interrompeu': 'interrupted',
   'interrompeu todos os agentes': 'interrupted all agents',
+  'você': 'you',
+  'celular': 'phone',
 }
 
 let lang = 'pt'

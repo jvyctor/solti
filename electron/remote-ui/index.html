@@ -87,7 +87,7 @@ const EN = {
   'Nenhum terminal em execução. Abra um workspace no computador.': 'No terminals running. Open a workspace on the computer.',
   'sem saída': 'no output', 'ativo': 'active', 'parado há': 'idle for', 'Nenhum pedido pendente.': 'No pending requests.', 'Negar': 'Deny', 'Permitir': 'Allow', 'para': 'to',
   'Interromper todos os agentes agora?': 'Interrupt all agents now?',
-  'mensagem': 'message', 'pergunta': 'question', 'criou agente': 'created agent', 'navegador': 'browser', 'concluiu': 'finished', 'celular': 'phone', 'rotina': 'routine',
+  'mensagem': 'message', 'pergunta': 'question', 'criou agente': 'created agent', 'navegador': 'browser', 'concluiu': 'finished', 'celular': 'phone', 'rotina': 'routine', 'pediu': 'asked', 'orçamento': 'budget', 'ponto de restauração': 'restore point', 'fluxo': 'pipeline', 'digitou': 'typed', 'aprovação': 'approval',
 }
 const EN_ON = !/^pt/i.test(navigator.language || 'pt')
 const T = (s) => (EN_ON ? EN[s] || s : s)
@@ -192,7 +192,7 @@ function renderAsks(list) {
   const b = $('askbadge'); b.hidden = !list.length; b.textContent = list.length
   $('asks').replaceChildren(...(list.length ? list.map((r) => {
     const card = el('div', { className: 'card', style: 'display:block' },
-      el('b', { textContent: `${r.from} → ${r.kind}` }),
+      el('b', { textContent: `${r.from} → ${KIND[r.kind] || r.kind}` }),
       el('span', { className: 'dim', textContent: r.to ? `${T('para')} ${r.to}` : '' }),
       r.text ? el('pre', { className: 'ask', textContent: r.text }) : '')
     const row = el('div', { className: 'row' })
@@ -202,7 +202,7 @@ function renderAsks(list) {
     return card
   }) : [el('p', { className: 'dim', textContent: T('Nenhum pedido pendente.') })]))
 }
-const KIND = Object.fromEntries(Object.entries({ send: 'mensagem', ask: 'pergunta', spawn: 'criou agente', portal: 'navegador', done: 'concluiu', remote: 'celular', routine: 'rotina' }).map(([k, v]) => [k, T(v)]))
+const KIND = Object.fromEntries(Object.entries({ send: 'mensagem', ask: 'pergunta', spawn: 'criou agente', portal: 'navegador', done: 'concluiu', remote: 'celular', routine: 'rotina', prompt: 'pediu', budget: 'orçamento', point: 'ponto de restauração', pipeline: 'fluxo', input: 'digitou', approval: 'aprovação' }).map(([k, v]) => [k, T(v)]))
 function renderLog(list) {
   $('log').replaceChildren(...[...list].reverse().map((e) => {
     const d = el('div', { className: 'act' + (e.outcome === 'denied' ? ' denied' : '') })

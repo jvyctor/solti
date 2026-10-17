@@ -1,8 +1,38 @@
 // Shared by the UI tests: start the built app in a throwaway profile and talk to it over CDP.
 import { execFileSync, spawn } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:net'
 import { join } from 'node:path'
 import electron from 'electron'
+
+// A port nobody is listening on right now. Fixed ports collide with apps a crashed run left behind
+// (a listener of a dead process keeps accepting connections and never answers).
+export const freePort = () => new Promise((resolve, reject) => {
+  const s = createServer()
+  s.once('error', reject)
+  s.listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => resolve(port)) })
+})
+
+// The page target of an app started with --remote-debugging-port, or null after ~20 s. Every request has a timeout.
+export async function findPage(port, tries = 40) {
+  for (let i = 0; i < tries; i++) {
+    await sleep(500)
+    try {
+      const page = (await (await fetch(`http://127.0.0.1:${port}/json`, { signal: AbortSignal.timeout(2000) })).json()).find((t) => t.type === 'page')
+      if (page) return page
+    } catch {}
+  }
+  return null
+}
+
+// CDP call with a timeout, so a page that stopped answering fails the test instead of hanging it.
+export function cdpCall(cdp, pending, id, method, params, ms = 30000) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => { delete pending[id]; reject(new Error(`CDP ${method} timed out`)) }, ms)
+    pending[id] = (r) => { clearTimeout(t); delete pending[id]; resolve(r) }
+    cdp.send(JSON.stringify({ id, method, params }))
+  })
+}
 
 // electron.exe leaves renderer/GPU children behind a plain kill(); they slow down the next launch.
 export function treeKill(app) {
@@ -19,21 +49,21 @@ export function prepareProfile(prof, { onboarded = true } = {}) {
   writeFileSync(sf, JSON.stringify({ ...s, ...(onboarded && s.onboarded === undefined ? { onboarded: true } : {}), ...(s.language === undefined ? { language: 'pt' } : {}) }))
 }
 
-export async function launch(prof, port, { onboarded = true } = {}) {
+// `_port` is kept for the callers' signature; a free port is always picked.
+export async function launch(prof, _port, { onboarded = true, env } = {}) {
   prepareProfile(prof, { onboarded })
-  const app = spawn(electron, ['.', `--user-data-dir=${prof}`, `--remote-debugging-port=${port}`], { stdio: 'ignore' })
-  let page
-  for (let i = 0; i < 40 && !page; i++) {
-    await sleep(500)
-    try { page = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find((t) => t.type === 'page') } catch {}
-  }
-  if (!page) { app.kill(); throw new Error('app window did not open') }
+  const port = await freePort()
+  // Linux CI: Electron from node_modules has no setuid sandbox helper.
+  const extra = process.platform === 'linux' ? ['--no-sandbox'] : []
+  const app = spawn(electron, ['.', `--user-data-dir=${prof}`, `--remote-debugging-port=${port}`, ...extra], { stdio: 'ignore', ...(env ? { env: { ...process.env, ...env } } : {}) })
+  const page = await findPage(port)
+  if (!page) { treeKill(app); throw new Error('app window did not open') }
   const cdp = new WebSocket(page.webSocketDebuggerUrl)
-  await new Promise((r) => (cdp.onopen = r))
+  await new Promise((r, j) => { cdp.onopen = r; setTimeout(() => j(new Error('CDP connection timed out')), 10000) })
   let n = 0
   const pending = {}
   cdp.onmessage = (e) => { const m = JSON.parse(e.data); pending[m.id]?.(m.result) }
-  const send = (method, params) => new Promise((r) => { const id = ++n; pending[id] = r; cdp.send(JSON.stringify({ id, method, params })) })
+  const send = (method, params) => cdpCall(cdp, pending, ++n, method, params)
   const ev = (expression) => send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }).then((r) => r.result.value)
   const until = async (expr, what, tries = 60) => {
     for (let i = 0; i < tries; i++) { if (await ev(expr)) return; await sleep(250) }

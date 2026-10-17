@@ -1,0 +1,44 @@
+# Every push and pull request: unit tests and a smoke test of the built app on Windows, macOS and Linux.
+# The release workflow runs this first (workflow_call), so nothing is published that fails here.
+# The full UI suite (npm test) drives Windows PowerShell terminals and runs locally.
+name: CI
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_call:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Linux libraries for Electron and a virtual display
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgbm1 libnss3 libgtk-3-0 libxss1
+          sudo apt-get install -y libasound2t64 || sudo apt-get install -y libasound2
+      - run: npm ci
+      - name: Git identity for the tests that commit and merge
+        run: |
+          git config --global user.name ci
+          git config --global user.email ci@example.com
+      - name: Unit tests
+        run: npm run test:unit
+      - run: npx vite build
+      - name: Smoke test (app opens, shell runs the canvas CLI, quitting ends the terminal)
+        if: runner.os != 'Linux'
+        run: npm run test:smoke
+      - name: Smoke test (Linux, virtual display)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run test:smoke

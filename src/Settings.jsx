@@ -212,6 +212,19 @@ function Geral({ s, set }) {
         </>
       )}
       {sub === 'notificacoes' && (
+        <>
+        <Section title={tr("AGENTES")}>
+          <p className="set-note-left" style={{ margin: '0 0 12px' }}>{tr("Notificações do sistema aparecem só quando a janela não está em foco. Clicar nelas traz o app para a frente e mostra o terminal.")}</p>
+          <Row title={tr("Quando um agente concluir")} desc={tr("O agente chamou canvas_done; a notificação traz o resumo.")}>
+            <Switch label={tr("Quando um agente concluir")} checked={s.notifyDone} onChange={(v) => set({ notifyDone: v })} />
+          </Row>
+          <Row title={tr("Quando um agente esperar você")} desc={tr("O agente fez uma pergunta ou pede uma confirmação.")}>
+            <Switch label={tr("Quando um agente esperar você")} checked={s.notifyWaiting} onChange={(v) => set({ notifyWaiting: v })} />
+          </Row>
+          <Row title={tr("Quando um fluxo terminar")} desc={tr("Concluído, parado, sem resposta ou orçamento atingido.")}>
+            <Switch label={tr("Quando um fluxo terminar")} checked={s.notifyPipeline} onChange={(v) => set({ notifyPipeline: v })} />
+          </Row>
+        </Section>
         <Section title={tr("ATIVIDADE")}>
           <Row title={tr("Avisar quando um agente parar")} desc={tr("Notificação do sistema para terminais com “Monitorar atividade” ligado.")}>
             <Switch label={tr("Avisar quando um agente parar")} checked={s.notifyIdle} onChange={(v) => set({ notifyIdle: v })} />
@@ -220,6 +233,7 @@ function Geral({ s, set }) {
             <Select label={tr("Tempo para considerar parado")} value={String(s.idleSeconds)} onChange={(v) => set({ idleSeconds: Number(v) })} options={[['3', '3 s'], ['6', '6 s'], ['15', '15 s'], ['30', '30 s'], ['60', '60 s']]} />
           </Row>
         </Section>
+        </>
       )}
     </>
   )
@@ -284,12 +298,64 @@ function TerminalTab({ s, set, mode }) {
 
 const AGENT_LABELS = { claude: 'Claude Code', codex: 'Codex', gemini: 'Gemini', antigravity: 'Antigravity', opencode: 'OpenCode' }
 
+// US$ per 1M tokens by model-name prefix (longest prefix wins). Defaults live in electron/pricing.cjs;
+// settings.prices keeps only what you changed (null = a default row removed).
+const PRICE_COLS = [['in', 'Entrada'], ['out', 'Saída'], ['cw', 'Cache (escrita)'], ['cr', 'Cache (leitura)']]
+function PricesSection({ s, set }) {
+  const [defs, setDefs] = useState(null)
+  const [adding, setAdding] = useState('')
+  useEffect(() => { window.api.pricingDefaults().then(setDefs) }, [])
+  if (!defs) return null
+  const ov = s.prices || {}
+  const rows = { ...defs }
+  for (const [k, v] of Object.entries(ov)) { if (v === null) delete rows[k]; else rows[k] = { ...(rows[k] || {}), ...v } }
+  const save = (prefix, col, raw) => {
+    const v = Number(String(raw).replace(',', '.'))
+    if (!Number.isFinite(v) || v < 0) return
+    const row = { ...rows[prefix], [col]: v }
+    const same = defs[prefix] && PRICE_COLS.every(([c]) => (row[c] ?? 0) === (defs[prefix][c] ?? 0))
+    const next = { ...ov }
+    if (same) delete next[prefix]
+    else next[prefix] = row
+    set({ prices: next })
+  }
+  const remove = (prefix) => { const next = { ...ov }; if (defs[prefix]) next[prefix] = null; else delete next[prefix]; set({ prices: next }) }
+  const add = () => { const p = adding.trim().toLowerCase(); if (!p || rows[p]) return; set({ prices: { ...ov, [p]: { in: 0, out: 0, cw: 0, cr: 0 } } }); setAdding('') }
+  return (
+    <Section title={tr("CUSTO ESTIMADO")}>
+      <p className="set-note-left" style={{ margin: '0 0 12px' }}>{tr("Preço de API em US$ por 1 milhão de tokens, pelo início do nome do modelo (o mais específico vale). Usado no custo de cada agente e nos orçamentos dos workspaces. Assinaturas (Claude Pro/Max, ChatGPT Plus…) não cobram por token: o valor mostra quanto custaria pela API.")}</p>
+      <div className="price-table" role="table" aria-label={tr("Preços por modelo")}>
+        <div className="price-row head" role="row"><span role="columnheader">{tr("Modelo (prefixo)")}</span>{PRICE_COLS.map(([c, l]) => <span key={c} role="columnheader">{tr(l)}</span>)}<span /></div>
+        {Object.entries(rows).sort(([a], [b]) => a.localeCompare(b)).map(([prefix, p]) => (
+          <div key={prefix} className={'price-row' + (ov[prefix] ? ' changed' : '')} role="row">
+            <code role="cell" title={ov[prefix] ? tr("alterado por você") : ''}>{prefix}</code>
+            {PRICE_COLS.map(([c, l]) => (
+              <input key={c + (p[c] ?? '')} role="cell" inputMode="decimal" aria-label={`${prefix} ${tr(l)}`} defaultValue={p[c] ?? ''} onBlur={(e) => save(prefix, c, e.target.value)} />
+            ))}
+            <button className="x" aria-label={tr("Remover {0}", [prefix])} onClick={() => remove(prefix)}><X size={12} /></button>
+          </div>
+        ))}
+      </div>
+      <div className="row" style={{ marginTop: 10 }}>
+        <input className="set-input" placeholder={tr("ex.: gpt-7 ou meu-modelo")} value={adding} onChange={(e) => setAdding(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} aria-label={tr("Novo prefixo de modelo")} />
+        <button className="set-btn" onClick={add}>{tr("Adicionar modelo")}</button>
+        {Object.keys(ov).length > 0 && <button className="set-btn" onClick={() => set({ prices: {} })}>{tr("Voltar aos preços padrão")}</button>}
+      </div>
+    </Section>
+  )
+}
+
 function AgentesTab({ s, set }) {
   return (
     <>
       <Section title={tr("INICIALIZAÇÃO")}>
         <Row title={tr("Enviar briefing do papel ao iniciar")} desc={tr("Instrui cada agente (Maestro ou Agente) sobre quem comanda e como delegar, e instala as skills do canvas.")}>
           <Switch label={tr("Enviar briefing")} checked={s.sendBriefing} onChange={(v) => set({ sendBriefing: v })} />
+        </Row>
+      </Section>
+      <Section title={tr("HISTÓRICO")}>
+        <Row title={tr("Registrar o que você digita nos agentes")} desc={tr("Cada linha enviada a um agente entra no histórico dele. Terminais de shell simples não são registrados, nem uma linha digitada logo após um pedido de senha ou token.")}>
+          <Switch label={tr("Registrar o que você digita")} checked={s.historyInput !== false} onChange={(v) => set({ historyInput: v })} />
         </Row>
       </Section>
       <Section title={tr("SEGURANÇA")}>
@@ -302,6 +368,7 @@ function AgentesTab({ s, set }) {
           <Select label={tr("Limite de tokens")} value={String(s.tokenLimit)} onChange={(v) => set({ tokenLimit: Number(v) })} options={[['0', tr("Desligado")], ['200000', tr("200 mil")], ['500000', tr("500 mil")], ['1000000', tr("1 milhão")], ['5000000', tr("5 milhões")]]} />
         </Row>
       </Section>
+      <PricesSection s={s} set={set} />
       <Section title={tr("COMANDOS")}>
         {Object.entries(AGENT_LABELS).map(([k, label]) => (
           <Row key={k} title={label} desc={k === 'claude' ? tr("Comando digitado no terminal ao criar este agente. Vale para novos terminais.") : undefined}>
@@ -343,6 +410,45 @@ function Atalhos() {
   )
 }
 
+// Named copies of all workspaces: made before each pipeline run, before a restore, or here by hand (the 30 newest).
+function PointsSection({ points }) {
+  const [list, setList] = useState(null)
+  const [label, setLabel] = useState('')
+  const [armed, setArmed] = useState('')
+  const [msg, setMsg] = useState('')
+  const load = () => points.list().then(setList)
+  useEffect(() => { load() }, [])
+  const create = async () => { const r = await points.create(label.trim() || tr('Ponto manual')); setMsg(r?.error || tr('Ponto criado.')); setLabel(''); load() }
+  const restore = async (id) => { const err = await points.restore(id); setArmed(''); setMsg(err || tr('Restaurado. O estado anterior foi guardado como “Antes de restaurar”.')); load() }
+  const when = (t) => new Date(t).toLocaleString()
+  return (
+    <Section title={tr("PONTOS DE RESTAURAÇÃO")}>
+      <p className="set-note-left" style={{ margin: '0 0 12px' }}>{tr("Cópias nomeadas de todos os workspaces (nós, cordas, fluxos). O app cria uma antes de cada fluxo e antes de restaurar. Restaurar não apaga conversas: terminais que existem nas duas versões continuam rodando.")}</p>
+      <div className="row">
+        <input className="set-input" placeholder={tr("Nome (opcional)")} value={label} onChange={(e) => setLabel(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && create()} aria-label={tr("Nome do ponto de restauração")} />
+        <button className="set-btn" onClick={create}>{tr("Criar ponto agora")}</button>
+      </div>
+      {msg && <p className="set-note-left" role="status">{msg}</p>}
+      <div className="points">
+        {list?.length === 0 && <p className="set-note-left">{tr("Nenhum ponto ainda.")}</p>}
+        {list?.map((p) => (
+          <div key={p.id} className="point-row">
+            <div><b>{p.label || tr('(sem nome)')}</b><small>{when(p.t)} · {tr("{0} workspace(s), {1} nó(s)", [p.workspaces, p.nodes])}</small></div>
+            {armed === p.id ? (
+              <span className="set-confirm">
+                <button className="set-btn danger" onClick={() => restore(p.id)}>{tr("Confirmar")}</button>
+                <button className="set-btn" onClick={() => setArmed('')}>{tr("Cancelar")}</button>
+              </span>
+            ) : (
+              <button className="set-btn" onClick={() => setArmed(p.id)}>{tr("Restaurar")}</button>
+            )}
+          </div>
+        ))}
+      </div>
+    </Section>
+  )
+}
+
 function Dados({ api, onReset, io }) {
   const [armed, setArmed] = useState(false)
   const [msg, setMsg] = useState('')
@@ -364,6 +470,7 @@ function Dados({ api, onReset, io }) {
           </span>
         </Row>
       </Section>
+      {io.points && <PointsSection points={io.points} />}
       <Section title={tr("REDEFINIR")}>
         <Row title={tr("Restaurar configurações padrão")} desc={tr("Não apaga workspaces nem terminais.")}>
           {armed ? (
@@ -395,8 +502,8 @@ function Sobre({ api }) {
   )
 }
 
-export default function SettingsDialog({ open, onOpenChange, settings, api, mode, update }) {
-  const [tab, setTab] = useState('geral')
+export default function SettingsDialog({ open, onOpenChange, settings, api, mode, update, startTab }) {
+  const [tab, setTab] = useState(startTab || 'geral')
   const set = (patch) => api.settingsSet(patch)
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>

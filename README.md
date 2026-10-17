@@ -32,9 +32,12 @@ O app roda nos três sistemas. O instalador de cada um sai do GitHub Actions (ab
 - **Windows**: instalador `.exe` (não assinado; o SmartScreen avisa na primeira execução).
 - **macOS**: `.dmg` / `.zip` (Intel e Apple Silicon), **não assinado**: na primeira abertura use botão direito → Abrir (ou `xattr -dr com.apple.quarantine "/Applications/Agent Canvas.app"`). A atualização automática do Mac não funciona sem assinatura: o botão abre a página de download.
 - **Linux**: `.AppImage` (`chmod +x` e executar) ou `.deb`. O AppImage se atualiza sozinho.
-- No Mac/Linux o terminal usa o seu `$SHELL`; o comando `canvas` funciona dentro dos terminais do app (script `bin/canvas`). Os testes de interface (`npm test`) são do Windows (PowerShell).
+- No Mac/Linux o terminal usa o seu `$SHELL` (no Mac, como shell de login, igual ao Terminal). O app carrega o PATH do seu shell de login ao abrir, para achar CLIs instalados via Homebrew, nvm ou `~/.local/bin` mesmo quando aberto pelo Dock ou pelo menu. O comando `canvas` funciona dentro dos terminais (script `bin/canvas`).
+- Ao fechar, o app encerra a árvore inteira de processos de cada terminal: `taskkill /T` no Windows, descendentes via `ps` no Mac/Linux.
+- **Linux, AppImage no Ubuntu 23.10+**: o AppArmor do Ubuntu bloqueia o sandbox do Chromium em AppImages, e o app pode não abrir. Prefira o `.deb`, que instala o `chrome-sandbox` com as permissões certas. Se precisar do AppImage, rode com `--no-sandbox`, sabendo que isso desliga o isolamento das páginas web dos Portais.
+- Os testes de interface completos (`npm test`) são do Windows (PowerShell). Em Mac e Linux, o CI roda os testes unitários e o teste de fumaça.
 
-Os builds de Mac e Linux foram gerados no GitHub Actions, mas ainda não foram executados em máquinas Mac/Linux reais.
+**O que foi verificado no Linux** (Debian 12 em container, Node 22): `npm ci` compila o node-pty, os testes unitários passam, e o teste de fumaça passa sob tela virtual (o app abre, o bash roda o `canvas` e fechar encerra os processos do terminal). O `.AppImage` e o `.deb` são gerados. O Mac é verificado pelo CI no GitHub (macOS), mas ainda não foi aberto numa máquina Mac real.
 
 ## Publicar uma versão
 
@@ -63,7 +66,9 @@ O GitHub Actions (`.github/workflows/release.yml`) confere se a tag bate com o `
 
 Quem tem uma versão anterior (a partir da 0.2.1) recebe o aviso ao abrir o app, ou em Configurações → Atualizações → Verificar atualizações.
 
-Testes: `npm run build` e depois `npm test` (abre o app em perfil temporário; inclui o fluxo de atualização com um feed falso).
+Testes: `npm run build` e depois `npm test` (abre o app em perfil temporário; inclui o fluxo de atualização com um feed falso). `npm run test:unit` roda só os testes sem interface (segundos) e `npm run test:smoke` o teste de fumaça que funciona em Windows, macOS e Linux.
+
+**CI** (`.github/workflows/ci.yml`): a cada push e pull request, testes unitários e o teste de fumaça do app compilado em Windows, macOS e Linux (este com tela virtual). O workflow de release roda o mesmo CI antes de publicar.
 
 ## Recursos de orquestração
 
@@ -72,7 +77,25 @@ Testes: `npm run build` e depois `npm test` (abre o app em perfil temporário; i
 - **Retomar conversa**: ao reabrir o app (ou "Recarregar"), Claude, Codex, Gemini, OpenCode e Antigravity retomam a conversa anterior (Antigravity, Codex e OpenCode pela conversa mais recente da pasta). "Nova conversa" começa do zero.
 - **Status ao vivo** em cada agente: trabalhando, esperando você, ocioso, encerrado (detectado pela saída do terminal).
 - **Conhecimento do projeto**: nó de memória compartilhada por workspace. Os agentes leem no início e usam `canvas_knowledge` / `canvas_remember`.
-- **Fluxos (pipeline)**: nó "Fluxo" com passos (agente + instrução). Executa em sequência: digita a instrução no agente, espera ele chamar `canvas_done` e passa o resumo ao próximo (`{{input}}`, `{{prev}}`, `{{step1}}`). "Parar se o resumo contiver…" encerra o fluxo. O fluxo só roda enquanto o workspace está aberto.
+- **Fluxos (pipeline)**: nó "Fluxo" com passos (agente + instrução). Executa em sequência: digita a instrução no agente, espera ele chamar `canvas_done` e passa o resumo ao próximo (`{{input}}`, `{{prev}}`, `{{step1}}`). "Parar se o resumo contiver…" encerra o fluxo. O fluxo só roda enquanto o app está aberto.
+  - **Paralelo**: o botão de colunas num passo faz ele rodar ao mesmo tempo que o passo de cima (agentes diferentes); o fluxo espera todos, e o `{{prev}}` seguinte traz uma linha `nome: resumo` por agente.
+  - **Repetição**: "Se o resumo contiver X, voltar ao passo N, no máximo M vezes" (ex.: revisor reprovou → volta ao dev com a revisão em `{{prev}}`). Esgotadas as repetições, o fluxo segue e avisa.
+  - **Tempo limite** por passo (15 min por padrão) e **orçamento** do fluxo em US$ (gasto dos agentes do fluxo desde o início; ao atingir, para e interrompe os agentes).
+  - **Aprovação humana**: um passo "Aprovação" pausa o fluxo até você permitir, no diálogo do app ou pelo celular (o texto pode usar `{{prev}}`). Sem resposta no prazo (60 min por padrão) ou negado, o fluxo para.
+  - Cada execução fica registrada (estado, rodadas, duração e gasto) em "Últimas execuções" e no histórico.
+  - Antes de cada execução o app cria um **ponto de restauração**.
+- **Notificações do sistema** (Configurações → Geral → Notificações): agente concluiu (com o resumo), agente esperando você, fluxo terminou ou parou, orçamento atingido. Só aparecem com a janela fora de foco; clicar traz o app e centraliza o terminal.
+- **Custo e orçamento**: cada agente mostra tokens e o custo estimado pelo preço de API do modelo que aparece no log do CLI (Claude, Codex, Gemini). O painel de uso soma o gasto do workspace e aceita um **orçamento em US$**: ao atingir, os agentes do workspace são interrompidos, os fluxos param e novos fluxos ficam bloqueados até você aumentar o valor. A tabela de preços (US$ por 1M de tokens, por prefixo do modelo) fica em Configurações → Agentes e pode ser editada. Em planos por assinatura não há cobrança por token: o valor é o que custaria pela API.
+- **Histórico por agente**: botão direito num terminal → Histórico… (ou Ctrl+K → "Histórico dos agentes"). É uma linha do tempo, com busca e filtro por tipo, que reúne:
+  - o que você digitou;
+  - o que foi pedido ao agente (fluxos, rotinas);
+  - as mensagens e perguntas trocadas;
+  - os resumos de `canvas_done`.
+
+  O registro do que você digita pode ser desligado em Configurações → Agentes. Ele não vale para terminais de shell simples nem para uma linha digitada logo após um pedido de senha ou token.
+- **Gasto por dia**: o painel de uso mostra um gráfico dos últimos 14 dias do workspace (`costs.json` na pasta de dados), a partir do crescimento do custo de cada conversa.
+- **Pontos de restauração** (Configurações → Dados, ou Ctrl+K): cópias nomeadas de todos os workspaces, feitas por você, antes de cada fluxo e antes de restaurar (as 30 mais recentes). Restaurar mantém rodando os terminais que existem nas duas versões.
+- **Estabilidade**: fechar o app (ou um terminal) encerra a árvore inteira de processos de cada terminal (agente, servidores MCP, servidores de dev). Erros internos vão para `logs/main.log` na pasta de dados e aparecem como um aviso discreto; Configurações → Diagnóstico → **Copiar diagnóstico** junta versões, estado dos agentes e o log recente para relatar problemas.
 - **Concluído**: agentes chamam `canvas_done(resumo)` ao terminar; o terminal mostra "Concluído" e, se você estava fora da janela, ao voltar aparece o resumo de quem terminou.
 - **Segurança do trabalho**: backup automático a cada 10 min (20 últimos, em `%APPDATA%gent-canvasackups`), gravação atômica, restauração automática se o arquivo estragar, exportar/importar workspaces (Configurações → Dados) e desfazer/refazer (Ctrl+Z / Ctrl+Shift+Z).
 - **Paleta (Ctrl+K)**: ir para workspace ou terminal, buscar na saída dos terminais e executar ações.
@@ -90,7 +113,13 @@ Testes: `npm run build` e depois `npm test` (abre o app em perfil temporário; i
 
 ## Estrutura
 
-- `electron/` processo principal: PTYs, bridge HTTP local, registro do MCP, configurações, briefings e skills.
+- `electron/` processo principal. `main.cjs` só inicializa; o resto fica em módulos:
+  - `state.cjs`: estado compartilhado (terminais, grafo, janela).
+  - `terminals.cjs`: PTYs, comando de cada agente, o que você digita.
+  - `bridge.cjs`: API local que os agentes usam.
+  - `window.cjs`: janela e menu do Mac.
+  - `ipc.cjs`: configurações, rotinas, celular, git, histórico, pontos, custos.
+  - Também: `proc.cjs` (encerra árvores de processos), `ledger.cjs` (gasto por dia), `inputlog.cjs`, `pricing.cjs`, registro do MCP, briefings e skills.
 - `bin/` CLI `canvas` e servidor MCP (`canvas-mcp.cjs`), usados pelos agentes dentro dos terminais.
 - `src/` interface React (canvas, sidebar, configurações, temas).
 - `build/` ícone (`icon.svg` → `npm run icons`).

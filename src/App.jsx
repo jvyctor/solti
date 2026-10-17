@@ -6,13 +6,17 @@ const SettingsDialog = lazy(() => import('./Settings.jsx')) // dialogs load when
 import { useUpdate, UpdateToast, UpdateDialog } from './Updates.jsx'
 import { exportable, mergeImport } from './workspaces.js'
 const Palette = lazy(() => import('./Palette.jsx'))
+const HistoryDialog = lazy(() => import('./History.jsx'))
 import { ApprovalDialog, AwayDigest } from './Activity.jsx'
+import { ErrorToast } from './ErrorToast.jsx'
+import { notify } from './notify.js'
 import { resolveTheme, applyTheme } from './themes.js'
 import { Canvas } from './Canvas.jsx'
 import { Sidebar } from './Sidebar.jsx'
-import { runPipeline, stopPipeline } from './pipelineRunner.js'
+import { isRunning, runPipeline, stopPipeline } from './pipelineRunner.js'
+import { overBudget, useUsage, wsCost } from './costs.js'
 const Onboarding = lazy(() => import('./Diagnostics.jsx').then((m) => ({ default: m.Onboarding })))
-import { CommCtx, PipeCtx, PRESET_LABELS, SettingsCtx, api, ask, describe, fresh, mem, uid } from './shared.js'
+import { CommCtx, PipeCtx, PRESET_LABELS, SettingsCtx, UsageCtx, api, ask, describe, fmt, fresh, mem, money, uid } from './shared.js'
 import { tr } from './i18n.js'
 
 export default function App() {
@@ -22,13 +26,35 @@ export default function App() {
   stateRef.current = state
   // Pipelines run here, not inside their node, so a run survives opening another workspace.
   const patchNode = useCallback((id, p) => setState((s) => ({ ...s, list: s.list.map((w) => (w.nodes.some((n) => n.id === id) ? { ...w, nodes: w.nodes.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...p } } : n)) } : w)) })), [])
+  const findNode = (nid) => stateRef.current?.list.flatMap((w) => w.nodes).find((n) => n.id === nid) || null
+  const wsOf = (nid) => stateRef.current?.list.find((w) => w.nodes.some((n) => n.id === nid)) || null
+
+  // Token use and estimated cost of every agent (all workspaces); limits and budgets are enforced further down.
+  const byNode = useUsage(state)
+  const usageRef = useRef(byNode)
+  usageRef.current = byNode
+
   const pipe = useMemo(() => ({
-    start: (id) => runPipeline(id, {
-      api,
-      getNode: (nid) => stateRef.current?.list.flatMap((w) => w.nodes).find((n) => n.id === nid) || null,
-      patch: patchNode,
-      agentExists: (aid) => !!stateRef.current?.list.some((w) => w.nodes.some((n) => n.id === aid && n.type === 'terminal')),
-    }),
+    start: (id) => {
+      const w = wsOf(id)
+      if (w?.budget > 0 && wsCost(w, usageRef.current).total >= w.budget) {
+        patchNode(id, { state: 'stopped', note: tr("Orçamento do workspace atingido. Aumente o orçamento no painel de uso para executar.") })
+        return
+      }
+      return runPipeline(id, {
+        api,
+        getNode: findNode,
+        patch: patchNode,
+        agentExists: (aid) => findNode(aid)?.type === 'terminal',
+        agentName: (aid) => findNode(aid)?.data.name || aid,
+        cost: (aid) => usageRef.current[aid]?.cost ?? 0,
+        snapshot: (label) => stateRef.current && api.pointCreate(label, stateRef.current),
+        notify: (title, body) => settingsRef.current?.notifyPipeline && notify(title, body, { nodeId: id }),
+        // "Wait for my OK" steps use the same approval dialog as agent requests (and the phone remote).
+        approve: ({ key, title, step, text, timeoutMs }) => api.approvalAsk({ key, from: tr('Fluxo “{0}” · passo {1}', [title, step]), text, timeoutMs }),
+        cancelApproval: (key) => api.approvalCancel(key),
+      })
+    },
     stop: stopPipeline,
   }), [patchNode])
 
@@ -136,8 +162,53 @@ export default function App() {
   useEffect(() => { if (eff) applyTheme(eff) }, [eff])
   const ctx = useMemo(() => (settings ? { ...settings, mode, eff } : null), [settings, mode, eff])
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsTab, setSettingsTab] = useState(null) // tab to open on (e.g. 'dados' from the palette)
   const settingsRef = useRef(null)
   settingsRef.current = settings
+
+  // Per-agent token limit: over it, the agent is interrupted once (until it drops below, e.g. a new conversation).
+  const [limited, setLimited] = useState(() => new Set())
+  const limitedRef = useRef(limited)
+  useEffect(() => {
+    const max = settings?.tokenLimit || 0
+    const next = new Set(Object.entries(byNode).filter(([, u]) => max > 0 && u.tokens >= max).map(([id]) => id))
+    for (const id of next) {
+      if (limitedRef.current.has(id)) continue
+      api.interrupt(id)
+      notify(findNode(id)?.data.name || id, tr("Limite de {0} tokens atingido; agente interrompido.", [fmt(max)]), { nodeId: id, always: true })
+    }
+    limitedRef.current = next
+    setLimited(next)
+  }, [byNode, settings?.tokenLimit])
+  // Workspace budget (US$, estimated): reaching it stops that workspace's pipelines and interrupts its agents once.
+  // You can still type to the agents; raising the budget re-arms it.
+  const budgetHit = useRef(new Set())
+  const budgetReady = useRef(false)
+  const budgetKey = (state?.list || []).map((w) => `${w.id}:${w.budget || 0}`).join('|')
+  useEffect(() => {
+    if (!state) return
+    const over = new Set(overBudget(state, byNode).map((w) => w.id))
+    // The first reading after start is the baseline: agents being resumed are not interrupted for a budget
+    // that was already used up (its pipelines stay blocked anyway). Only crossings while the app runs act.
+    if (!budgetReady.current) {
+      if (!Object.keys(byNode).length) return
+      budgetReady.current = true
+      budgetHit.current = over
+      return
+    }
+    for (const w of state.list) {
+      if (!over.has(w.id) || budgetHit.current.has(w.id)) continue
+      const spent = money(wsCost(w, byNode).total)
+      w.nodes.forEach((n) => {
+        if (n.type === 'terminal') api.interrupt(n.id)
+        if (n.type === 'pipeline' && isRunning(n.id)) stopPipeline(n.id, tr("Orçamento do workspace atingido."))
+      })
+      api.activityRecord({ kind: 'budget', from: w.name, text: tr("Orçamento de {0} atingido ({1}); agentes interrompidos.", [money(w.budget), spent]) })
+      notify(tr("Orçamento atingido: {0}", [w.name]), tr("Gasto estimado {0} de {1}. Agentes interrompidos e fluxos parados.", [spent, money(w.budget)]), { always: true })
+    }
+    budgetHit.current = over
+  }, [byNode, budgetKey])
+  const usage = useMemo(() => ({ byNode, limited }), [byNode, limited])
 
   // Pairs that are talking: an open canvas_ask holds the pair "on"; every message keeps it on for commSeconds after the last one.
   const [talking, setTalking] = useState(() => new Set())
@@ -179,12 +250,49 @@ export default function App() {
   const upd = useUpdate(api)
   // An agent called canvas_done: remember it on its node (drives the "Concluído" badge).
   useEffect(() => api.onDone(({ from, summary, t }) => setState((s) => ({ ...s, list: s.list.map((w) => (w.nodes.some((n) => n.id === from) ? { ...w, nodes: w.nodes.map((n) => (n.id === from ? { ...n, data: { ...n.data, lastDone: { summary, t } } } : n)) } : w)) }))), [])
+  useEffect(() => api.onDone(({ from, name, summary }) => {
+    if (settingsRef.current?.notifyDone) notify(tr("{0} concluiu", [name || from]), summary, { nodeId: from })
+  }), [])
   const [focus, setFocus] = useState(null) // { nodeId, n }: Canvas pans to it
   const [palette, setPalette] = useState(false)
   const goTo = useCallback((wsId, nodeId) => {
     if (wsId) setState((s) => ({ ...s, active: wsId }))
     if (nodeId) setFocus({ nodeId, n: Date.now() })
   }, [])
+  // A clicked notification (or anything else) asks to show a node: open its workspace and pan to it.
+  useEffect(() => {
+    const h = (e) => {
+      const id = e.detail?.nodeId
+      const w = stateRef.current?.list.find((x) => x.nodes.some((n) => n.id === id))
+      if (w) goTo(w.id, id)
+    }
+    window.addEventListener('ac:goto', h)
+    return () => window.removeEventListener('ac:goto', h)
+  }, [goTo])
+  // Agent history dialog: { start: node id | '' } while open.
+  const [history, setHistory] = useState(null)
+  useEffect(() => {
+    const h = (e) => setHistory({ start: e.detail?.nodeId || '' })
+    window.addEventListener('ac:agent-history', h)
+    return () => window.removeEventListener('ac:agent-history', h)
+  }, [])
+  const historyAgents = useMemo(() => (state?.list || []).flatMap((w) => w.nodes.filter((n) => n.type === 'terminal').map((n) => ({ id: n.id, name: state.list.length > 1 ? `${n.data.name} (${w.name})` : n.data.name }))), [state])
+
+  // Restore points: a named copy of every workspace. Restoring makes one of the current state first,
+  // stops terminals that do not exist in the restored version and keeps the others running.
+  const points = useMemo(() => ({
+    list: () => api.pointList(),
+    create: (label) => api.pointCreate(label || tr('Ponto manual'), stateRef.current),
+    restore: async (id) => {
+      const r = await api.pointLoad(id)
+      if (r.error) return r.error
+      await api.pointCreate(tr('Antes de restaurar'), stateRef.current)
+      const keep = new Set(r.data.list.flatMap((w) => w.nodes.map((n) => n.id)))
+      stateRef.current.list.forEach((w) => w.nodes.forEach((n) => n.type === 'terminal' && !keep.has(n.id) && api.kill(n.id)))
+      setState({ ...r.data, active: r.data.list.some((w) => w.id === r.data.active) ? r.data.active : r.data.list[0]?.id })
+      return ''
+    },
+  }), [])
   useEffect(() => {
     const key = (e) => {
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k') { e.preventDefault(); setPalette((o) => !o) }
@@ -236,7 +344,10 @@ export default function App() {
     { label: tr("Verificar atualizações"), run: () => { setUpdOpen(true); api.updateCheck() } },
     { label: tr("Mostrar/ocultar barra lateral"), run: toggleSide },
     { label: tr("Interromper todos os agentes"), run: () => api.interrupt() },
-  ], [])
+    { label: tr("Histórico dos agentes"), run: () => setHistory({ start: '' }) },
+    { label: tr("Criar ponto de restauração"), run: () => points.create(tr('Ponto manual')) },
+    { label: tr("Pontos de restauração…"), run: () => { setSettingsTab('dados'); setSettingsOpen(true) } },
+  ], [points])
 
   const [confirm, setConfirm] = useState(null) // { msg, done }
   useEffect(() => {
@@ -250,13 +361,16 @@ export default function App() {
     <SettingsCtx.Provider value={ctx}>
     <CommCtx.Provider value={talking}>
     <PipeCtx.Provider value={pipe}>
+    <UsageCtx.Provider value={usage}>
     <div className={'app' + (settings.handCursor ? ' hand' : '')}>
       <Suspense fallback={null}>
-        {settingsOpen && <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} settings={settings} api={api} mode={mode} update={{ targets, state: upd, open: () => setUpdOpen(true), io: { export: exportWs, import: importWs } }} />}
+        {settingsOpen && <SettingsDialog open={settingsOpen} onOpenChange={(o) => { setSettingsOpen(o); if (!o) setSettingsTab(null) }} startTab={settingsTab} settings={settings} api={api} mode={mode} update={{ targets, state: upd, open: () => setUpdOpen(true), io: { export: exportWs, import: importWs, points } }} />}
       </Suspense>
       <ApprovalDialog />
       <Suspense fallback={null}>{(!!settings && !settings.onboarded && !!state && state.list.every((w) => w.nodes.length === 0)) && <Onboarding open onClose={() => api.settingsSet({ onboarded: true })} onTeam={() => setTimeout(() => window.dispatchEvent(new Event('ac:team')), 200)} />}</Suspense>
       <AwayDigest />
+      <ErrorToast />
+      <Suspense fallback={null}>{history && <HistoryDialog open onClose={() => setHistory(null)} agents={historyAgents} start={history.start} />}</Suspense>
       <Suspense fallback={null}>{state && palette && <Palette open={palette} onClose={() => setPalette(false)} state={state} goTo={goTo} actions={paletteActions} />}</Suspense>
       <UpdateToast state={upd} onOpen={() => { setUpdOpen(true); api.updateDownload() }} />
       <UpdateDialog open={updOpen} onOpenChange={setUpdOpen} state={upd} api={api} />
@@ -286,6 +400,7 @@ export default function App() {
         </ReactFlowProvider>
       </main>
     </div>
+    </UsageCtx.Provider>
     </PipeCtx.Provider>
     </CommCtx.Provider>
     </SettingsCtx.Provider>

@@ -6,9 +6,10 @@ import { SerializeAddon } from '@xterm/addon-serialize'
 import { Activity, Folder, GitBranch, X } from 'lucide-react'
 import { termOptions } from './themes.js'
 import { classify, STATUS } from './status.js'
-import { AGENT_COLORS, PRESET_COLOR, SettingsCtx, api, fmt, shortPath, sinks, terms } from './shared.js'
+import { AGENT_COLORS, PRESET_COLOR, SettingsCtx, UsageCtx, api, fmt, money, shortPath, sinks, terms } from './shared.js'
 import { Ring } from './Ring.jsx'
 import { tr } from './i18n.js'
+import { notify } from './notify.js'
 
 export function TerminalNode({ id, data, selected }) {
   const host = useRef(null)
@@ -18,7 +19,6 @@ export function TerminalNode({ id, data, selected }) {
   dataRef.current = data
   const [cwd, setCwd] = useState('')
   const [status, setStatus] = useState(null) // working | input | idle | exited | limit (agents only)
-  const [tokens, setTokens] = useState(0)
   // "Starting…" until the shell prints its first output; after 12 s a hint that it is slow, not frozen.
   const [booting, setBooting] = useState(true)
   const [slow, setSlow] = useState(false)
@@ -67,13 +67,13 @@ export function TerminalNode({ id, data, selected }) {
           for (let i = Math.max(0, b.length - 6); i < b.length; i++) lines.push(b.getLine(i)?.translateToString(true) || '')
           cur = classify(lines)
           setStatus(cur)
-          if (cur === 'input' && !document.hasFocus() && cfgRef.current.notifyIdle) new Notification(dataRef.current.name, { body: tr("Está esperando você.") })
+          if (cur === 'input' && cfgRef.current.notifyWaiting) notify(dataRef.current.name, tr("Está esperando você."), { nodeId: id })
         }, 2500)
       }
       if (dataRef.current.monitor && cfgRef.current.notifyIdle) {
         clearTimeout(idle)
         const secs = cfgRef.current.idleSeconds
-        idle = setTimeout(() => new Notification(dataRef.current.name, { body: tr("Atividade parou ({0} s sem saída).", [secs]) }), secs * 1000)
+        idle = setTimeout(() => notify(dataRef.current.name, tr("Atividade parou ({0} s sem saída).", [secs]), { nodeId: id, always: true }), secs * 1000)
       }
     }
     sinks.set(id, (d) => (ready ? show(d) : held.push(d)))
@@ -100,25 +100,12 @@ export function TerminalNode({ id, data, selected }) {
     return () => { save(); offExit(); clearInterval(timer); clearTimeout(idle); clearTimeout(settle); window.removeEventListener('beforeunload', save); mark.dispose(); terms.delete(id); sinks.delete(id); sub.dispose(); ro.disconnect(); term.dispose() }
   }, [id, data.rev, data.unloaded])
 
-  // Claude, Codex and Gemini: token use is read from the CLI's own session log; over the limit, the agent is interrupted once.
-  const limitHit = useRef(false)
-  useEffect(() => {
-    if (!['claude', 'codex', 'gemini'].includes(data.preset) || !data.sid || data.unloaded) return
-    const poll = () => api.agentTokens(id, data.preset, data.sid).then((r) => {
-      setTokens(r.tokens)
-      const max = cfgRef.current.tokenLimit
-      if (max > 0 && r.tokens >= max && !limitHit.current) {
-        limitHit.current = true
-        api.interrupt(id)
-        setStatus('limit')
-        new Notification(data.name, { body: tr("Limite de {0} tokens atingido; agente interrompido.", [fmt(max)]) })
-      }
-      if (!(max > 0 && r.tokens >= max)) limitHit.current = false
-    })
-    poll()
-    const t = setInterval(poll, 15000)
-    return () => clearInterval(t)
-  }, [data.sid, data.preset, data.unloaded])
+  // Claude, Codex and Gemini: token use and estimated cost come from the central poller (costs.js, App enforces the limit).
+  const usage = useContext(UsageCtx)
+  const u = usage.byNode[id]
+  const tokens = u?.tokens || 0
+  const isLimited = usage.limited.has(id)
+  useEffect(() => { if (isLimited) setStatus('limit') }, [isLimited])
 
   // Style changes apply to open terminals without restarting them.
   const opts = termOptions({ ...cfg, ...(data.look || {}) }, cfg.mode) // node.data.look overrides the global style for this terminal
@@ -144,6 +131,7 @@ export function TerminalNode({ id, data, selected }) {
         <span className="spacer" />
         {status && <span className={'stat ' + status} title={STATUS[status].label}><i style={{ background: STATUS[status].color }} />{STATUS[status].label}</span>}
         {tokens > 0 && <span className={'tok' + (cfg.tokenLimit > 0 && tokens >= cfg.tokenLimit ? ' over' : '')} title={tr("Tokens usados por este agente (entrada + cache novo + saída)")}>{fmt(tokens)} {tr("tok")}</span>}
+        {tokens > 0 && u?.cost != null && <span className="cost" title={tr("Custo estimado pelo preço de API de {0} (assinaturas não cobram por token)", [u.model || '?'])}>{money(u.cost)}</span>}
         {data.monitor && <Activity className="mon" size={13} aria-label={tr("Monitorando atividade")} />}
         <select className={'rolepill' + (data.maestro ? ' maestro' : '')} value={data.maestro ? 'maestro' : 'agent'} onChange={(e) => setRole(e.target.value === 'maestro')} title={tr("Papel (use Reenviar briefing no menu para aplicar)")}>
           <option value="agent">{tr("Agente")}</option>

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { RefreshCw, Square, X } from 'lucide-react'
-import { AGENT_COLORS, api, fmt } from './shared.js'
+import { AGENT_COLORS, UsageCtx, api, fmt, money } from './shared.js'
+import { wsCost } from './costs.js'
 import { tr } from './i18n.js'
 
 export const resetText = (ts) => {
@@ -102,7 +103,102 @@ export function useAgents() {
   return { agents, load }
 }
 
-export function UsageDock() {
+// Spend per day for the last 14 days (main process ledger): one series, so no legend; the extreme is labeled,
+// each column has a hover tooltip, and a hidden table carries the values for screen readers.
+const DAYS = 14
+function DailySpend({ ws }) {
+  const [rows, setRows] = useState(null)
+  const [hover, setHover] = useState(-1)
+  useEffect(() => {
+    let alive = true
+    const load = () => api.costsSeries(ws.id, DAYS).then((r) => alive && setRows(r))
+    load()
+    const t = setInterval(load, 30000)
+    return () => { alive = false; clearInterval(t) }
+  }, [ws.id])
+  if (!rows) return null
+  const W = 300, H = 64, TOP = 14, GAP = 2
+  const slot = W / rows.length
+  const bw = Math.min(16, slot - GAP)
+  const max = Math.max(...rows.map((r) => r.cost), 0)
+  const peak = rows.findIndex((r) => r.cost === max && max > 0)
+  const label = (day) => new Date(day + 'T12:00').toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' })
+  const total = rows.reduce((s, r) => s + r.cost, 0)
+  const bar = (r, i) => {
+    const h = max > 0 ? Math.max(r.cost > 0 ? 2 : 0, ((H - TOP) * r.cost) / max) : 0
+    const x = i * slot + (slot - bw) / 2, y = H - h, rad = Math.min(4, h, bw / 2)
+    // 4px rounded data-end, square at the baseline.
+    return h > 0 ? `M${x},${H} V${y + rad} Q${x},${y} ${x + rad},${y} H${x + bw - rad} Q${x + bw},${y} ${x + bw},${y + rad} V${H} Z` : ''
+  }
+  const cur = hover >= 0 ? rows[hover] : null
+  return (
+    <div className="daily">
+      <div className="daily-head">
+        <span>{tr("Gasto por dia")}</span>
+        <small>{cur ? `${label(cur.day)} · ${money(cur.cost)}` : tr("{0} dias: {1}", [DAYS, money(total)])}</small>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H + 14}`} width="100%" role="img" aria-label={tr("Gasto estimado por dia nos últimos {0} dias, total {1}", [DAYS, money(total)])} onMouseLeave={() => setHover(-1)}>
+        <line x1="0" x2={W} y1={H + 0.5} y2={H + 0.5} className="daily-axis" />
+        {rows.map((r, i) => <path key={r.day} d={bar(r, i)} className={'daily-bar' + (hover === i ? ' on' : '')} />)}
+        {peak >= 0 && <text x={Math.min(Math.max(peak * slot + slot / 2, 18), W - 18)} y={TOP - 4} textAnchor="middle" className="daily-val">{money(max)}</text>}{/* the tallest column always reaches TOP */}
+        <text x="0" y={H + 12} className="daily-tick">{label(rows[0].day)}</text>
+        <text x={W} y={H + 12} textAnchor="end" className="daily-tick">{tr("hoje")}</text>
+        {/* hit targets: the whole column slot, taller than the mark */}
+        {rows.map((r, i) => <rect key={'h' + r.day} x={i * slot} y="0" width={slot} height={H} fill="transparent" onMouseEnter={() => setHover(i)}><title>{`${label(r.day)}: ${money(r.cost)}`}</title></rect>)}
+      </svg>
+      <table className="visually-hidden">
+        <caption>{tr("Gasto por dia")}</caption>
+        <tbody>{rows.map((r) => <tr key={r.day}><th scope="row">{label(r.day)}</th><td>{money(r.cost)}</td></tr>)}</tbody>
+      </table>
+    </div>
+  )
+}
+
+// This workspace's estimated spend per agent, and its budget (stored on the workspace; App enforces it).
+export function CostPanel({ ws, update }) {
+  const { byNode } = useContext(UsageCtx)
+  const rows = ws.nodes.filter((n) => n.type === 'terminal' && byNode[n.id]?.tokens > 0).map((n) => ({ id: n.id, name: n.data.name, ...byNode[n.id] })).sort((a, b) => (b.cost ?? -1) - (a.cost ?? -1))
+  const { total, partial } = wsCost(ws, byNode)
+  const budget = ws.budget || 0
+  const pct = budget > 0 ? Math.min((total / budget) * 100, 100) : 0
+  const [draft, setDraft] = useState(budget ? String(budget) : '')
+  useEffect(() => setDraft(budget ? String(budget) : ''), [ws.id, budget])
+  const save = () => {
+    const v = Number(String(draft).replace(',', '.'))
+    update((w) => ({ ...w, budget: v > 0 ? Math.round(v * 100) / 100 : 0 }))
+  }
+  return (
+    <section className="agent cost-panel">
+      <header className="cost-head">
+        <div><b>{tr("Custo estimado")}</b><small>{tr("deste workspace, pelo preço de API")}</small></div>
+        <b className="cost-total" title={partial ? tr("Parcial: há agente com modelo sem preço conhecido") : ''}>{money(total)}{partial ? '+' : ''}</b>
+      </header>
+      {rows.length === 0 && <small>{tr("Nenhum gasto registrado ainda.")}</small>}
+      {rows.map((r) => (
+        <div key={r.id} className="cost-row">
+          <button className="link" onClick={() => window.dispatchEvent(new CustomEvent('ac:goto', { detail: { nodeId: r.id } }))}>{r.name}</button>
+          <small title={r.model}>{r.model || ''}</small>
+          <span>{fmt(r.tokens)} {tr("tok")}</span>
+          <b>{money(r.cost)}</b>
+        </div>
+      ))}
+      <label className="cost-budget">
+        <span>{tr("Orçamento (US$)")}</span>
+        <input inputMode="decimal" placeholder={tr("sem limite")} value={draft} onChange={(e) => setDraft(e.target.value)} onBlur={save} onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()} aria-label={tr("Orçamento do workspace em dólares")} />
+      </label>
+      {budget > 0 && (
+        <>
+          <SegBar color={total >= budget ? 'var(--danger)' : pct >= 80 ? 'var(--maestro)' : 'var(--success)'} pct={pct} />
+          <small>{total >= budget ? tr("Atingido: agentes interrompidos e fluxos bloqueados. Aumente para continuar.") : tr("{0}% usado. Ao atingir, os agentes são interrompidos e os fluxos param.", [Math.round(pct)])}</small>
+        </>
+      )}
+      <DailySpend ws={ws} />
+      <small className="cost-note">{tr("Estimativa a partir dos logs dos CLIs. Em planos por assinatura não há cobrança por token. Preços em Configurações → Agentes.")}</small>
+    </section>
+  )
+}
+
+export function UsageDock({ ws, update }) {
   const [open, setOpen] = useState(false)
   const { agents, load } = useAgents()
   const root = useRef(null)
@@ -120,6 +216,7 @@ export function UsageDock() {
         <div className="usage">
           <h4>{tr("Uso dos agentes")} <span><button onClick={load} aria-label={tr("Atualizar")} title={tr("Atualizar")}><RefreshCw size={15} /></button><button onClick={() => setOpen(false)} aria-label={tr("Fechar")} title={tr("Fechar")}><X size={16} /></button></span></h4>
           <div className="usage-scroll">
+            {ws && <CostPanel ws={ws} update={update} />}
             {agents.map((a) => <AgentUsage key={a.key} color={AGENT_COLORS[a.key]} {...a} />)}
           </div>
           <button className="stop-all" onClick={() => api.interrupt()} title={tr("Envia Esc e Ctrl+C para todos os terminais")}><Square size={13} /> {tr("Interromper todos os agentes")}</button>

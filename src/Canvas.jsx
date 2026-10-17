@@ -196,6 +196,7 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
       ...(t ? [{ label: tr("Reenviar briefing do papel"), run: () => api.brief(n.id, { name: d.name, maestro: !!d.maestro, instructions: d.instructions, knowledge: ws.nodes.find((x) => x.type === 'knowledge')?.data.text || '' }) }, { label: tr("Monitorar atividade"), checked: d.monitor, run: () => patch(n.id, { monitor: !d.monitor }) }, '-'] : []),
       ...(t
         ? [
+            { label: tr("Histórico…"), run: () => window.dispatchEvent(new CustomEvent('ac:agent-history', { detail: { nodeId: n.id } })) },
             { label: tr("Aparência…"), run: () => setLookId(n.id) },
             { label: d.blur ? tr("Focar") : tr("Desfocar"), run: () => patch(n.id, { blur: !d.blur }) },
             { label: tr("Recarregar (retoma a conversa)"), run: () => { api.kill(n.id); patch(n.id, { rev: (d.rev || 0) + 1, unloaded: false }) } },
@@ -284,7 +285,7 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
       )}
       <ReactFlow deleteKeyCode={['Backspace', 'Delete']} onNodeDragStart={onNodeDragStart} onNodeDrag={onNodeDrag} nodes={ws.nodes} edges={shownEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} connectionMode={ConnectionMode.Loose} connectionRadius={48} onBeforeDelete={onBeforeDelete} onConnectEnd={onConnectEnd} defaultEdgeOptions={{ type: 'floating' }} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeContextMenu={(e, n) => openMenu(e, nodeMenu(n))} onPaneContextMenu={(e) => openMenu(e, paneMenu(screenToFlowPosition({ x: e.clientX, y: e.clientY })))} colorMode={cfg.mode} snapToGrid={cfg.eff.snap} snapGrid={[cfg.eff.snapSize, cfg.eff.snapSize]} className={cfg.eff.edgeFlow ? 'flow' : undefined} minZoom={0.1} fitView proOptions={{ hideAttribution: true }}>
         {cfg.eff.gridStyle !== 'none' && <Background variant={GRID_VARIANT[cfg.eff.gridStyle]} color={cfg.eff.grid} gap={cfg.eff.gap} size={cfg.eff.size} lineWidth={cfg.eff.size} />}
-        <Zoom><UsageDock /><ActivityDock /></Zoom>
+        <Zoom><UsageDock ws={ws} update={update} /><ActivityDock /></Zoom>
       </ReactFlow>
     </>
   )

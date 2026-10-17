@@ -7,18 +7,19 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import electron from 'electron'
-import { prepareProfile, treeKill } from './helpers.mjs'
+import { freePort, prepareProfile, treeKill } from './helpers.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 async function session(prof, port, body) {
   prepareProfile(prof)
+  port = await freePort()
   const app = spawn(electron, ['.', `--user-data-dir=${prof}`, `--remote-debugging-port=${port}`], { stdio: 'ignore' })
   try {
     let page
     for (let i = 0; i < 100 && !page; i++) {
       await sleep(500)
-      try { page = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find((t) => t.type === 'page') } catch {}
+      try { page = (await (await fetch(`http://127.0.0.1:${port}/json`, { signal: AbortSignal.timeout(2000) })).json()).find((t) => t.type === 'page') } catch {}
     }
     assert.ok(page, 'app window did not open')
     const cdp = new WebSocket(page.webSocketDebuggerUrl)

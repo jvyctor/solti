@@ -33,6 +33,21 @@ test('request waits for the answer; record keeps and persists the timeline', asy
 
   a.record({ kind: 'send', from: 'a', to: 'b', text: 'x'.repeat(900), outcome: 'ok' })
   const last = a.list().at(-1)
-  assert.equal(last.text.length, 500)
+  assert.equal(last.text.length, 500, 'the dock list stays short')
+  assert.equal(a.query({ q: 'xxxx' })[0].text.length, 900, 'the history keeps the full text')
   assert.match(readFileSync(join(dir, 'activity.jsonl'), 'utf8'), /"kind":"send"/)
+})
+
+test('history query: by agent id (or name for old entries), kind and text, newest first', () => {
+  a.init(mkdtempSync(join(tmpdir(), 'ac-act-')), () => {})
+  a.record({ kind: 'prompt', from: 'Fluxo X · passo 1', to: 'dev', toId: 'n1', text: 'implemente o login' })
+  a.record({ kind: 'send', from: 'dev', fromId: 'n1', to: 'rev', toId: 'n2', text: 'pronto para revisão' })
+  a.record({ kind: 'done', from: 'rev', fromId: 'n2', text: 'aprovado' })
+  a.record({ kind: 'send', from: 'dev', to: 'rev', text: 'entrada antiga, só com nomes' })
+  const dev = { id: 'n1', name: 'dev' }
+  assert.deepEqual(a.query({ agent: dev }).map((e) => e.kind), ['send', 'send', 'prompt'])
+  assert.deepEqual(a.query({ agent: { id: 'n2', name: 'rev' }, kinds: ['done'] }).map((e) => e.text), ['aprovado'])
+  assert.deepEqual(a.query({ q: 'LOGIN' }).map((e) => e.toId), ['n1'])
+  assert.equal(a.query({ limit: 2 }).length, 2)
+  assert.equal(a.query({ agent: { id: 'zz', name: 'ninguém' } }).length, 0)
 })

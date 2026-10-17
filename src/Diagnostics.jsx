@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { Check, X, Minus } from 'lucide-react'
 import { tr } from './i18n.js'
+import { copyReport } from './ErrorToast.jsx'
 
 const api = window.api
 
@@ -38,13 +39,27 @@ export function DiagList() {
 }
 
 export function DiagTab({ ui: { Section } }) {
+  const [msg, setMsg] = useState('')
+  const copy = async () => setMsg((await copyReport()) ? tr("Diagnóstico copiado. Cole no relato do problema.") : tr("Não foi possível copiar."))
   return (
-    <Section title={tr("AGENTES NESTE COMPUTADOR")}>
-      <p className="set-note-left" style={{ margin: '0 0 12px' }}>
-        {tr("Confere, para cada agente, se o programa está instalado, se há login (leitura dos arquivos do próprio CLI: é uma estimativa) e se o canvas está registrado nele. “Consertar” registra o canvas e instala as skills.")}
-      </p>
-      <DiagList />
-    </Section>
+    <>
+      <Section title={tr("AGENTES NESTE COMPUTADOR")}>
+        <p className="set-note-left" style={{ margin: '0 0 12px' }}>
+          {tr("Confere, para cada agente, se o programa está instalado, se há login (leitura dos arquivos do próprio CLI: é uma estimativa) e se o canvas está registrado nele. “Consertar” registra o canvas e instala as skills.")}
+        </p>
+        <DiagList />
+      </Section>
+      <Section title={tr("RELATAR UM PROBLEMA")}>
+        <p className="set-note-left" style={{ margin: '0 0 12px' }}>
+          {tr("Erros internos ficam registrados num log. “Copiar diagnóstico” junta versões, o estado dos agentes e o log recente (sem conteúdo dos seus arquivos).")}
+        </p>
+        <div className="row">
+          <button className="set-btn" onClick={copy}>{tr("Copiar diagnóstico")}</button>
+          <button className="set-btn" onClick={() => api.openLogs()}>{tr("Abrir pasta de logs")}</button>
+        </div>
+        {msg && <p className="set-note-left" role="status">{msg}</p>}
+      </Section>
+    </>
   )
 }
 

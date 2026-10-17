@@ -1,21 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
-import { ScrollText, X, ShieldAlert } from 'lucide-react'
+import { History, ScrollText, X, ShieldAlert } from 'lucide-react'
 import { getLang, tr } from './i18n.js'
+import { notify } from './notify.js'
 
 const api = window.api
-const KIND = { send: tr('mensagem'), ask: tr('pergunta'), spawn: tr('criou agente'), portal: tr('navegador'), done: tr('concluiu'), remote: tr('celular'), routine: tr('rotina') }
+const KIND = { send: tr('mensagem'), ask: tr('pergunta'), spawn: tr('criou agente'), portal: tr('navegador'), done: tr('concluiu'), remote: tr('celular'), routine: tr('rotina'), prompt: tr('pediu'), budget: tr('orçamento'), point: tr('ponto de restauração'), input: tr('digitou'), pipeline: tr('fluxo'), approval: tr('aprovação') }
 const hhmm = (t) => new Date(t).toLocaleTimeString(getLang() === 'en' ? 'en-US' : 'pt-BR')
 
 // Timeline of what agents did to each other; opens from a dock button.
 export function ActivityDock() {
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState([])
+  const [q, setQ] = useState('')
   const root = useRef(null)
   useEffect(() => {
     api.activityList().then(setItems)
     return api.onActivity((e) => setItems((l) => [...l.slice(-199), e]))
   }, [])
+  const needle = q.trim().toLowerCase()
+  const shown = needle ? items.filter((e) => [e.from, e.to, e.text].some((s) => String(s || '').toLowerCase().includes(needle))) : items
   useEffect(() => {
     if (!open) return
     const away = (e) => !root.current?.contains(e.target) && setOpen(false)
@@ -26,10 +30,11 @@ export function ActivityDock() {
     <div ref={root} className="usage-root">
       {open && (
         <div className="usage activity" role="log" aria-label={tr("Atividade dos agentes")}>
-          <h4>{tr("Atividade")} <span><button onClick={() => setOpen(false)} aria-label={tr("Fechar")}><X size={16} /></button></span></h4>
+          <h4>{tr("Atividade")} <span><button onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent('ac:agent-history', { detail: {} })) }} aria-label={tr("Histórico completo")} title={tr("Histórico completo")}><History size={16} /></button><button onClick={() => setOpen(false)} aria-label={tr("Fechar")}><X size={16} /></button></span></h4>
+          <input className="act-search" placeholder={tr("Filtrar…")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={tr("Filtrar atividade")} />
           <div className="usage-scroll">
             {items.length === 0 && <p className="act-empty">{tr("Nada ainda. Mensagens, criação de agentes e uso do navegador aparecem aqui.")}</p>}
-            {[...items].reverse().map((e, i) => (
+            {[...shown].reverse().map((e, i) => (
               <div key={i} className={'act-row' + (e.outcome === 'denied' ? ' denied' : '')}>
                 <div className="act-head"><b>{e.from}</b> {KIND[e.kind] || e.kind}{e.to ? <> → <b>{e.to}</b></> : null}<time>{hhmm(e.t)}</time></div>
                 {e.text && <div className="act-text">{e.text}</div>}
@@ -72,6 +77,7 @@ const WHAT = {
   send: (r) => tr('quer enviar uma mensagem para “{0}”.', [r.to]),
   ask: (r) => tr('quer fazer uma pergunta a “{0}”.', [r.to]),
   portal: (r) => tr('quer controlar o navegador “{0}”.', [r.to]),
+  approval: () => tr('espera sua aprovação para continuar.'),
 }
 
 // One request at a time; the rest wait in the queue. No answer in 2 minutes counts as "Negar" (main side).
@@ -80,7 +86,7 @@ export function ApprovalDialog() {
   useEffect(() => {
     const offReq = api.onApproval((r) => {
       setQueue((q) => [...q, r])
-      if (!document.hasFocus()) new Notification('Agent Canvas', { body: `${r.from} ${(WHAT[r.kind] || (() => 'quer agir'))(r)}` })
+      notify('Agent Canvas', `${r.from} ${(WHAT[r.kind] || (() => tr('quer agir.')))(r)}`, { nodeId: r.fromId })
     })
     const offClose = api.onApprovalClose((id) => setQueue((q) => q.filter((x) => x.id !== id)))
     return () => { offReq(); offClose() }

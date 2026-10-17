@@ -15,6 +15,9 @@ const DEFAULTS = {
   // Geral > Notificações
   notifyIdle: true,
   idleSeconds: 6,
+  notifyDone: true, // an agent called canvas_done
+  notifyWaiting: true, // an agent is asking you something
+  notifyPipeline: true, // a pipeline finished or stopped
   autoUpdate: true,
   language: 'auto', // auto | pt | en
   onboarded: false, // first-run welcome already shown
@@ -41,7 +44,9 @@ const DEFAULTS = {
   // Agentes
   approval: 'spawn', // ask the user before agents act on each other: off | spawn (create agents) | all (also messages and portal control)
   tokenLimit: 0, // per-agent token limit (Claude Code only); 0 = off
+  prices: {}, // overrides of electron/pricing.cjs, US$ per 1M tokens: { prefix: { in, out, cw, cr } | null }
   sendBriefing: true,
+  historyInput: true, // record what you type into agents (not plain shells, not after a password prompt) in their history
   commands: { claude: 'claude', codex: 'codex', gemini: 'gemini', antigravity: 'agy', opencode: 'opencode' },
 }
 

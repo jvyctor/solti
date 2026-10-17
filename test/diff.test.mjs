@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createRequire } from 'node:module'
 import electron from 'electron'
-import { prepareProfile, treeKill } from './helpers.mjs'
+import { freePort, prepareProfile, treeKill } from './helpers.mjs'
 
 const g = createRequire(import.meta.url)('../electron/git.cjs')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -32,12 +32,13 @@ test('diff node shows changes, approves and merges', async () => {
 
   prepareProfile(prof)
 
-  const app = spawn(electron, ['.', `--user-data-dir=${prof}`, '--remote-debugging-port=9395'], { stdio: 'ignore' })
+  const dbgPort = await freePort()
+  const app = spawn(electron, ['.', `--user-data-dir=${prof}`, `--remote-debugging-port=${dbgPort}`], { stdio: 'ignore' })
   try {
     let page
     for (let i = 0; i < 40 && !page; i++) {
       await sleep(500)
-      try { page = (await (await fetch('http://127.0.0.1:9395/json')).json()).find((t) => t.type === 'page') } catch {}
+      try { page = (await (await fetch(`http://127.0.0.1:${dbgPort}/json`, { signal: AbortSignal.timeout(2000) })).json()).find((t) => t.type === 'page') } catch {}
     }
     assert.ok(page, 'app window did not open')
     const cdp = new WebSocket(page.webSocketDebuggerUrl)
