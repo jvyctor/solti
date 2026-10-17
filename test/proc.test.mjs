@@ -41,21 +41,26 @@ test('killTreesSync ends a shell, the command it runs in its own process group, 
   assert.deepEqual(pids.map(alive), [false, false], 'job and grandchild ended')
 })
 
-test('killTreesSync ends a shell and the program it started', { skip: process.platform !== 'win32' && 'Windows process tree' }, async () => {
+test('killTreesSync ends a process and the program it started', { skip: process.platform !== 'win32' && 'Windows process tree' }, async () => {
   const dir = mkdtempSync(join(tmpdir(), 'ac-proc-'))
   const pidFile = join(dir, 'child.pid')
-  // A shell that starts a long-lived grandchild (like an agent CLI starting an MCP server) and records its pid.
-  const shell = spawn('powershell.exe', ['-NoProfile', '-Command', `$p = Start-Process -PassThru -WindowStyle Hidden ping -ArgumentList '-n','300','127.0.0.1'; $p.Id | Out-File -Encoding ascii '${pidFile}'; Start-Sleep 300`], { stdio: 'ignore', windowsHide: true })
+  // A parent that starts a long-lived child (like an agent CLI starting an MCP server) and records its pid.
+  // Plain Node on both levels: starts in milliseconds even on a slow CI machine (PowerShell can take many seconds).
+  const keep = 'setInterval(() => {}, 1000)'
+  const parentCode = `const c = require('child_process').spawn(process.execPath, ['-e', ${JSON.stringify(keep)}], { stdio: 'ignore' }); require('fs').writeFileSync(${JSON.stringify(pidFile)}, String(c.pid)); ${keep}`
+  const parent = spawn(process.execPath, ['-e', parentCode], { stdio: 'ignore', windowsHide: true })
   let child = 0
-  for (let i = 0; i < 60 && !child; i++) { await sleep(250); try { child = Number(readFileSync(pidFile, 'utf8').trim()) } catch {} }
-  assert.ok(child > 0 && alive(child), 'grandchild started')
-  proc.killTreesSync([shell.pid, 0, 'x'])
-  await sleep(500)
-  assert.equal(alive(shell.pid), false, 'shell ended')
-  // Start-Process detaches on Windows; the tree kill reaches it only while its parent is alive, so check by name too.
-  const left = execFileSync('tasklist', ['/FI', `PID eq ${child}`], { encoding: 'utf8' })
-  if (left.includes(String(child))) execFileSync('taskkill', ['/PID', String(child), '/F'])
-  assert.ok(!left.includes(String(child)), 'grandchild ended with the tree')
+  try {
+    for (let i = 0; i < 200 && !child; i++) { await sleep(100); try { child = Number(readFileSync(pidFile, 'utf8').trim()) } catch {} }
+    assert.ok(child > 0 && alive(child), 'child started')
+    proc.killTreesSync([parent.pid, 0, 'x'])
+    await sleep(500)
+    assert.equal(alive(parent.pid), false, 'parent ended')
+    assert.equal(alive(child), false, 'child ended with the tree')
+  } finally {
+    // Never leave processes behind: they would hold the test file open until its timeout.
+    for (const p of [parent.pid, child]) if (p && alive(p)) try { execFileSync('taskkill', ['/PID', String(p), '/T', '/F'], { stdio: 'ignore' }) } catch {}
+  }
 })
 
 test('node-pty spawn-helper without the execute bit is fixed (macOS/Linux "posix_spawnp failed")', { skip: process.platform === 'win32' && 'POSIX file modes' }, async () => {
