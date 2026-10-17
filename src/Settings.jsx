@@ -511,14 +511,14 @@ export default function SettingsDialog({ open, onOpenChange, settings, api, mode
         <Dialog.Overlay className="dlg-back" />
         <Dialog.Content className="set" aria-describedby={undefined}>
           <Dialog.Title className="visually-hidden">{tr("Configurações")}</Dialog.Title>
-          <div className="set-tabs" role="tablist">
+          <div className="set-tabs" role="tablist" aria-orientation="vertical">
             {TABS.map(({ id, label, Icon }) => (
               <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>
                 <Icon size={15} /> {label}
               </button>
             ))}
-            <Dialog.Close asChild><button className="set-close" aria-label={tr("Fechar")}><X size={16} /></button></Dialog.Close>
           </div>
+          <Dialog.Close asChild><button className="set-close" aria-label={tr("Fechar")}><X size={16} /></button></Dialog.Close>
           <div className="set-body">
             {tab === 'geral' && <Geral s={settings} set={set} />}
             {tab === 'tela' && <Tela s={settings} set={set} mode={mode} />}

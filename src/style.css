@@ -272,13 +272,23 @@ svg { flex: none; }
 
 /* ───────── Settings dialog ───────── */
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.set { position: fixed; z-index: 160; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(780px, calc(100vw - 32px)); height: min(640px, calc(100vh - 48px)); display: flex; flex-direction: column; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--r-lg); box-shadow: var(--shadow-3); animation: pop-c 140ms var(--ease); overflow: hidden; }
-.set-tabs { display: flex; align-items: center; gap: 4px; padding: 6px 12px 0; border-bottom: 1px solid var(--border); }
-.set-tabs button { display: inline-flex; align-items: center; gap: 7px; padding: 10px 12px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-2); font-size: 14px; font-weight: 500; transition: color var(--t); }
-.set-tabs button:hover { color: var(--text); }
-.set-tabs button.on { color: var(--text); border-bottom-color: var(--accent); }
-.set-tabs .set-close { margin-left: auto; padding: 8px; border-bottom: none; border-radius: var(--r-sm); }
-.set-body { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 28px 28px; }
+/* Settings: section list on the left (every tab visible, room for more), content on the right. */
+.set { position: fixed; z-index: 160; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(920px, calc(100vw - 32px)); height: min(660px, calc(100vh - 48px)); display: flex; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--r-lg); box-shadow: var(--shadow-3); animation: pop-c 140ms var(--ease); overflow: hidden; }
+.set-tabs { flex: none; width: 196px; display: flex; flex-direction: column; gap: 2px; padding: 14px 10px; overflow-y: auto; background: var(--surface-1); border-right: 1px solid var(--border); }
+.set-tabs button { display: flex; align-items: center; gap: 9px; width: 100%; padding: 8px 10px; background: none; border: none; border-radius: var(--r-md); color: var(--text-2); font-size: 13.5px; font-weight: 500; text-align: left; white-space: nowrap; transition: background var(--t), color var(--t); }
+.set-tabs button svg { flex: none; }
+.set-tabs button:hover { background: var(--surface-3); color: var(--text); }
+.set-tabs button.on { background: var(--surface-3); color: var(--text); box-shadow: inset 3px 0 0 var(--accent); }
+.set-close { position: absolute; z-index: 1; top: 10px; right: 10px; display: inline-flex; padding: 7px; background: none; border: none; border-radius: var(--r-sm); color: var(--text-3); }
+.set-close:hover { background: var(--surface-3); color: var(--text); }
+.set-body { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; padding: 22px 32px 28px; }
+/* Narrow windows: the list goes back to a scrollable row on top. */
+@media (max-width: 640px) {
+  .set { flex-direction: column; }
+  .set-tabs { width: auto; flex-direction: row; margin-right: 44px; padding: 8px; overflow-x: auto; overflow-y: hidden; border-right: none; border-bottom: 1px solid var(--border); }
+  .set-tabs button { width: auto; flex: none; }
+  .set-body { padding: 18px 18px 24px; }
+}
 .set-subtabs { display: flex; width: fit-content; margin: 0 auto 22px; padding: 3px; gap: 2px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--r-md); }
 .set-subtabs button { padding: 5px 16px; background: none; border: none; border-radius: var(--r-sm); font-size: 13px; font-weight: 500; color: var(--text-2); transition: background var(--t), color var(--t); }
 .set-subtabs button.on { background: var(--surface-3); color: var(--text); }
@@ -519,8 +529,6 @@ svg { flex: none; }
 .dlg:focus, .dlg:focus-visible { outline: none; }
 .dlg form > * { flex: none; }
 .dlg .seg button { display: flex; align-items: center; justify-content: center; min-height: 30px; }
-.set-tabs { overflow-x: auto; scrollbar-width: none; }
-.set-tabs button { flex: none; white-space: nowrap; padding: 10px 9px; font-size: 13.5px; }
 .note.knowledge .k-title, .note.knowledge .note-head svg { color: #6d6730; }
 
 /* ───────── Command palette ───────── */

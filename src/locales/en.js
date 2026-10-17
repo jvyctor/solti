@@ -688,4 +688,6 @@ export default {
   'hoje': 'today',
   'aprovação': 'approval',
   '{0}: aprovação': '{0}: approval',
+  'Histórico': 'History',
+  'Histórico dos agentes: pedidos, mensagens, conclusões e o que você digitou': 'Agent history: requests, messages, completions and what you typed',
 }
