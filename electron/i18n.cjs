@@ -22,7 +22,7 @@ const EN = {
   'Versões e downloads': 'Releases and downloads',
   'Sair': 'Quit',
   'Cancelar': 'Cancel',
-  'Sair do Agent Canvas?': 'Quit Agent Canvas?',
+  'Sair do Solti?': 'Quit Solti?',
   'Os agentes em execução serão encerrados.': 'Running agents will be closed.',
   'Nenhuma versão publicada encontrada.': 'No published version found.',
   'Limite de consultas do GitHub atingido. Tente mais tarde.': 'GitHub rate limit reached. Try again later.',

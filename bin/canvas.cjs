@@ -2,7 +2,7 @@
 // Usage: canvas peers | canvas send <peer> <text...> | canvas read <peer> [bytes] | canvas note <text...> | canvas knowledge | canvas remember <text...> | canvas done <summary...>
 const http = require('http')
 const { CANVAS_URL, CANVAS_ID } = process.env
-if (!CANVAS_URL) { console.error('canvas: run inside an Agent Canvas terminal'); process.exit(1) }
+if (!CANVAS_URL) { console.error('canvas: run inside an Solti terminal'); process.exit(1) }
 
 const [cmd, ...args] = process.argv.slice(2)
 const routes = {

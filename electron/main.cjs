@@ -18,6 +18,15 @@ if (binScript) {
 }
 
 const { app } = require('electron')
+// Renamed from "Agent Canvas" (0.8.1): keep using the existing data folder, so workspaces, settings, history and
+// backups carry over. Must run before anything reads userData (the instance lock below is per data folder).
+{
+  const path = require('path')
+  const fs = require('fs')
+  const appData = app.getPath('appData')
+  const old = path.join(appData, 'Agent Canvas')
+  if (!app.commandLine.hasSwitch('user-data-dir') && fs.existsSync(old) && !fs.existsSync(path.join(appData, 'Solti'))) app.setPath('userData', old)
+}
 // One app per profile: a second launch just brings the existing window forward.
 if (!app.requestSingleInstanceLock()) {
   app.quit()

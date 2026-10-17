@@ -122,7 +122,7 @@ function register() {
   const safe = (fn) => async (_e, ...a) => { try { return await fn(...a) } catch (e) { return { error: e.message } } }
   ipcMain.handle('git:info', safe((dir) => gitx.info(dir)))
   ipcMain.handle('git:remote-branches', safe(async (url) => ({ branches: await gitx.remoteBranches(url) })))
-  ipcMain.handle('git:prepare', safe((o) => gitx.prepare({ ...o, dest: o.dest || path.join(app.getPath('documents'), 'AgentCanvas', 'repos') })))
+  ipcMain.handle('git:prepare', safe((o) => gitx.prepare({ ...o, dest: o.dest || path.join(app.getPath('documents'), 'Solti', 'repos') })))
   ipcMain.handle('git:remove-worktree', safe((wt) => gitx.removeWorktree(wt)))
   ipcMain.handle('git:dirty', safe(async (dir) => ({ dirty: await gitx.dirty(dir) })))
   ipcMain.handle('git:changes', safe(async (wt, base) => ({ files: await gitx.changes(wt, base) })))
@@ -173,8 +173,8 @@ function register() {
   ipcMain.handle('app:info', () => ({ version: app.getVersion(), electron: process.versions.electron, node: process.versions.node, dataDir: app.getPath('userData'), platform: process.platform }))
   ipcMain.on('app:open-data', () => shell.openPath(app.getPath('userData')))
   // Project links shown in the app (About, updates). A fixed list: the page names one, it cannot pass a URL.
-  const REPO = 'https://github.com/jvyctor/agent-canvas'
-  const LINKS = { repo: REPO, star: REPO + '/stargazers', changelog: REPO + '/blob/main/CHANGELOG.md', releases: REPO + '/releases', issues: REPO + '/issues/new/choose', site: 'https://jvyctor.github.io/agent-canvas/' }
+  const REPO = 'https://github.com/jvyctor/solti'
+  const LINKS = { repo: REPO, star: REPO + '/stargazers', changelog: REPO + '/blob/main/CHANGELOG.md', releases: REPO + '/releases', issues: REPO + '/issues/new/choose', site: 'https://jvyctor.github.io/solti/' }
   ipcMain.on('app:open-link', (_e, key) => LINKS[key] && shell.openExternal(LINKS[key]))
 
   // Activity, history and approvals
@@ -200,7 +200,7 @@ function register() {
   ipcMain.handle('points:create', (_e, label, data) => {
     try {
       const id = backup.pointCreate(S.wsFile(), label, data)
-      activity.record({ kind: 'point', from: 'Agent Canvas', text: String(label || ''), outcome: 'ok' })
+      activity.record({ kind: 'point', from: 'Solti', text: String(label || ''), outcome: 'ok' })
       return { id }
     } catch (e) { return { error: e.message } }
   })
@@ -222,7 +222,7 @@ function register() {
   })
   ipcMain.on('app:open-backups', () => { fs.mkdirSync(backup.dirOf(S.wsFile()), { recursive: true }); shell.openPath(backup.dirOf(S.wsFile())) })
   ipcMain.handle('ws:export', async (_e, data) => {
-    const r = await dialog.showSaveDialog(S.win, { defaultPath: 'agent-canvas-workspaces.json', filters: [{ name: 'JSON', extensions: ['json'] }] })
+    const r = await dialog.showSaveDialog(S.win, { defaultPath: 'solti-workspaces.json', filters: [{ name: 'JSON', extensions: ['json'] }] })
     if (r.canceled) return { canceled: true }
     fs.writeFileSync(r.filePath, JSON.stringify(data, null, 2))
     return { path: r.filePath }

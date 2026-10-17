@@ -1,20 +1,20 @@
 {
-  "name": "agent-canvas",
-  "productName": "Agent Canvas",
-  "version": "0.8.0",
+  "name": "solti",
+  "productName": "Solti",
+  "version": "0.8.1",
   "description": "Run a team of AI coding agents (Claude Code, Codex, Gemini CLI, OpenCode) side by side on one canvas: a maestro delegates, agents talk to each other, pipelines with loops and human approval.",
   "author": {
     "name": "João Vyctor",
     "url": "https://github.com/jvyctor"
   },
   "license": "MIT",
-  "homepage": "https://github.com/jvyctor/agent-canvas#readme",
+  "homepage": "https://github.com/jvyctor/solti#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jvyctor/agent-canvas.git"
+    "url": "https://github.com/jvyctor/solti.git"
   },
   "bugs": {
-    "url": "https://github.com/jvyctor/agent-canvas/issues"
+    "url": "https://github.com/jvyctor/solti/issues"
   },
   "keywords": [
     "ai-agents",
@@ -39,8 +39,8 @@
     "test": "node --test --test-concurrency=1 --test-timeout=300000 \"test/*.test.mjs\"",
     "test:unit": "node --test --test-timeout=120000 test/activity.test.mjs test/agentusage.test.mjs test/backup.test.mjs test/diagnose.test.mjs test/geometry.test.mjs test/git.test.mjs test/history.test.mjs test/inputlog.test.mjs test/launch.test.mjs test/ledger.test.mjs test/pipeline.test.mjs test/pipelinerunner.test.mjs test/proc.test.mjs test/remote.test.mjs test/routines.test.mjs test/schedule.test.mjs test/status.test.mjs test/teams.test.mjs",
     "test:smoke": "node --test --test-timeout=300000 test/smoke.test.mjs",
-    "release": "vite build && electron-builder --win nsis --x64 --publish always \"--config.directories.output=%LOCALAPPDATA%\\agent-canvas-release\"",
-    "dist": "vite build && electron-builder --win nsis --x64 \"--config.directories.output=%LOCALAPPDATA%\\agent-canvas-release\""
+    "release": "vite build && electron-builder --win nsis --x64 --publish always \"--config.directories.output=%LOCALAPPDATA%\\solti-release\"",
+    "dist": "vite build && electron-builder --win nsis --x64 \"--config.directories.output=%LOCALAPPDATA%\\solti-release\""
   },
   "dependencies": {
     "@xterm/addon-serialize": "^0.14.0",
@@ -73,7 +73,7 @@
   },
   "build": {
     "appId": "com.agentcanvas.app",
-    "productName": "Agent Canvas",
+    "productName": "Solti",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -96,7 +96,7 @@
       {
         "provider": "github",
         "owner": "jvyctor",
-        "repo": "agent-canvas",
+        "repo": "solti",
         "releaseType": "release"
       }
     ],
@@ -117,10 +117,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Agent Canvas",
+      "shortcutName": "Solti",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
-      "artifactName": "Agent-Canvas-Setup-${version}.${ext}"
+      "artifactName": "Solti-Setup-${version}.${ext}"
     },
     "mac": {
       "target": [
@@ -144,7 +144,7 @@
       "identity": null
     },
     "dmg": {
-      "artifactName": "Agent-Canvas-${version}-${arch}.${ext}"
+      "artifactName": "Solti-${version}-${arch}.${ext}"
     },
     "linux": {
       "target": [
@@ -153,14 +153,14 @@
       ],
       "category": "Development",
       "icon": "build/icon.png",
-      "maintainer": "Agent Canvas",
+      "maintainer": "Solti",
       "synopsis": "Run a team of AI coding agents side by side on one canvas"
     },
     "appImage": {
-      "artifactName": "Agent-Canvas-${version}.${ext}"
+      "artifactName": "Solti-${version}.${ext}"
     },
     "deb": {
-      "artifactName": "Agent-Canvas-${version}.${ext}"
+      "artifactName": "Solti-${version}.${ext}"
     }
   }
 }

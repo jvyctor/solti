@@ -55,7 +55,7 @@ function init(win, { beforeInstall }) {
   ipcMain.on('update:download', () => {
     if (state.status !== 'available') return
     // The Mac build is not code-signed, and macOS refuses to replace an unsigned app in place: open the download page instead.
-    if (process.platform === 'darwin') return shell.openExternal('https://github.com/jvyctor/agent-canvas/releases/latest')
+    if (process.platform === 'darwin') return shell.openExternal('https://github.com/jvyctor/solti/releases/latest')
     push({ ...state, status: 'downloading', percent: 0 })
     autoUpdater.downloadUpdate().catch((e) => push({ status: 'error', message: friendly(e), version: state.version }))
   })

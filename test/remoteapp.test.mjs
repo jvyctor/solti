@@ -32,7 +32,7 @@ test('remote: pair, list, type into a real terminal', async () => {
 
     assert.ok(st.httpPort > 0, 'plain HTTP listener is on')
     const plain = await new Promise((resolve, reject) => http.get({ host: '127.0.0.1', port: st.httpPort, path: '/' }, (res) => { let b = ''; res.on('data', (c) => (b += c)); res.on('end', () => resolve(b)) }).on('error', reject))
-    assert.match(plain, /Agent Canvas/)
+    assert.match(plain, /Solti/)
 
     const pair = await app.ev(`window.api.remotePair()`)
     if (pair.error) return console.log('skipped (no LAN interface on this machine):', pair.error)
@@ -41,7 +41,7 @@ test('remote: pair, list, type into a real terminal', async () => {
     const token = /#pair=([0-9a-f]+)/.exec(pair.urls[0])[1]
 
     const page = await call(st.port, 'GET', '/')
-    assert.match(page.text, /Agent Canvas/)
+    assert.match(page.text, /Solti/)
     assert.ok((await call(st.port, 'GET', '/xterm.js')).text.length > 100000, 'real xterm bundle served')
 
     const r = await call(st.port, 'POST', '/api/pair', { body: { token, name: 'teste' } })

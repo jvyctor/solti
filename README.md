@@ -1,17 +1,19 @@
 <div align="center">
 
-<img src="build/icon.svg" width="112" alt="Agent Canvas logo" />
+<img src="build/icon.svg" width="112" alt="Solti logo" />
 
-# Agent Canvas
+# Solti
+
+### Conduct your AI coding agents like an orchestra.
 
 **Run a team of AI coding agents side by side on one canvas.** Claude Code, Codex, Gemini CLI, OpenCode and Antigravity work in real terminals, roped together. A maestro delegates, agents message each other, and you watch, approve and steer.
 
-[![CI](https://github.com/jvyctor/agent-canvas/actions/workflows/ci.yml/badge.svg)](https://github.com/jvyctor/agent-canvas/actions/workflows/ci.yml)
-[![Latest release](https://img.shields.io/github/v/release/jvyctor/agent-canvas?label=download&color=f2c230)](https://github.com/jvyctor/agent-canvas/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/jvyctor/agent-canvas/total?color=4cc38a)](https://github.com/jvyctor/agent-canvas/releases)
+[![CI](https://github.com/jvyctor/solti/actions/workflows/ci.yml/badge.svg)](https://github.com/jvyctor/solti/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/jvyctor/solti?label=download&color=f2c230)](https://github.com/jvyctor/solti/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/jvyctor/solti/total?color=4cc38a)](https://github.com/jvyctor/solti/releases)
 [![Platforms](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-7c9cff)](#download)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/jvyctor/agent-canvas?style=social)](https://github.com/jvyctor/agent-canvas/stargazers)
+[![Stars](https://img.shields.io/github/stars/jvyctor/solti?style=social)](https://github.com/jvyctor/solti/stargazers)
 
 **[Download](#download)** · **[What it does](#what-it-does)** · **[Quick start](#quick-start)** · **[How it works](#how-it-works)** · **[Changelog](CHANGELOG.md)** · **[Português](README.pt-BR.md)**
 
@@ -25,7 +27,7 @@
 
 Running one AI coding agent is easy. Running **four** gets messy: separate terminal windows, copy-pasting outputs from one to another, no idea who is waiting for you, and no way to say "when the dev finishes, have the reviewer check it, and loop until it passes".
 
-Agent Canvas puts every agent on one infinite canvas and lets them **work as a team**:
+Solti puts every agent on one infinite canvas and lets them **work as a team**:
 
 - 🎼 **A maestro delegates** to specialists, who report back with `canvas_done`.
 - 🔗 **Ropes are permissions.** An agent can only message, read or hand work to what it is roped to.
@@ -33,17 +35,19 @@ Agent Canvas puts every agent on one infinite canvas and lets them **work as a t
 - 💸 **Budgets** stop a workspace or a pipeline before it burns through your tokens.
 - 🌿 **Git worktree per agent**, so three agents never fight over the same files.
 
-Agent Canvas uses the agent CLIs you already have, logged in to your own accounts. It needs no API keys, has no backend and sends no telemetry.
+*The name comes from [Georg Solti](https://en.wikipedia.org/wiki/Georg_Solti), one of the great conductors of the 20th century. Here, the maestro is an agent, and you are the one holding the baton.*
+
+Solti uses the agent CLIs you already have, logged in to your own accounts. It needs no API keys, has no backend and sends no telemetry.
 
 ## Download
 
 | | Installer | Notes |
 |---|---|---|
-| <img src="https://cdn.simpleicons.org/windows11/0078D4" width="16" /> **Windows** 10/11 | [**Agent-Canvas-Setup.exe**](https://github.com/jvyctor/agent-canvas/releases/latest) | Not code-signed yet: on the SmartScreen warning, click **More info → Run anyway**. Auto-updates. |
-| <img src="https://cdn.simpleicons.org/apple/999999" width="16" /> **macOS** | [**.dmg** (Apple Silicon / Intel)](https://github.com/jvyctor/agent-canvas/releases/latest) | Not notarized yet: the first time, **right-click the app → Open**. You can also run `xattr -dr com.apple.quarantine "/Applications/Agent Canvas.app"`. |
-| <img src="https://cdn.simpleicons.org/linux/FCC624" width="16" /> **Linux** x64 | [**.deb** or **.AppImage**](https://github.com/jvyctor/agent-canvas/releases/latest) | Prefer the `.deb` on Ubuntu 23.10+. For the AppImage: `chmod +x Agent-Canvas-*.AppImage`. It auto-updates. |
+| 🪟 **Windows** 10/11 | [**Solti-Setup.exe**](https://github.com/jvyctor/solti/releases/latest) | Not code-signed yet: on the SmartScreen warning, click **More info → Run anyway**. Auto-updates. |
+| 🍎 **macOS** | [**.dmg** (Apple Silicon / Intel)](https://github.com/jvyctor/solti/releases/latest) | Not notarized yet: the first time, **right-click the app → Open**. You can also run `xattr -dr com.apple.quarantine "/Applications/Solti.app"`. |
+| 🐧 **Linux** x64 | [**.deb** or **.AppImage**](https://github.com/jvyctor/solti/releases/latest) | Prefer the `.deb` on Ubuntu 23.10+. For the AppImage: `chmod +x Solti-*.AppImage`. It auto-updates. |
 
-👉 The **[download page](https://jvyctor.github.io/agent-canvas/)** picks the right file for your system. Every version and its changes are on **[Releases](https://github.com/jvyctor/agent-canvas/releases)** and in the **[Changelog](CHANGELOG.md)**.
+👉 The **[download page](https://jvyctor.github.io/solti/)** picks the right file for your system. Every version and its changes are on **[Releases](https://github.com/jvyctor/solti/releases)** and in the **[Changelog](CHANGELOG.md)**.
 
 You also need at least one agent CLI installed and logged in: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex), [Gemini CLI](https://github.com/google-gemini/gemini-cli), [OpenCode](https://opencode.ai) or Antigravity. On first launch, the welcome screen checks each one and connects the canvas to it with one click.
 
@@ -115,7 +119,7 @@ Each agent has a searchable timeline:
 
 ## Quick start
 
-1. Install Agent Canvas ([Download](#download)) and at least one agent CLI, logged in.
+1. Install Solti ([Download](#download)) and at least one agent CLI, logged in.
 2. Open it. The welcome screen checks your CLIs; click **Fix** if the canvas is not connected yet.
 3. Click **Create a team** → **Development**. A maestro and three specialists appear, already roped.
 4. Tell the maestro what you want ("add OAuth login with tests"). It splits the work, the specialists report back with `canvas_done`, and you get a notification when they are done.
@@ -125,7 +129,7 @@ Each agent has a searchable timeline:
 
 ```mermaid
 flowchart LR
-  subgraph App["Agent Canvas (Electron)"]
+  subgraph App["Solti (Electron)"]
     UI["Canvas UI (React)"]
     Bridge["Local bridge<br/>127.0.0.1 + secret token"]
     PTY["Real terminals<br/>(node-pty)"]
@@ -151,7 +155,7 @@ flowchart LR
 ## Build from source
 
 ```bash
-git clone https://github.com/jvyctor/agent-canvas.git && cd agent-canvas
+git clone https://github.com/jvyctor/solti.git && cd solti
 npm install
 npm run dev                 # development, hot reload
 npm run dist                # Windows installer (see package.json for --mac / --linux)
@@ -167,7 +171,7 @@ Tests: `npm run test:unit` (any OS, seconds), `npm run test:smoke` (the built ap
 - [ ] Shareable team and pipeline templates
 - [ ] Briefings and skills in English
 
-Have an idea? [Open a feature request](https://github.com/jvyctor/agent-canvas/issues/new/choose).
+Have an idea? [Open a feature request](https://github.com/jvyctor/solti/issues/new/choose).
 
 ## Contributing
 
@@ -175,9 +179,9 @@ Issues and pull requests are welcome. Read **[CONTRIBUTING.md](CONTRIBUTING.md)*
 
 ## Support the project
 
-If Agent Canvas saves you time, **[give it a ⭐ on GitHub](https://github.com/jvyctor/agent-canvas/stargazers)**. It is the simplest way to help, and it helps other developers find the project.
+If Solti saves you time, **[give it a ⭐ on GitHub](https://github.com/jvyctor/solti/stargazers)**. It is the simplest way to help, and it helps other developers find the project.
 
-[![Star History Chart](https://api.star-history.com/svg?repos=jvyctor/agent-canvas&type=Date)](https://star-history.com/#jvyctor/agent-canvas&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=jvyctor/solti&type=Date)](https://star-history.com/#jvyctor/solti&Date)
 
 ## License
 

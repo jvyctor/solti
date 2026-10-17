@@ -9,15 +9,15 @@ const MARK = '<!-- managed by agent-canvas -->'
 const SKILLS = {
   'canvas-connect': {
     description:
-      'Use when the user asks if you are connected to another agent/terminal on the Agent Canvas, wants to talk to, message, ask, read or hand work to another agent (e.g. "fale com o codex-2", "peça ao revisor", "veja se está conectado"), or leave a note on the canvas.',
-    body: `# Agent Canvas: conexão entre agentes
+      'Use when the user asks if you are connected to another agent/terminal on the Solti, wants to talk to, message, ask, read or hand work to another agent (e.g. "fale com o codex-2", "peça ao revisor", "veja se está conectado"), or leave a note on the canvas.',
+    body: `# Solti: conexão entre agentes
 
-Você roda dentro de um terminal do Agent Canvas. Terminais ligados entre si (ou o maestro do workspace) podem trocar mensagens.
+Você roda dentro de um terminal do Solti. Terminais ligados entre si (ou o maestro do workspace) podem trocar mensagens.
 
 ## 1. Verificar se está conectado
 - Ferramentas MCP: \`canvas_peers\` lista tudo que você alcança (terminais, notas, portais, árvores de arquivos, revisões), com tipo e papel.
 - Shell: \`canvas peers\`.
-- Se a variável \`CANVAS_URL\` estiver vazia, você NÃO está num terminal do canvas: avise o usuário para abrir este agente por um terminal do Agent Canvas. Não invente conexões.
+- Se a variável \`CANVAS_URL\` estiver vazia, você NÃO está num terminal do canvas: avise o usuário para abrir este agente por um terminal do Solti. Não invente conexões.
 
 ## 2. Falar com um agente
 - \`canvas_send\` com \`to\` (nome do par) e \`text\`. Shell: \`canvas send <nome> <texto>\`.
@@ -42,8 +42,8 @@ Você roda dentro de um terminal do Agent Canvas. Terminais ligados entre si (ou
 
   'canvas-maestro': {
     description:
-      'Use when your role in the Agent Canvas is MAESTRO / orquestrador, or the user asks you to coordinate, plan, split work, delegate to other agents, or consolidate results across terminals.',
-    body: `# Agent Canvas: playbook do Maestro (Orquestrador)
+      'Use when your role in the Solti is MAESTRO / orquestrador, or the user asks you to coordinate, plan, split work, delegate to other agents, or consolidate results across terminals.',
+    body: `# Solti: playbook do Maestro (Orquestrador)
 
 Você planeja, delega, acompanha e consolida. Você NÃO faz o trabalho pesado.
 
@@ -66,8 +66,8 @@ Você planeja, delega, acompanha e consolida. Você NÃO faz o trabalho pesado.
 
   'canvas-spawn': {
     description:
-      'Use when you are the MAESTRO and need a new agent that does not exist yet (e.g. "crie um agente UX/UI senior", "preciso de um revisor", "suba um agente de testes"): creates the terminal on the Agent Canvas, connected to you, with its own specialty.',
-    body: `# Agent Canvas: criar novos agentes (somente Maestro)
+      'Use when you are the MAESTRO and need a new agent that does not exist yet (e.g. "crie um agente UX/UI senior", "preciso de um revisor", "suba um agente de testes"): creates the terminal on the Solti, connected to you, with its own specialty.',
+    body: `# Solti: criar novos agentes (somente Maestro)
 
 Você pode criar agentes no canvas com a ferramenta MCP \`canvas_spawn\` (shell: \`canvas spawn <nome> [preset] <instruções...>\`). O terminal aparece ao lado do seu, já ligado a você.
 
@@ -95,8 +95,8 @@ Você pode criar agentes no canvas com a ferramenta MCP \`canvas_spawn\` (shell:
 
   'canvas-agent': {
     description:
-      'Use when your role in the Agent Canvas is AGENTE (executor), when you receive a message prefixed "[from <nome>]" from a maestro/orquestrador, or when asked to report results back to another agent.',
-    body: `# Agent Canvas: playbook do Agente (Executor)
+      'Use when your role in the Solti is AGENTE (executor), when you receive a message prefixed "[from <nome>]" from a maestro/orquestrador, or when asked to report results back to another agent.',
+    body: `# Solti: playbook do Agente (Executor)
 
 Você faz o trabalho pesado: implementar, testar, pesquisar, investigar. Recebe ordens do MAESTRO.
 

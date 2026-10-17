@@ -59,7 +59,7 @@ function create({ dir, host, version = '' }) {
     } catch {}
     const selfsigned = require('selfsigned')
     const notAfterDate = new Date(Date.now() + 365 * 24 * 3600 * 1000)
-    const pems = await selfsigned.generate([{ name: 'commonName', value: 'Agent Canvas' }], {
+    const pems = await selfsigned.generate([{ name: 'commonName', value: 'Solti' }], {
       keySize: 2048,
       algorithm: 'sha256',
       notAfterDate,

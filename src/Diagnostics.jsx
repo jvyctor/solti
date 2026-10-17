@@ -70,7 +70,7 @@ export function Onboarding({ open, onClose, onTeam }) {
       <Dialog.Portal>
         <Dialog.Overlay className="dlg-back" />
         <Dialog.Content className="dlg wide" aria-describedby={undefined}>
-          <Dialog.Title className="dlg-title">{tr("Bem-vindo ao Agent Canvas")}</Dialog.Title>
+          <Dialog.Title className="dlg-title">{tr("Bem-vindo ao Solti")}</Dialog.Title>
           <p>{tr("Terminais de agentes de IA lado a lado, ligados por cordas: um Maestro delega e os agentes executam e se comunicam. Veja se os seus agentes estão prontos:")}</p>
           <DiagList />
           <div className="dlg-actions">

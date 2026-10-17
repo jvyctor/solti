@@ -43,7 +43,7 @@ export function UpdateDialog({ open, onOpenChange, state, api }) {
       <Dialog.Portal>
         <Dialog.Overlay className="dlg-back" />
         <Dialog.Content className="dlg upd" aria-describedby={undefined} onInteractOutside={(e) => busy && e.preventDefault()}>
-          <Dialog.Title className="dlg-title">{tr("Atualização do Agent Canvas")}</Dialog.Title>
+          <Dialog.Title className="dlg-title">{tr("Atualização do Solti")}</Dialog.Title>
 
           {status === 'checking' && <p>{tr("Verificando atualizações…")}</p>}
           {status === 'none' && <p className="upd-ok"><CheckCircle2 size={16} /> {state.dev ? tr("Atualizações só funcionam no app instalado.") : tr("Você já está na versão mais recente ({0}).", [state.current])}</p>}
@@ -101,7 +101,7 @@ export function UpdatesTab({ s, set, api, state, onOpen, ui: { Section, Row, Swi
         </Row>
       </Section>
       <Section title={tr("VERIFICAÇÃO MANUAL")}>
-        <Row title={tr("Agent Canvas {0}", [state.current || ''])} desc={msg}>
+        <Row title={tr("Solti {0}", [state.current || ''])} desc={msg}>
           {['available', 'downloading', 'downloaded'].includes(state.status)
             ? <button className="set-btn" onClick={onOpen}>{tr("Ver atualização")}</button>
             : <button className="set-btn" disabled={checking} onClick={() => api.updateCheck()}>{tr("Verificar atualizações…")}</button>}

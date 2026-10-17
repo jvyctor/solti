@@ -86,7 +86,7 @@ test('error log rotates at 1 MB; the report has versions, agents and the recent 
   assert.ok(statSync(errlog.file()).size < 1000)
   assert.ok(statSync(join(dir, 'logs', 'main.1.log')).size > 1024 * 1024)
   const r = errlog.report({ version: '9.9.9', electron: '44', diag: [{ label: 'Claude Code', installed: true, version: '3.0', authenticated: true, mcp: false }, { label: 'Codex', installed: false }], settings: { language: 'pt', approval: 'spawn' } })
-  assert.match(r, /Agent Canvas 9\.9\.9/)
+  assert.match(r, /Solti 9\.9\.9/)
   assert.match(r, /Claude Code: instalado 3\.0, login sim, canvas não registrado/)
   assert.match(r, /Codex: não instalado/)
   assert.match(r, /depois da rotação/)

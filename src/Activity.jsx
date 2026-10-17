@@ -86,7 +86,7 @@ export function ApprovalDialog() {
   useEffect(() => {
     const offReq = api.onApproval((r) => {
       setQueue((q) => [...q, r])
-      notify('Agent Canvas', `${r.from} ${(WHAT[r.kind] || (() => tr('quer agir.')))(r)}`, { nodeId: r.fromId })
+      notify('Solti', `${r.from} ${(WHAT[r.kind] || (() => tr('quer agir.')))(r)}`, { nodeId: r.fromId })
     })
     const offClose = api.onApprovalClose((id) => setQueue((q) => q.filter((x) => x.id !== id)))
     return () => { offReq(); offClose() }

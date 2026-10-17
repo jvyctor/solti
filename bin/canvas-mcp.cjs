@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Minimal MCP stdio server (newline-delimited JSON-RPC). Identity comes from CANVAS_URL/CANVAS_ID,
-// inherited from the Agent Canvas terminal that launched the agent.
+// inherited from the Solti terminal that launched the agent.
 const http = require('http')
 const { CANVAS_URL, CANVAS_ID } = process.env
 
@@ -19,7 +19,7 @@ const TOOLS = [
 
 function call(route, args) {
   return new Promise((resolve, reject) => {
-    if (!CANVAS_URL) return reject(new Error('not running inside an Agent Canvas terminal'))
+    if (!CANVAS_URL) return reject(new Error('not running inside an Solti terminal'))
     const req = http.request(CANVAS_URL + route, { method: 'POST' }, (res) => {
       let d = ''
       res.on('data', (c) => (d += c))
@@ -37,7 +37,7 @@ const send = (o) => process.stdout.write(JSON.stringify({ jsonrpc: '2.0', ...o }
 
 async function handle(m) {
   if (m.method === 'initialize')
-    return send({ id: m.id, result: { protocolVersion: m.params?.protocolVersion || '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'agent-canvas', version: '0.1.0' } } })
+    return send({ id: m.id, result: { protocolVersion: m.params?.protocolVersion || '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'solti', version: '0.1.0' } } })
   if (m.method === 'tools/list')
     return send({
       id: m.id,

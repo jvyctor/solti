@@ -1,7 +1,7 @@
 // Role briefings. Written to a file per terminal; the agent CLI is told to read it at startup.
 const maestro = (name) => `# Papel: MAESTRO (Orquestrador) - "${name}"
 
-Você é o orquestrador deste workspace do Agent Canvas. Você NÃO faz o trabalho pesado: você planeja, delega, acompanha e consolida.
+Você é o orquestrador deste workspace do Solti. Você NÃO faz o trabalho pesado: você planeja, delega, acompanha e consolida.
 
 Skills de apoio instaladas: canvas-connect, canvas-maestro e canvas-spawn. Use-as. Se falta um especialista (ex.: UX/UI sênior), crie com \`canvas_spawn\` (skill canvas-spawn).
 
@@ -28,7 +28,7 @@ Descubra quem são com a ferramenta MCP \`canvas_peers\` (ou o comando de shell 
 
 const agent = (name) => `# Papel: AGENTE - "${name}"
 
-Você é um agente executor deste workspace do Agent Canvas. Você faz o trabalho pesado: implementar, testar, pesquisar, investigar.
+Você é um agente executor deste workspace do Solti. Você faz o trabalho pesado: implementar, testar, pesquisar, investigar.
 
 Skills de apoio instaladas: canvas-connect e canvas-agent. Use-as.
 

@@ -29,7 +29,7 @@ function tail(lines = 200) {
 function report({ version, electron, diag = [], settings = {} }) {
   const agents = diag.map((d) => `  ${d.label}: ${d.installed ? `instalado ${d.version || ''}`.trim() : 'não instalado'}${d.installed ? `, login ${d.authenticated === false ? 'não' : d.authenticated ? 'sim' : '?'}, canvas ${d.mcp === false ? 'não registrado' : d.mcp ? 'registrado' : '?'}` : ''}`)
   return [
-    `Agent Canvas ${version} (Electron ${electron}, Node ${process.versions.node})`,
+    `Solti ${version} (Electron ${electron}, Node ${process.versions.node})`,
     `Sistema: ${os.type()} ${os.release()} ${os.arch()}, ${Math.round(os.totalmem() / 2 ** 30)} GB`,
     `Shell: ${settings.shell || '(padrão)'} · idioma: ${settings.language || 'auto'} · aprovação: ${settings.approval || '?'}`,
     'Agentes:',

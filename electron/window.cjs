@@ -6,7 +6,7 @@ const settings = require('./settings.cjs')
 const errlog = require('./errlog.cjs')
 const { tr } = require('./i18n.cjs')
 
-const RELEASES = 'https://github.com/jvyctor/agent-canvas/releases'
+const RELEASES = 'https://github.com/jvyctor/solti/releases'
 
 function show() {
   const w = S.win
@@ -50,7 +50,7 @@ function create() {
     if (confirmed || !settings.get().confirmQuit) return
     e.preventDefault()
     dialog
-      .showMessageBox(win, { type: 'question', buttons: [tr('Sair'), tr('Cancelar')], defaultId: 1, cancelId: 1, message: tr('Sair do Agent Canvas?'), detail: tr('Os agentes em execução serão encerrados.') })
+      .showMessageBox(win, { type: 'question', buttons: [tr('Sair'), tr('Cancelar')], defaultId: 1, cancelId: 1, message: tr('Sair do Solti?'), detail: tr('Os agentes em execução serão encerrados.') })
       .then((r) => { if (r.response === 0) { confirmed = true; win.close() } })
   })
   win.on('closed', () => { if (S.win === win) S.win = null })

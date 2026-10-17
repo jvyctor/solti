@@ -1,10 +1,10 @@
-# Contributing to Agent Canvas
+# Contributing to Solti
 
 Thanks for helping! Bug reports, ideas and pull requests are all welcome.
 
 ## Reporting a bug
 
-Open an [issue](https://github.com/jvyctor/agent-canvas/issues/new/choose) and include:
+Open an [issue](https://github.com/jvyctor/solti/issues/new/choose) and include:
 
 - What you did, what you expected and what happened.
 - **Settings → Diagnostics → Copy diagnostics**, pasted into the issue. It contains versions, the agent checks and the recent error log, and nothing from your files.
@@ -15,8 +15,8 @@ Open an [issue](https://github.com/jvyctor/agent-canvas/issues/new/choose) and i
 Requirements: Node.js 22+ and git. Agent CLIs are optional (a plain shell terminal works for most changes).
 
 ```bash
-git clone https://github.com/jvyctor/agent-canvas.git
-cd agent-canvas
+git clone https://github.com/jvyctor/solti.git
+cd solti
 npm install
 npm run dev        # Vite + Electron with hot reload
 ```

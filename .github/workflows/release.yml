@@ -33,14 +33,14 @@ jobs:
         run: |
           v="${GITHUB_REF_NAME#v}"
           awk -v v="$v" '$0 ~ "^## \\[" v "\\]" {on=1; next} on && /^## \[/ {exit} on {print}' CHANGELOG.md > notes.md
-          printf '\n---\n**Download:** pick the file for your system below, or use the [download page](https://jvyctor.github.io/agent-canvas/). Installers are not code-signed yet: see [install notes](https://github.com/jvyctor/agent-canvas#download).\n' >> notes.md
+          printf '\n---\n**Download:** pick the file for your system below, or use the [download page](https://jvyctor.github.io/solti/). Installers are not code-signed yet: see [install notes](https://github.com/jvyctor/solti#download).\n' >> notes.md
           cat notes.md
       - name: Create the release once (parallel uploads would race to create it)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
-            || gh release create "$GITHUB_REF_NAME" --title "Agent Canvas ${GITHUB_REF_NAME#v}" --notes-file notes.md
+            || gh release create "$GITHUB_REF_NAME" --title "Solti ${GITHUB_REF_NAME#v}" --notes-file notes.md
 
   build:
     needs: prepare

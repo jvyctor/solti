@@ -496,7 +496,7 @@ function Sobre({ api }) {
       <div className="about-star">
         <Star size={20} />
         <div>
-          <b>{tr("Gostou do Agent Canvas?")}</b>
+          <b>{tr("Gostou do Solti?")}</b>
           <p>{tr("Ele é open source (MIT). Uma estrela no GitHub ajuda outros desenvolvedores a encontrá-lo.")}</p>
         </div>
         <button className="set-btn primary" onClick={() => api.openLink('star')}><Star size={13} /> {tr("Dar uma estrela")}</button>

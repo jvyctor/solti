@@ -1,9 +1,22 @@
 # Changelog
 
-All notable changes to Agent Canvas. Versions follow [Semantic Versioning](https://semver.org); the format follows [Keep a Changelog](https://keepachangelog.com).
-Downloads for every version: [Releases](https://github.com/jvyctor/agent-canvas/releases).
+All notable changes to Solti. Versions follow [Semantic Versioning](https://semver.org); the format follows [Keep a Changelog](https://keepachangelog.com).
+Downloads for every version: [Releases](https://github.com/jvyctor/solti/releases).
 
 ## [Unreleased]
+
+## [0.8.1] - 2026-10-17
+
+**Agent Canvas is now Solti**, named after the conductor Georg Solti, because it conducts your agents. This is the first public release. Everything from 0.8.0 below is included.
+
+### Changed
+- New name: **Solti**. Your workspaces, settings, history and backups carry over: an existing "Agent Canvas" data folder is kept. Installing over Agent Canvas replaces it, so you do not end up with two copies.
+- The repository moved to [jvyctor/solti](https://github.com/jvyctor/solti). Old links redirect.
+- About shows a "Star on GitHub" card and links to what's new, the source and issues.
+
+### Fixed
+- The Claude quota card shows a clear message instead of a raw system error.
+- History search: the icon sits next to the field.
 
 ## [0.8.0] - 2026-10-17
 
@@ -79,5 +92,6 @@ The first open-source release, and the first one for **macOS and Linux**.
 ## [0.1.0] - 2026-10-15
 - First version: terminals on a canvas, roped together, with a maestro and agents that talk through MCP tools.
 
-[0.8.0]: https://github.com/jvyctor/agent-canvas/releases/tag/v0.8.0
+[0.8.1]: https://github.com/jvyctor/solti/releases/tag/v0.8.1
+[0.8.0]: https://github.com/jvyctor/solti/releases/tag/v0.8.0
 [0.7.0]: https://github.com/jvyctor/agent-canvas-releases/releases/tag/v0.7.0
