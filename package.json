@@ -11,6 +11,7 @@
     "build": "vite build",
     "start": "vite build && electron .",
     "icons": "node build/make-icons.cjs",
+    "postinstall": "node build/fix-node-pty.cjs",
     "test": "node --test --test-concurrency=1 --test-timeout=300000 \"test/*.test.mjs\"",
     "test:unit": "node --test --test-timeout=120000 test/activity.test.mjs test/agentusage.test.mjs test/backup.test.mjs test/diagnose.test.mjs test/geometry.test.mjs test/git.test.mjs test/history.test.mjs test/inputlog.test.mjs test/launch.test.mjs test/ledger.test.mjs test/pipeline.test.mjs test/pipelinerunner.test.mjs test/proc.test.mjs test/remote.test.mjs test/routines.test.mjs test/schedule.test.mjs test/status.test.mjs test/teams.test.mjs",
     "test:smoke": "node --test --test-timeout=300000 test/smoke.test.mjs",
@@ -59,6 +60,7 @@
       "bin/**",
       "build/icon.png",
       "build/icon.ico",
+      "build/fix-node-pty.cjs",
       "package.json"
     ],
     "asarUnpack": [

@@ -24,6 +24,11 @@ test('app opens, the shell runs `canvas`, quitting ends the terminal\'s processe
   mkdirSync(prof)
   writeFileSync(join(prof, 'workspace.json'), JSON.stringify({ list: [{ id: 'w1', name: 'A', nodes, edges: [{ id: 'e', source: 't1', target: 'n1', type: 'floating' }] }], active: 'w1' }))
   const app = await launch(prof)
+  // On failure, show what the app logged and what the terminal printed (CI has no screen to look at).
+  const dump = async () => {
+    try { console.log('--- terminal:\n' + (await app.ev(`document.querySelector('.xterm-rows')?.textContent || '(vazio)'`))) } catch {}
+    try { console.log('--- main.log:\n' + readFileSync(join(prof, 'logs', 'main.log'), 'utf8')) } catch { console.log('--- main.log: (nenhum)') }
+  }
   try {
     // Any prompt will do (PowerShell, bash, zsh): wait for the shell's first output, then a moment for it to settle.
     await app.until(`(document.querySelector('.xterm-rows')?.textContent || '').trim().length > 0`, 'shell output', 200)
@@ -46,6 +51,9 @@ test('app opens, the shell runs `canvas`, quitting ends the terminal\'s processe
     for (let i = 0; i < 40 && alive(shellPid); i++) await sleep(250)
     assert.equal(alive(shellPid), false, 'quitting ended the terminal')
     assert.ok(existsSync(join(prof, 'workspace.json')))
+  } catch (e) {
+    await dump()
+    throw e
   } finally {
     app.close()
   }

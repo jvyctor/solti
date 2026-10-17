@@ -25,6 +25,19 @@ function loadLoginPath() {
   } catch {}
 }
 
+// macOS/Linux: node-pty starts shells through its "spawn-helper", which must be executable (see build/fix-node-pty.cjs,
+// which fixes it at install time). Last resort at run time, for installs where that did not happen.
+let helperChecked = false
+function ensureSpawnHelper() {
+  if (helperChecked || process.platform === 'win32') return
+  helperChecked = true
+  try {
+    const root = S.unpacked(path.dirname(require.resolve('node-pty/package.json')))
+    const fixed = require('../build/fix-node-pty.cjs').fix(root)
+    if (fixed.length) require('./errlog.cjs').write('node-pty', `made spawn-helper executable: ${fixed.join(', ')}`)
+  } catch (e) { require('./errlog.cjs').write('node-pty', `spawn-helper check failed: ${e.message}`) }
+}
+
 // Keep the machine awake per the "Impedir a suspensão" setting.
 let blockerId = null
 function applyPower() {
@@ -51,24 +64,33 @@ const shellArgs = (shell) => (process.platform === 'darwin' && /(^|\/)(zsh|bash|
 
 function spawnPty(id, { preset, name, maestro, instructions, cwd, cols, rows, resume, sid, knowledge }) {
   if (S.ptys.has(id)) return
+  ensureSpawnHelper()
   const shell = settings.get().shell || defaultShell()
   const binDir = S.unpacked(path.join(__dirname, '..', 'bin'))
   // Windows spells it "Path": adding a separate "PATH" key leaves two entries and the shell keeps the original one.
   const pathKey = Object.keys(process.env).find((k) => k.toUpperCase() === 'PATH') || 'PATH'
   const home = process.env.USERPROFILE || process.env.HOME
-  const p = pty.spawn(shell, shellArgs(shell), {
-    name: 'xterm-256color',
-    cols: cols || 80,
-    rows: rows || 24,
-    cwd: cwd || home,
-    env: {
-      ...process.env,
-      [pathKey]: binDir + path.delimiter + process.env[pathKey],
-      CANVAS_URL: `http://127.0.0.1:${S.bridgePort}/${S.TOKEN}`,
-      CANVAS_ID: id,
-      CANVAS_NODE: process.execPath, // lets bin/canvas(.cmd) run on the app's own runtime
-    },
-  })
+  let p
+  try {
+    p = pty.spawn(shell, shellArgs(shell), {
+      name: 'xterm-256color',
+      cols: cols || 80,
+      rows: rows || 24,
+      cwd: cwd || home,
+      env: {
+        ...process.env,
+        [pathKey]: binDir + path.delimiter + process.env[pathKey],
+        CANVAS_URL: `http://127.0.0.1:${S.bridgePort}/${S.TOKEN}`,
+        CANVAS_ID: id,
+        CANVAS_NODE: process.execPath, // lets bin/canvas(.cmd) run on the app's own runtime
+      },
+    })
+  } catch (e) {
+    // Shown in the terminal itself (and logged) instead of an empty terminal that never starts.
+    require('./errlog.cjs').write('pty', `${shell}: ${e.stack || e.message}`)
+    setTimeout(() => S.toRenderer('pty:data', id, `\r\n\x1b[31mNão foi possível iniciar o terminal (${shell}): ${e.message}\x1b[0m\r\n`), 300)
+    return
+  }
   const entry = { p, buf: '', cwd: cwd || home, cols: cols || 80, rows: rows || 24, last: 0, preset, line: '', paste: false }
   S.ptys.set(id, entry)
   applyPower()

@@ -58,6 +58,19 @@ test('killTreesSync ends a shell and the program it started', { skip: process.pl
   assert.ok(!left.includes(String(child)), 'grandchild ended with the tree')
 })
 
+test('node-pty spawn-helper without the execute bit is fixed (macOS/Linux "posix_spawnp failed")', { skip: process.platform === 'win32' && 'POSIX file modes' }, async () => {
+  const { chmodSync, mkdirSync, statSync: st } = await import('node:fs')
+  const fixPty = req('../build/fix-node-pty.cjs')
+  const root = mkdtempSync(join(tmpdir(), 'ac-pty-'))
+  mkdirSync(join(root, 'prebuilds', 'darwin-arm64'), { recursive: true })
+  const f = join(root, 'prebuilds', 'darwin-arm64', 'spawn-helper')
+  writeFileSync(f, '')
+  chmodSync(f, 0o644)
+  assert.deepEqual(fixPty.fix(root), [f])
+  assert.equal(st(f).mode & 0o777, 0o755)
+  assert.deepEqual(fixPty.fix(root), [], 'already executable: nothing to do')
+})
+
 test('error log rotates at 1 MB; the report has versions, agents and the recent log', () => {
   const dir = mkdtempSync(join(tmpdir(), 'ac-log-'))
   errlog.init(dir)
