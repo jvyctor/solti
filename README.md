@@ -51,6 +51,20 @@ Solti uses the agent CLIs you already have, logged in to your own accounts. It n
 
 👉 The **[download page](https://jvyctor.github.io/solti/)** picks the right file for your system. Every version and its changes are on **[Releases](https://github.com/jvyctor/solti/releases)** and in the **[Changelog](CHANGELOG.md)**.
 
+**From the command line:**
+
+```sh
+# Windows (Scoop)
+scoop bucket add solti https://github.com/jvyctor/solti
+scoop install solti
+
+# macOS (Homebrew)
+brew tap jvyctor/solti https://github.com/jvyctor/solti
+brew install --cask solti
+```
+
+winget (`winget install jvyctor.Solti`) and the AUR (`yay -S solti-bin`) are on the way: see [packaging](packaging/README.md).
+
 No agent CLI yet? Open the app and click **Try the demo**: it runs on simulated agents. To work for real, you need at least one agent CLI installed and logged in: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex), [Gemini CLI](https://github.com/google-gemini/gemini-cli), [OpenCode](https://opencode.ai) or Antigravity. On first launch, the welcome screen checks each one and connects the canvas to it with one click.
 
 ## What it does
@@ -70,7 +84,7 @@ Create a ready-made team (maestro + dev + reviewer + tester) or drop terminals a
 | `canvas_portal` | Drive a browser node: open, click, type, screenshot |
 | `canvas_knowledge` / `canvas_remember` | Shared project notes for the whole workspace |
 
-Live status on every agent (**working**, **waiting for you**, **idle**, **done**), tokens and estimated cost on each one, and conversations that **resume** after a restart.
+Live status on every agent (**working**, **waiting for you**, **idle**, **done**), exact for Claude Code through its hooks, tokens and estimated cost on each one, and conversations that **resume** after a restart.
 
 ### Pipelines: parallel, loops and human approval
 
@@ -113,7 +127,9 @@ Each agent has a searchable timeline:
 
 ### And also
 
-- **Review (Diff) node**: see the agent's changes, approve (commit), merge or open a PR.
+- **Review (Diff) node**: see the agent's changes, **comment on any line** and send the comments back to the agent, approve (commit), merge or open a PR. A warning appears when two agents change the same file in different worktrees.
+- **Templates**: ready-made teams with their pipeline (PR review, bugfix with tests, documentation). Save your own and share them as a file.
+- **Run reports**: every pipeline run gets a Markdown report (what each agent did, the cost, the files changed), ready to paste as a PR description.
 - **Portals**: a real browser on the canvas that agents can read and drive.
 - **Phone remote**: watch terminals, type, approve requests and interrupt, over your Wi-Fi with QR pairing.
 - **Notifications** when an agent finishes or needs you. Clicking one jumps to that terminal.

@@ -129,3 +129,58 @@ jobs:
         run: |
           f="release/Solti-Setup-${{ steps.v.outputs.version }}.exe"
           gh release upload "$GITHUB_REF_NAME" "$f" "$f.blockmap" release/latest.yml --clobber
+
+  # Package managers, once every installer is in the release (hashes from GitHub, see build/package-managers.cjs):
+  # Scoop bucket and Homebrew tap live in this repository, so they are committed to main here. winget and the AUR
+  # are submitted only when their secrets exist:
+  #   secret WINGET_TOKEN          classic PAT with public_repo (wingetcreate opens the PR in microsoft/winget-pkgs;
+  #                                the very first version is submitted by hand, see packaging/README.md)
+  #   secret AUR_SSH_PRIVATE_KEY   SSH key of the AUR account that owns solti-bin
+  packages:
+    needs: [build, windows]
+    runs-on: ubuntu-latest
+    env:
+      AUR_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Write the manifests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node build/package-managers.cjs "${GITHUB_REF_NAME#v}"
+      - name: Commit the Scoop bucket and the Homebrew cask to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bucket Casks packaging
+          git diff --cached --quiet || { git commit -m "Package manifests for ${GITHUB_REF_NAME}"; git push origin HEAD:main; }
+      - name: Publish to the AUR
+        if: ${{ env.AUR_KEY != '' }}
+        run: |
+          mkdir -p ~/.ssh && printf '%s\n' "$AUR_KEY" > ~/.ssh/aur && chmod 600 ~/.ssh/aur
+          ssh-keyscan -t ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur -o IdentitiesOnly=yes"
+          git clone ssh://aur@aur.archlinux.org/solti-bin.git aur
+          cp packaging/aur/PKGBUILD packaging/aur/.SRCINFO aur/
+          cd aur
+          git add PKGBUILD .SRCINFO
+          git diff --cached --quiet || git commit -m "Update to ${GITHUB_REF_NAME#v}"
+          git push origin HEAD:master
+
+  winget:
+    needs: [build, windows]
+    runs-on: windows-latest
+    env:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+    steps:
+      - name: Submit the new version to winget
+        if: ${{ env.WINGET_TOKEN != '' }}
+        shell: pwsh
+        run: |
+          $v = "$env:GITHUB_REF_NAME".TrimStart('v')
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          .\wingetcreate.exe update jvyctor.Solti --version $v --urls "https://github.com/jvyctor/solti/releases/download/v$v/Solti-Setup-$v.exe" --submit --token $env:WINGET_TOKEN

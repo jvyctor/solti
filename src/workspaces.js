@@ -23,7 +23,12 @@ export function mergeImport(state, file, uid) {
       id: uid('w'),
       name,
       locked: false,
-      nodes: (w.nodes || []).map((n) => ({ ...n, id: ids.get(n.id), selected: false, data: fresh(n.data) })),
+      nodes: (w.nodes || []).map((n) => {
+        const data = fresh(n.data)
+        // Pipeline steps name their agents by node id: point them at the new ids.
+        if (n.type === 'pipeline' && Array.isArray(data.steps)) data.steps = data.steps.map((s) => (s.agent ? { ...s, agent: ids.get(s.agent) || '' } : s))
+        return { ...n, id: ids.get(n.id), selected: false, data }
+      }),
       edges: (w.edges || []).filter((e) => ids.has(e.source) && ids.has(e.target)).map((e) => ({ ...e, id: uid('e'), source: ids.get(e.source), target: ids.get(e.target) })),
     }
   })

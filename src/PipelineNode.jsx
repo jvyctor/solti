@@ -1,11 +1,12 @@
-import { useContext, useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useContext, useEffect, useRef, useState } from 'react'
 import { Handle, NodeResizer, Position, useNodes, useReactFlow } from '@xyflow/react'
-import { Workflow, X, Play, Square, Plus, Trash2, Columns2, Repeat, SlidersHorizontal, ShieldCheck } from 'lucide-react'
+import { Workflow, X, Play, Square, Plus, Trash2, Columns2, Repeat, SlidersHorizontal, ShieldCheck, FileText } from 'lucide-react'
 import { DEFAULT_APPROVAL_MIN, DEFAULT_TIMEOUT_MIN, settle } from './pipeline.js'
 import { isRunning } from './pipelineRunner.js'
 import { PipeCtx, money } from './shared.js'
 import { tr } from './i18n.js'
 
+const ReportDialog = lazy(() => import('./ReportDialog.jsx'))
 const MARK = { ok: '✓', stopped: '■', timeout: '⏱', running: '…' }
 const hasAdvanced = (s) => !!(String(s.loopIf || '').trim() || s.timeout)
 
@@ -38,6 +39,7 @@ export default function PipelineNode({ id, data, selected }) {
   }, [])
 
   const running = data.state === 'running'
+  const [report, setReport] = useState('') // run report open in a dialog
 
   return (
     <div className={'tnode pipe' + (selected ? ' selected' : '')}>
@@ -133,6 +135,7 @@ export default function PipelineNode({ id, data, selected }) {
                 <span>{r.state === 'done' ? tr('concluído') : tr('parado')}</span>
                 <span>{tr('{0} rodada(s)', [r.rounds])} · {Math.max(1, Math.round(r.ms / 60000))} min</span>
                 <b>{money(r.spent || 0)}</b>
+                {r.report && <button className="x on" title={tr('Relatório da execução (Markdown, pronto para um PR)')} aria-label={tr('Relatório da execução')} onClick={() => setReport(r.report)}><FileText size={13} /></button>}
               </div>
             ))}
           </details>
@@ -152,6 +155,7 @@ export default function PipelineNode({ id, data, selected }) {
             : <button disabled={!steps.length} onClick={() => start(id)}><Play size={12} /> {tr("Executar")}</button>}
         </div>
       </div>
+      <Suspense fallback={null}>{report && <ReportDialog title={data.name || tr('Fluxo')} report={report} onClose={() => setReport('')} />}</Suspense>
       <Handle type="source" position={Position.Right} />
       <Handle id="ring" type="source" position={Position.Right} className="ring" />
     </div>

@@ -8,8 +8,22 @@ let getWin = () => null
 let state = { status: 'idle' }
 let timer
 
+// Installed by a package manager (Scoop, AUR): it owns the files, so updates go through it, not electron-updater.
+// The Scoop manifest and the PKGBUILD write resources/.managed-by (see build/package-managers.cjs).
+// (Homebrew moves the app to /Applications, so it is not detected; on macOS the update opens the download page anyway.)
+const UPGRADE = { scoop: 'scoop update solti', pacman: 'yay -Syu solti-bin' }
+let managedBy
+function managed() {
+  if (managedBy !== undefined) return managedBy
+  managedBy = null
+  try { managedBy = require('fs').readFileSync(require('path').join(process.resourcesPath, '.managed-by'), 'utf8').trim() || null } catch {}
+  if (!managedBy && process.platform === 'win32' && /[\\/]scoop[\\/]apps[\\/]/i.test(process.execPath)) managedBy = 'scoop'
+  return managedBy
+}
+
 const push = (p) => {
-  state = { ...p, current: app.getVersion() }
+  const m = managed()
+  state = { ...p, current: app.getVersion(), ...(m ? { managed: m, upgrade: UPGRADE[m] || '' } : {}) }
   getWin()?.webContents.send('update:state', state)
 }
 
@@ -50,10 +64,13 @@ function init(win, { beforeInstall }) {
   autoUpdater.on('update-downloaded', (i) => push({ ...state, status: 'downloaded', version: i.version }))
   autoUpdater.on('error', (e) => push({ status: 'error', message: friendly(e), version: state.version }))
 
-  ipcMain.handle('update:state', () => ({ ...state, current: app.getVersion() }))
+  ipcMain.handle('update:state', () => {
+    const m = managed()
+    return { ...state, current: app.getVersion(), ...(m ? { managed: m, upgrade: UPGRADE[m] || '' } : {}) }
+  })
   ipcMain.on('update:check', () => check())
   ipcMain.on('update:download', () => {
-    if (state.status !== 'available') return
+    if (state.status !== 'available' || managed()) return
     // The Mac build is not code-signed, and macOS refuses to replace an unsigned app in place: open the download page instead.
     if (process.platform === 'darwin') return shell.openExternal('https://github.com/jvyctor/solti/releases/latest')
     push({ ...state, status: 'downloading', percent: 0 })

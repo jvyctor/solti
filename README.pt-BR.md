@@ -51,6 +51,20 @@ O Solti usa os CLIs de agente que você já tem, logados nas suas próprias cont
 
 👉 A **[página de download](https://jvyctor.github.io/solti/)** escolhe o arquivo certo para o seu sistema. Todas as versões e o que mudou em cada uma estão em **[Releases](https://github.com/jvyctor/solti/releases)** e no **[Changelog](CHANGELOG.md)**.
 
+**Pela linha de comando:**
+
+```sh
+# Windows (Scoop)
+scoop bucket add solti https://github.com/jvyctor/solti
+scoop install solti
+
+# macOS (Homebrew)
+brew tap jvyctor/solti https://github.com/jvyctor/solti
+brew install --cask solti
+```
+
+winget (`winget install jvyctor.Solti`) e AUR (`yay -S solti-bin`) estão a caminho: veja [packaging](packaging/README.md).
+
 Ainda não tem nenhum CLI de agente? Abra o app e clique em **Ver a demonstração**: ela roda com agentes simulados. Para trabalhar de verdade, você precisa de pelo menos um CLI de agente instalado e logado: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex), [Gemini CLI](https://github.com/google-gemini/gemini-cli), [OpenCode](https://opencode.ai) ou Antigravity. Na primeira abertura, a tela de boas-vindas confere cada um e conecta o canvas a ele com um clique.
 
 ## O que faz
@@ -70,7 +84,7 @@ Crie um time pronto (maestro + dev + revisor + testador) ou solte terminais em q
 | `canvas_portal` | Controla um nó de navegador: abre, clica, digita, tira captura |
 | `canvas_knowledge` / `canvas_remember` | Anotações compartilhadas do projeto para o workspace inteiro |
 
-Cada agente mostra o status ao vivo (**trabalhando**, **esperando você**, **ocioso**, **concluído**), os tokens e o custo estimado. As conversas são **retomadas** depois de reiniciar.
+Cada agente mostra o status ao vivo (**trabalhando**, **esperando você**, **ocioso**, **concluído**), exato no Claude Code graças aos hooks dele, os tokens e o custo estimado. As conversas são **retomadas** depois de reiniciar.
 
 ### Fluxos: paralelo, repetição e aprovação humana
 
@@ -113,7 +127,9 @@ Os **pontos de restauração** guardam todos os workspaces, feitos à mão ou au
 
 ### E mais
 
-- **Nó de Revisão (Diff)**: veja as mudanças do agente, aprove (commit), faça merge ou abra um PR.
+- **Nó de Revisão (Diff)**: veja as mudanças do agente, **comente qualquer linha** e mande os comentários de volta ao agente, aprove (commit), faça merge ou abra um PR. Um aviso aparece quando dois agentes mexem no mesmo arquivo em worktrees diferentes.
+- **Modelos**: times prontos que já vêm com o fluxo (revisão de PR, bugfix com testes, documentação). Salve os seus e compartilhe como arquivo.
+- **Relatório de cada execução**: todo fluxo gera um relatório em Markdown (o que cada agente fez, o custo, os arquivos alterados), pronto para virar a descrição de um PR.
 - **Portais**: um navegador de verdade no canvas, que os agentes leem e controlam.
 - **Controle pelo celular**: acompanhe terminais, digite, aprove pedidos e interrompa, pela sua rede Wi-Fi, com pareamento por QR code.
 - **Notificações** quando um agente termina ou precisa de você. Clicar leva direto ao terminal.

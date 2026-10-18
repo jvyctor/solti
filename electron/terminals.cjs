@@ -114,7 +114,8 @@ function spawnPty(id, { preset, boot, name, maestro, instructions, cwd, cols, ro
   else if (settings.get().commands[preset]) {
     if (settings.get().sendBriefing) try { require('./skills.cjs').installSkills(i18nLang()) } catch {} // idempotent; skills must exist before the agent starts
     const line = settings.get().sendBriefing ? briefLine(writeBrief(id, name, maestro, instructions, knowledge)) : ''
-    setTimeout(() => p.write(launchCommand(settings.get(), preset, line, { resume, sid }) + '\r'), 400)
+    const extra = require('./hooks.cjs').hookFlags(preset, settings.get().agentHooks !== false)
+    setTimeout(() => p.write(launchCommand(settings.get(), preset, line, { resume, sid, extra }) + '\r'), 400)
   }
 }
 

@@ -31,6 +31,8 @@ function describe(e, me) {
     case 'portal': return tr('{0} usou o navegador {1}', [e.from, e.to])
     case 'budget': return tr('orçamento: {0}', [e.from])
     case 'point': return tr('ponto de restauração')
+    case 'conflict': return tr('possível conflito: {0}', [e.from])
+    case 'review': return tr('revisão enviada a {0}', [e.to])
     default: return `${e.from} ${e.kind}${e.to ? ' → ' + e.to : ''}`
   }
 }

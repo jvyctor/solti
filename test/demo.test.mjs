@@ -29,6 +29,17 @@ test('demo: opens from the empty canvas, pipeline loops on the review and finish
     const text = await app.ev(`${pipe}.textContent`)
     assert.match(text, /Fixed: state checked/, 'the dev got the review and fixed it')
     assert.match(text, /×2/, 'steps ran twice (the loop)')
+    // The run's Markdown report: every step with its summary.
+    await app.ev(`${pipe}.querySelector('.pipe-runs').open = true`)
+    await app.until(`!!${pipe}.querySelector('.pipe-run button[aria-label="Run report"]')`, 'report button', 40)
+    await app.ev(`${pipe}.querySelector('.pipe-run button[aria-label="Run report"]').click()`)
+    await app.until(`!!document.querySelector('.report-md')`, 'report dialog')
+    const md = await app.ev(`document.querySelector('.report-md').textContent`)
+    assert.match(md, /^# Pipeline “.+”: finished/)
+    assert.match(md, /### 3\. reviewer ✓ \(×2\)/)
+    assert.match(md, /### 4\. Human approval ✓/)
+    await app.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
+    await sleep(300)
     // Opening the demo again reuses the same workspace.
     await app.ev(`window.dispatchEvent(new Event('ac:demo'))`)
     await sleep(500)

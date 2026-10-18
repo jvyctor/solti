@@ -5,6 +5,7 @@
 // waited for together. After a group, a step's loop rule may send the run back to an earlier step.
 // An approval step pauses the run until you allow it (desktop dialog or phone); denying stops the run.
 import { MAX_ROUNDS, hint as hintText, fill, groupsOf, joinSummaries, loopDecision, shouldStop, timeoutMs, validate } from './pipeline.js'
+import { runReport } from './report.js'
 import { tr } from './i18n.js'
 
 const BUDGET_CHECK = 5000
@@ -27,9 +28,9 @@ function waitDone(api, agent, ms, { onCancel, overBudget }) {
 
 // deps: { api, getNode(id), patch(id, partialData), agentExists(id), agentName?(id), cost?(id) -> US$,
 //         snapshot?(label), notify?(title, body), approve?({ key, title, step, text, timeoutMs }) -> Promise<bool>,
-//         cancelApproval?(key) }
+//         cancelApproval?(key), changes?(agentId) -> Promise<{ branch, base, files } | null> (for the run report) }
 export async function runPipeline(id, deps) {
-  const { api, getNode, patch, agentExists, agentName = (a) => a, cost = () => 0, snapshot, notify, approve, cancelApproval } = deps
+  const { api, getNode, patch, agentExists, agentName = (a) => a, cost = () => 0, snapshot, notify, approve, cancelApproval, changes } = deps
   if (active.has(id)) return
   const cancels = new Set()
   let cancelReason = ''
@@ -39,16 +40,25 @@ export async function runPipeline(id, deps) {
   const started = Date.now()
   let spent = () => 0
   let rounds = 0
+  let steps = [], results = [], agents = [], spentFrom = {}
   // Ends the run: final state on the node, one line in the run list and the history, and a notification.
   const end = (data, body) => {
     const run = { t: started, ms: Date.now() - started, state: data.state, spent: spent(), rounds, note: data.note || '' }
     patch(id, { ...data, spent: run.spent, runs: [...(getNode(id)?.data.runs || []), run].slice(-KEEP_RUNS) })
     api.activityRecord?.({ kind: 'pipeline', from: title, fromId: id, cost: run.spent, text: `${data.state === 'done' ? tr('concluído') : tr('parado')} · ${tr('{0} rodada(s)', [rounds])} · ${tr('gasto estimado')} $${run.spent.toFixed(2)}${data.note ? ' · ' + data.note : ''}` })
     notify?.(data.state === 'done' ? tr('Fluxo concluído: {0}', [title]) : tr('Fluxo parado: {0}', [title]), body || data.note || '')
+    // Markdown report (Últimas execuções → Relatório): needs each agent's changed files, so it is added when ready.
+    const snap = { title, input: node?.data.input || '', state: data.state, note: data.note || '', t: started, ms: run.ms, rounds, steps, results: results.map((r) => r && { ...r }),
+      costs: agents.map((a) => ({ id: a, cost: Math.max((cost(a) || 0) - (spentFrom[a] || 0), 0) })) }
+    Promise.all(agents.map((a) => (changes ? changes(a).catch(() => null) : null))).then(async (ch) => {
+      await new Promise((r) => setTimeout(r, 50)) // let the run above reach the node first
+      const report = runReport({ ...snap, changes: ch.map((c, k) => c && { id: agents[k], ...c }).filter(Boolean) }, agentName)
+      patch(id, { runs: (getNode(id)?.data.runs || []).map((r) => (r.t === started ? { ...r, report } : r)) })
+    })
   }
   try {
     if (!node) return
-    const steps = node.data.steps || []
+    steps = node.data.steps || []
     const problem = validate(steps, agentExists)
     if (problem) return patch(id, { state: 'stopped', note: problem, results: [], at: -1 })
 
@@ -56,13 +66,13 @@ export async function runPipeline(id, deps) {
     const input = node.data.input || ''
     const hint = node.data.hint === false ? '' : hintText()
     const budget = Number(node.data.budget) || 0
-    const agents = [...new Set(steps.filter((s) => !s.approval).map((s) => s.agent))]
-    const spentFrom = Object.fromEntries(agents.map((a) => [a, cost(a) || 0]))
+    agents = [...new Set(steps.filter((s) => !s.approval).map((s) => s.agent))]
+    spentFrom = Object.fromEntries(agents.map((a) => [a, cost(a) || 0]))
     spent = () => agents.reduce((sum, a) => sum + Math.max((cost(a) || 0) - spentFrom[a], 0), 0)
     const overBudget = () => budget > 0 && spent() >= budget
 
     snapshot?.(tr('Antes do fluxo “{0}”', [title]))
-    const results = steps.map(() => null) // latest result per step: { state, summary, runs, note }
+    results = steps.map(() => null) // latest result per step: { state, summary, runs, note }
     const loops = steps.map(() => 0) // jumps back taken from each step
     const show = (extra = {}) => patch(id, { results: results.map((r) => r && { ...r }), loops: [...loops], spent: spent(), ...extra })
     show({ state: 'running', note: '', at: 0 })

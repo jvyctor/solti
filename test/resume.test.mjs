@@ -47,7 +47,8 @@ test('first start assigns a session id; the next start resumes it', async () => 
 
   await session(prof, 9390, async (screen, stat) => {
     for (let i = 0; i < 100 && !/--session-id/.test(await screen()); i++) await sleep(300)
-    assert.match(await screen(), /CMD --session-id/)
+    // Claude Code also gets the status hooks (--settings, see electron/hooks.cjs).
+    assert.match(await screen(), /CMD --settings "[^"]+claude-settings\.json" --session-id/)
     for (let i = 0; i < 100 && (await stat()) !== 'Ocioso'; i++) await sleep(300) // output settled at a plain prompt
     assert.equal(await stat(), 'Ocioso')
   })
@@ -56,6 +57,6 @@ test('first start assigns a session id; the next start resumes it', async () => 
 
   await session(prof, 9391, async (screen) => {
     for (let i = 0; i < 100 && !new RegExp(`--resume ${sid}`).test(await screen()); i++) await sleep(300)
-    assert.match(await screen(), new RegExp(`CMD --resume ${sid}`))
+    assert.match(await screen(), new RegExp(`CMD --settings "[^"]+" --resume ${sid}`))
   })
 })

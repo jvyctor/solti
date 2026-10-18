@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+PackageIdentifier: jvyctor.Solti
+PackageVersion: 0.8.2
+InstallerType: nullsoft
+Scope: user
+UpgradeBehavior: install
+ReleaseDate: 2026-10-18
+Installers:
+- Architecture: x64
+  InstallerUrl: https://github.com/jvyctor/solti/releases/download/v0.8.2/Solti-Setup-0.8.2.exe
+  InstallerSha256: AD5202907F639B27A63FCF1B3BE4055709891FD61F2BFF71E57A0C000865D539
+ManifestType: installer
+ManifestVersion: 1.6.0

@@ -10,9 +10,11 @@ const SESSION = {
   antigravity: { start: () => '', resume: () => '--continue' },
 }
 
-function launchCommand(S, preset, line, { resume, sid } = {}) {
-  const cmd = S.commands[preset]
-  if (!cmd) return ''
+// extra: flags right after the command (e.g. Claude Code's --settings with the status hooks, see hooks.cjs).
+function launchCommand(S, preset, line, { resume, sid, extra } = {}) {
+  const base = S.commands[preset]
+  if (!base) return ''
+  const cmd = extra ? `${base} ${extra}` : base
   const s = SESSION[preset]
   if (resume && s) return `${cmd} ${s.resume(sid)}`
   if (!S.sendBriefing) return s ? `${cmd} ${s.start(sid)}`.trim() : cmd

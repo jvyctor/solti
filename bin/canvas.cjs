@@ -14,6 +14,28 @@ if (cmd === 'demo') {
   })
   return require('./canvas-demo.cjs')(args, post)
 }
+// canvas hook <event>: run by the agent CLI's hooks (electron/hooks.cjs). Reads the hook's JSON from stdin, reports it,
+// prints nothing and never fails: a hook must not get in the agent's way.
+if (cmd === 'hook') {
+  let input = '', sent = false
+  const send = () => {
+    if (sent) return
+    sent = true
+    let j = {}
+    try { j = JSON.parse(input) } catch {}
+    const r = http.request(CANVAS_URL + '/hook', { method: 'POST', timeout: 3000 }, (res) => { res.resume(); res.on('end', () => process.exit(0)) })
+    r.on('error', () => process.exit(0))
+    r.on('timeout', () => process.exit(0))
+    r.end(JSON.stringify({ from: CANVAS_ID, event: args[0], input: { notification_type: j.notification_type, message: j.message } }))
+  }
+  if (process.stdin.isTTY) send()
+  else {
+    process.stdin.on('data', (c) => { input += c })
+    process.stdin.on('end', send)
+    setTimeout(send, 1500).unref?.() // stdin left open: report anyway
+  }
+  return
+}
 const routes = {
   peers: ['/peers', () => ({})],
   send: ['/send', () => ({ to: args[0], text: args.slice(1).join(' ') })],

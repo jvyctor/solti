@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: jvyctor.Solti
+PackageVersion: 0.8.2
+PackageLocale: en-US
+Publisher: João Vyctor
+PublisherUrl: https://github.com/jvyctor
+PublisherSupportUrl: https://github.com/jvyctor/solti/issues
+PackageName: Solti
+PackageUrl: https://jvyctor.github.io/solti/
+License: MIT
+LicenseUrl: https://github.com/jvyctor/solti/blob/main/LICENSE
+ShortDescription: 'Run a team of AI coding agents side by side on one canvas'
+Description: 'Run a team of AI coding agents (Claude Code, Codex, Gemini CLI, OpenCode) side by side on one canvas: a maestro delegates, agents talk to each other, pipelines with loops and human approval.'
+Tags:
+- ai
+- agents
+- claude-code
+- codex
+- gemini-cli
+- terminal
+ReleaseNotesUrl: https://github.com/jvyctor/solti/releases/tag/v0.8.2
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

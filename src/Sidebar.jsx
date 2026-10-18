@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Folder, History, Lock, Plus, Search, Settings as SettingsIcon, SquareTerminal, X } from 'lucide-react'
+import { Folder, History, LayoutTemplate, Lock, Plus, Search, Settings as SettingsIcon, SquareTerminal, X } from 'lucide-react'
 import { uid } from './shared.js'
 import { tr } from './i18n.js'
 
@@ -49,6 +49,7 @@ export function Sidebar({ state, setState, onRemove, onSettings }) {
       <footer className="side-foot">
         {/* New workspaces come from the + above; this opens what the agents did (history of every agent, searchable). */}
         <button className="side-new" onClick={() => window.dispatchEvent(new CustomEvent('ac:agent-history', { detail: {} }))} title={tr("Histórico dos agentes: pedidos, mensagens, conclusões e o que você digitou")}><History size={15} /> {tr("Histórico")}</button>
+        <button className="side-new" onClick={() => window.dispatchEvent(new Event('ac:templates'))} title={tr("Modelos de workspace: times prontos com fluxo, para usar, salvar e compartilhar")}><LayoutTemplate size={15} /> {tr("Modelos")}</button>
         <button className="side-gear" aria-label={tr("Configurações")} title={tr("Configurações")} onClick={onSettings}><SettingsIcon size={16} /></button>
       </footer>
     </aside>

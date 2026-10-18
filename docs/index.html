@@ -68,6 +68,7 @@
   .dl .card .alt a { flex: 1; text-align: center; padding: 9px; font-size: 13.5px; border: 1px solid var(--border); border-radius: 10px; text-decoration: none; color: var(--text-2); }
   .dl .card .alt a:hover { color: var(--text); border-color: var(--text-3); }
   .note { margin-top: 12px; font-size: 13px; color: var(--text-3); }
+  .note code { font-size: 12px; overflow-wrap: anywhere; }
   .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; padding: 36px; border: 1px solid var(--border); border-radius: var(--radius); background: radial-gradient(500px 220px at 0% 0%, rgba(124,156,255,.14), transparent), var(--surface); }
   .teams ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; color: var(--text-2); }
   .teams li { padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
@@ -176,6 +177,7 @@
           <p>Installer for x64. Updates itself.</p>
           <a class="btn primary" data-asset="win" href="https://github.com/jvyctor/solti/releases/latest">Download .exe</a>
           <p class="note">Not code-signed yet: on the SmartScreen warning, click <b>More info → Run anyway</b>.</p>
+          <p class="note">Or with Scoop: <code>scoop bucket add solti https://github.com/jvyctor/solti</code> then <code>scoop install solti</code></p>
         </div>
         <div class="card" id="card-mac">
           <h3>macOS</h3>
@@ -183,6 +185,7 @@
           <a class="btn primary" data-asset="mac-arm" href="https://github.com/jvyctor/solti/releases/latest">Download for Apple Silicon</a>
           <div class="alt"><a data-asset="mac-x64" href="https://github.com/jvyctor/solti/releases/latest">Intel .dmg</a></div>
           <p class="note">Not notarized yet: the first time, <b>right-click the app → Open</b>.</p>
+          <p class="note">Or with Homebrew: <code>brew tap jvyctor/solti https://github.com/jvyctor/solti</code> then <code>brew install --cask solti</code></p>
         </div>
         <div class="card" id="card-linux">
           <h3>Linux</h3>

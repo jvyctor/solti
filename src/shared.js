@@ -3,6 +3,7 @@ import { createContext } from 'react'
 export const api = window.api
 export const PipeCtx = createContext({ start() {}, stop() {} }) // pipeline runner (see App)
 export const CommCtx = createContext(new Set()) // 'idA|idB' pairs currently talking
+export const ConflictCtx = createContext([]) // files changed by 2+ worktree agents of one repo (see app/useConflicts.js)
 export const SettingsCtx = createContext(null) // app settings (see electron/settings.cjs) + { mode, eff }
 // Agent usage, polled centrally (see costs.js): byNode id -> { tokens, cost (US$ | null), model }; limited = ids over the token limit.
 export const UsageCtx = createContext({ byNode: {}, limited: new Set() })

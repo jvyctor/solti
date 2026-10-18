@@ -22,6 +22,7 @@ const DEFAULTS = {
   claudeQuota: true, // read the Claude plan quota from Anthropic with Claude Code's own login (usage panel)
   language: 'auto', // auto | pt | en
   onboarded: false, // first-run welcome already shown
+  lastSeenVersion: '', // "What's new" was shown up to this version
   // Controle remoto (celular)
   remoteEnabled: false,
   remotePort: 7443,
@@ -47,6 +48,7 @@ const DEFAULTS = {
   tokenLimit: 0, // per-agent token limit (Claude Code only); 0 = off
   prices: {}, // overrides of electron/pricing.cjs, US$ per 1M tokens: { prefix: { in, out, cw, cr } | null }
   sendBriefing: true,
+  agentHooks: true, // Claude Code reports its status through hooks (hooks.cjs) instead of the output heuristic
   historyInput: true, // record what you type into agents (not plain shells, not after a password prompt) in their history
   commands: { claude: 'claude', codex: 'codex', gemini: 'gemini', antigravity: 'agy', opencode: 'opencode' },
 }

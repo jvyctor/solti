@@ -140,6 +140,12 @@ function handle(url, j, reply) {
     toRenderer('agent:done', { from, name: nameOf(from) || from, summary, t: Date.now() })
     return reply(200, { ok: true })
   }
+  // A CLI hook reported what the agent is doing (canvas hook <event>, see hooks.cjs).
+  if (url === '/hook') {
+    const s = require('./hooks.cjs').statusOf(String(j.event || ''), j.input || {})
+    if (s && S.ptys.has(from)) toRenderer('agent:status', { from, ...s })
+    return reply(200, { ok: true })
+  }
   if (url === '/note') {
     toRenderer('note', { from, text: j.text })
     return reply(200, { ok: true })

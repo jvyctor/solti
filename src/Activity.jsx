@@ -5,7 +5,7 @@ import { getLang, tr } from './i18n.js'
 import { notify } from './notify.js'
 
 const api = window.api
-const KIND = { send: tr('mensagem'), ask: tr('pergunta'), spawn: tr('criou agente'), portal: tr('navegador'), done: tr('concluiu'), remote: tr('celular'), routine: tr('rotina'), prompt: tr('pediu'), budget: tr('orçamento'), point: tr('ponto de restauração'), input: tr('digitou'), pipeline: tr('fluxo'), approval: tr('aprovação') }
+const KIND = { send: tr('mensagem'), ask: tr('pergunta'), spawn: tr('criou agente'), portal: tr('navegador'), done: tr('concluiu'), remote: tr('celular'), routine: tr('rotina'), prompt: tr('pediu'), budget: tr('orçamento'), point: tr('ponto de restauração'), input: tr('digitou'), pipeline: tr('fluxo'), approval: tr('aprovação'), conflict: tr('conflito'), review: tr('revisão') }
 const hhmm = (t) => new Date(t).toLocaleTimeString(getLang() === 'en' ? 'en-US' : 'pt-BR')
 
 // Timeline of what agents did to each other; opens from a dock button.

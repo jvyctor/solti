@@ -352,6 +352,9 @@ function AgentesTab({ s, set }) {
         <Row title={tr("Enviar briefing do papel ao iniciar")} desc={tr("Instrui cada agente (Maestro ou Agente) sobre quem comanda e como delegar, e instala as skills do canvas.")}>
           <Switch label={tr("Enviar briefing")} checked={s.sendBriefing} onChange={(v) => set({ sendBriefing: v })} />
         </Row>
+        <Row title={tr("Status exato pelos hooks do Claude Code")} desc={tr("O Claude Code avisa quando começa, para ou pede permissão, em vez de o app adivinhar pelo texto do terminal. Vale para agentes iniciados depois de ligar.")}>
+          <Switch label={tr("Status pelos hooks")} checked={s.agentHooks !== false} onChange={(v) => set({ agentHooks: v })} />
+        </Row>
       </Section>
       <Section title={tr("HISTÓRICO")}>
         <Row title={tr("Registrar o que você digita nos agentes")} desc={tr("Cada linha enviada a um agente entra no histórico dele. Terminais de shell simples não são registrados, nem uma linha digitada logo após um pedido de senha ou token.")}>
@@ -507,7 +510,7 @@ function Sobre({ api }) {
         <button className="set-btn primary" onClick={() => api.openLink('star')}><Star size={13} /> {tr("Dar uma estrela")}</button>
       </div>
       <div className="row about-links">
-        <button className="set-btn" onClick={() => api.openLink('changelog')}>{tr("Novidades")}</button>
+        <button className="set-btn" onClick={() => window.dispatchEvent(new Event('ac:whats-new'))}>{tr("Novidades")}</button>
         <button className="set-btn" onClick={() => api.openLink('repo')}>{tr("Código-fonte")}</button>
         <button className="set-btn" onClick={() => api.openLink('issues')}>{tr("Relatar problema ou ideia")}</button>
       </div>

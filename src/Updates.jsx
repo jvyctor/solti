@@ -53,6 +53,7 @@ export function UpdateDialog({ open, onOpenChange, state, api }) {
             <>
               <p>{tr("Nova versão")} <b>{state.version}</b> {tr("(você tem")} {state.current}).</p>
               {state.notes && <pre className="upd-notes">{state.notes}</pre>}
+              {state.managed && <p className="upd-meta">{tr("Instalado por gerenciador de pacotes. Para atualizar, rode:")} <code>{state.upgrade}</code></p>}
             </>
           )}
 
@@ -72,7 +73,8 @@ export function UpdateDialog({ open, onOpenChange, state, api }) {
 
           <div className="dlg-actions">
             {!busy && <button onClick={() => onOpenChange(false)}>{status === 'available' || status === 'downloaded' ? tr("Depois") : tr("Fechar")}</button>}
-            {status === 'available' && <button className="primary" onClick={() => api.updateDownload()}>{tr("Baixar e instalar")}</button>}
+            {status === 'available' && !state.managed && <button className="primary" onClick={() => api.updateDownload()}>{tr("Baixar e instalar")}</button>}
+            {status === 'available' && state.managed && <button className="primary" onClick={() => navigator.clipboard?.writeText(state.upgrade)}>{tr("Copiar o comando")}</button>}
             {status === 'downloaded' && <button className="primary" onClick={() => api.updateInstall()}>{tr("Instalar e reiniciar")}</button>}
             {status === 'error' && <button className="primary" onClick={() => api.updateCheck()}>{tr("Tentar de novo")}</button>}
           </div>

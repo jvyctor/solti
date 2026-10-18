@@ -7,6 +7,17 @@ Downloads for every version: [Releases](https://github.com/jvyctor/solti/release
 ### Added
 - [Code signing policy](CODE_SIGNING.md) with team roles and a privacy statement, ready for the SignPath Foundation's free code signing for open source. The Release workflow signs the Windows installer through SignPath as soon as it is configured, then rebuilds the auto-update files for the signed file.
 - Settings → Agents → Privacy: turn off the Claude plan quota check, the app's only request to Anthropic.
+- **What's new**: after an update, the app shows what changed since the version you had (also in Settings → About and `Ctrl/⌘+K`).
+- **Templates** (sidebar → Templates): ready-made teams that come with their pipeline (PR review, bugfix with tests, documentation). Save any workspace as a template, export it to a file and import templates others share.
+- **Exact agent status for Claude Code**: its own hooks report when it starts, stops or asks for permission, instead of the app guessing from the terminal text (Settings → Agents; other CLIs keep the old detection).
+- **Line comments in the Diff node**: click any line, write what to change, and send all comments to the agent as one instruction with `file:line`.
+- **Conflict warning**: when two agents in worktrees of the same repository change the same file, you get a notification and the Diff node flags the file.
+- **Run reports**: every pipeline run gets a Markdown report (each step's result, the estimated cost per agent, the files each agent changed). Copy it as a PR description or save it as `.md` (pipeline → Recent runs).
+- **Install from the command line**: `scoop install solti` (Windows) and `brew install --cask solti` (macOS), with this repository as the bucket and the tap. Manifests for winget and the AUR are generated on every release ([packaging](packaging/README.md)). Installed this way, the app leaves updates to the package manager.
+### Fixed
+- Importing workspaces kept pipeline steps pointing at the old agent ids, so imported pipelines could not run.
+### Changed
+- The app shell (`App.jsx`) is split into focused hooks under `src/app/`.
 
 ## [0.8.2] - 2026-10-17
 ### Added

@@ -53,12 +53,22 @@ export function TerminalNode({ id, data, selected }) {
     fit.fit()
     terms.set(id, term)
     // Output is held until the saved screen (or the live pty buffer) has been written, so order is kept.
-    let idle, settle, cur, ready = false
+    // hooked: the CLI reports its status through hooks (Claude Code, see electron/hooks.cjs); output no longer decides it.
+    let idle, settle, cur, ready = false, hooked = false
     const held = []
+    const offHook = api.onAgentStatus(({ from, status: s }) => {
+      if (from !== id) return
+      hooked = true
+      clearTimeout(settle)
+      if (s === cur) return
+      cur = s
+      setStatus(s)
+      if (s === 'input' && cfgRef.current.notifyWaiting) notify(dataRef.current.name, tr("Está esperando você."), { nodeId: id })
+    })
     const show = (d) => {
       term.write(d)
       setBooting(false)
-      if (dataRef.current.preset !== 'shell') {
+      if (dataRef.current.preset !== 'shell' && !hooked) {
         if (cur !== 'working') { cur = 'working'; setStatus('working') }
         clearTimeout(settle)
         settle = setTimeout(() => {
@@ -97,7 +107,7 @@ export function TerminalNode({ id, data, selected }) {
       try { fit.fit(); api.resize(id, term.cols, term.rows) } catch {}
     })
     ro.observe(host.current)
-    return () => { save(); offExit(); clearInterval(timer); clearTimeout(idle); clearTimeout(settle); window.removeEventListener('beforeunload', save); mark.dispose(); terms.delete(id); sinks.delete(id); sub.dispose(); ro.disconnect(); term.dispose() }
+    return () => { save(); offExit(); offHook(); clearInterval(timer); clearTimeout(idle); clearTimeout(settle); window.removeEventListener('beforeunload', save); mark.dispose(); terms.delete(id); sinks.delete(id); sub.dispose(); ro.disconnect(); term.dispose() }
   }, [id, data.rev, data.unloaded])
 
   // Claude, Codex and Gemini: token use and estimated cost come from the central poller (costs.js, App enforces the limit).

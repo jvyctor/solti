@@ -46,7 +46,9 @@ export function prepareProfile(prof, { onboarded = true } = {}) {
   const sf = join(prof, 'settings.json')
   let s = {}
   try { s = JSON.parse(readFileSync(sf, 'utf8')) } catch {}
-  writeFileSync(sf, JSON.stringify({ ...s, ...(onboarded && s.onboarded === undefined ? { onboarded: true } : {}), ...(s.language === undefined ? { language: 'pt' } : {}) }))
+  // lastSeenVersion = this version: no "What's new" dialog over the UI under test.
+  const version = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
+  writeFileSync(sf, JSON.stringify({ ...s, ...(onboarded && s.onboarded === undefined ? { onboarded: true } : {}), ...(s.language === undefined ? { language: 'pt' } : {}), ...(s.lastSeenVersion === undefined ? { lastSeenVersion: version } : {}) }))
 }
 
 // `_port` is kept for the callers' signature; a free port is always picked.

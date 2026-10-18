@@ -40,6 +40,15 @@ try {
   await sleep(1200); await grab('palette')
   await app.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
   await sleep(400)
+  // template gallery (every built-in) and "What's new"
+  await app.ev(`window.dispatchEvent(new Event('ac:templates'))`)
+  await app.until(`document.querySelectorAll('.tpl-list li').length >= 3`, 'templates')
+  for (let i = 0; i < 3; i++) { await app.ev(`document.querySelectorAll('.tpl-list li')[${i}].click()`); await sleep(400); await grab('templates ' + i) }
+  await app.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 }); await sleep(400)
+  await app.ev(`window.dispatchEvent(new Event('ac:whats-new'))`)
+  await app.until(`!!document.querySelector('.whats-new')`, "what's new")
+  await grab("what's new")
+  await app.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 }); await sleep(400)
   // node menu on a terminal footer and pane menu
   const rc = async (x, y) => { for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await app.send('Input.dispatchMouseEvent', { type, x, y, button: 'right', clickCount: 1 }); await sleep(600) }
   const p = await app.ev(`(() => { const r = document.querySelector('.react-flow__node[data-id="a"] .tfoot').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)

@@ -186,7 +186,7 @@ function register() {
   ipcMain.handle('history:query', (_e, o) => activity.query(o || {}))
   // The renderer logs what only it sees (budgets, pipeline runs). Kinds are fixed so a page cannot forge agent actions.
   ipcMain.on('activity:record', (_e, e) => {
-    if (!['budget', 'pipeline', 'prompt', 'point'].includes(e?.kind)) return
+    if (!['budget', 'pipeline', 'prompt', 'point', 'conflict', 'review'].includes(e?.kind)) return
     activity.record({ kind: e.kind, from: String(e.from || ''), fromId: e.fromId || '', to: String(e.to || ''), toId: e.toId || '', text: String(e.text || ''), outcome: 'ok', ...(Number.isFinite(e.cost) ? { cost: e.cost } : {}) })
   })
   ipcMain.on('approval:answer', (_e, id, ok) => activity.answer(id, ok))
@@ -225,10 +225,20 @@ function register() {
     }
   })
   ipcMain.on('app:open-backups', () => { fs.mkdirSync(backup.dirOf(S.wsFile()), { recursive: true }); shell.openPath(backup.dirOf(S.wsFile())) })
-  ipcMain.handle('ws:export', async (_e, data) => {
-    const r = await dialog.showSaveDialog(S.win, { defaultPath: 'solti-workspaces.json', filters: [{ name: 'JSON', extensions: ['json'] }] })
+  ipcMain.handle('ws:export', async (_e, data, name) => {
+    // name: suggested file name (templates); a plain workspace export otherwise.
+    const file = typeof name === 'string' && name ? name.replace(/[^\w.-]+/g, '-').slice(0, 60) + '.json' : 'solti-workspaces.json'
+    const r = await dialog.showSaveDialog(S.win, { defaultPath: file, filters: [{ name: 'JSON', extensions: ['json'] }] })
     if (r.canceled) return { canceled: true }
     fs.writeFileSync(r.filePath, JSON.stringify(data, null, 2))
+    return { path: r.filePath }
+  })
+  // A pipeline run report as a Markdown file.
+  ipcMain.handle('report:save', async (_e, name, text) => {
+    const file = String(name || 'solti-report').replace(/[^\w.-]+/g, '-').slice(0, 60) + '.md'
+    const r = await dialog.showSaveDialog(S.win, { defaultPath: file, filters: [{ name: 'Markdown', extensions: ['md'] }] })
+    if (r.canceled) return { canceled: true }
+    fs.writeFileSync(r.filePath, String(text))
     return { path: r.filePath }
   })
   ipcMain.handle('ws:import', async () => {
