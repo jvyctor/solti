@@ -202,6 +202,10 @@ Issues e pull requests são bem-vindos. Leia antes o **[CONTRIBUTING.md](CONTRIB
 
 Se o Solti economiza o seu tempo, **[deixe uma ⭐ no GitHub](https://github.com/jvyctor/solti/stargazers)**. É o jeito mais simples de ajudar, e ajuda outros desenvolvedores a encontrar o projeto.
 
+## Política de assinatura de código (Code signing policy)
+
+As versões de Windows são geradas e assinadas só pelo workflow de release deste repositório, com aprovação manual de cada pedido de assinatura. Veja a **[Code signing policy](CODE_SIGNING.md)** (em inglês) para saber o que é assinado, os papéis do time e a declaração de privacidade. O pedido ao programa gratuito da SignPath Foundation para open source está em andamento; até lá, os instaladores saem sem assinatura.
+
 ## Licença
 
 [MIT](LICENSE) © João Vyctor

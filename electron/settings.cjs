@@ -19,6 +19,7 @@ const DEFAULTS = {
   notifyWaiting: true, // an agent is asking you something
   notifyPipeline: true, // a pipeline finished or stopped
   autoUpdate: true,
+  claudeQuota: true, // read the Claude plan quota from Anthropic with Claude Code's own login (usage panel)
   language: 'auto', // auto | pt | en
   onboarded: false, // first-run welcome already shown
   // Controle remoto (celular)

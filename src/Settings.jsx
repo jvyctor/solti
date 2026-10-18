@@ -358,6 +358,11 @@ function AgentesTab({ s, set }) {
           <Switch label={tr("Registrar o que você digita")} checked={s.historyInput !== false} onChange={(v) => set({ historyInput: v })} />
         </Row>
       </Section>
+      <Section title={tr("PRIVACIDADE")}>
+        <Row title={tr("Mostrar a cota do plano do Claude")} desc={tr("O painel de uso consulta a Anthropic com o login do próprio Claude Code. É o único acesso do app à Anthropic; desligado, o painel mostra só os tokens lidos dos logs locais.")}>
+          <Switch label={tr("Mostrar a cota do plano do Claude")} checked={s.claudeQuota !== false} onChange={(v) => set({ claudeQuota: v })} />
+        </Row>
+      </Section>
       <Section title={tr("SEGURANÇA")}>
         <Row title={tr("Pedir sua aprovação")} desc={tr("Protege contra um agente que seguiu uma instrução maliciosa de uma página ou arquivo. Sem resposta em 2 minutos, o pedido é negado.")}>
           <Select label={tr("Aprovação")} value={s.approval} onChange={(v) => set({ approval: v })} options={[['off', tr("Nunca (tudo liberado)")], ['spawn', tr("Ao criar agentes")], ['all', tr("Em tudo (mensagens, agentes, navegador)")]]} />

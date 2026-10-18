@@ -77,6 +77,7 @@ export function AgentUsage({ name, plan, color, session, weekly, note }) {
 // Why the Claude quota is unavailable, from the main process's short code.
 const quotaError = (code) => {
   if (!code) return tr('sem dados')
+  if (code === 'off') return tr('consulta da cota desligada nas configurações')
   if (code === 'nocred') return tr('cota indisponível (sem credencial local do Claude Code)')
   if (code === 'expired') return tr('login expirado: abra o Claude Code')
   if (code === 'offline') return tr('sem conexão')

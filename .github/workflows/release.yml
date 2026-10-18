@@ -33,7 +33,7 @@ jobs:
         run: |
           v="${GITHUB_REF_NAME#v}"
           awk -v v="$v" '$0 ~ "^## \\[" v "\\]" {on=1; next} on && /^## \[/ {exit} on {print}' CHANGELOG.md > notes.md
-          printf '\n---\n**Download:** pick the file for your system below, or use the [download page](https://jvyctor.github.io/solti/). Installers are not code-signed yet: see [install notes](https://github.com/jvyctor/solti#download).\n' >> notes.md
+          printf '\n---\n**Download:** pick the file for your system below, or use the [download page](https://jvyctor.github.io/solti/). See the [install notes](https://github.com/jvyctor/solti#download) and the [Code signing policy](https://github.com/jvyctor/solti/blob/main/CODE_SIGNING.md).\n' >> notes.md
           cat notes.md
       - name: Create the release once (parallel uploads would race to create it)
         env:
@@ -48,8 +48,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
-            args: --win nsis --x64
           - os: macos-latest
             args: --mac
           - os: ubuntu-latest
@@ -67,3 +65,67 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder ${{ matrix.args }} --publish always
+
+  # Windows: build, sign through SignPath Foundation when it is configured (see CODE_SIGNING.md), rebuild the
+  # auto-update files for the final installer, then upload. Without the SignPath settings the installer is
+  # published unsigned, exactly as before.
+  # Settings (Settings → Secrets and variables → Actions):
+  #   secret   SIGNPATH_API_TOKEN
+  #   variables SIGNPATH_ORGANIZATION_ID, SIGNPATH_PROJECT_SLUG, SIGNPATH_SIGNING_POLICY_SLUG
+  windows:
+    needs: prepare
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vite build
+      - name: Build the installer (not published yet)
+        run: npx electron-builder --win nsis --x64 --publish never
+      - name: Version
+        id: v
+        shell: bash
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Upload the unsigned installer for SignPath
+        if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+        id: unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-installer
+          path: release/Solti-Setup-${{ steps.v.outputs.version }}.exe
+          if-no-files-found: error
+      - name: Sign with SignPath (needs manual approval in SignPath)
+        if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: signed
+      - name: Use the signed installer
+        if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+        shell: bash
+        run: |
+          f="Solti-Setup-${{ steps.v.outputs.version }}.exe"
+          test -f "signed/$f"
+          cp "signed/$f" "release/$f"
+          powershell -NoProfile -Command "(Get-AuthenticodeSignature 'release/$f').Status"
+      - name: Rebuild the auto-update files for the final installer
+        run: node build/update-info.cjs release/Solti-Setup-${{ steps.v.outputs.version }}.exe ${{ steps.v.outputs.version }}
+      - name: Upload to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          f="release/Solti-Setup-${{ steps.v.outputs.version }}.exe"
+          gh release upload "$GITHUB_REF_NAME" "$f" "$f.blockmap" release/latest.yml --clobber

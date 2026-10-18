@@ -94,7 +94,9 @@ async function claudeQuota() {
 let cache = { t: 0, v: null }
 async function getUsage() {
   if (Date.now() - cache.t < 30e3) return cache.v
-  const v = { codex: codex(), claude: claude(), claudeQuota: await claudeQuota() }
+  // The quota call is the app's only request to Anthropic; it can be turned off (Settings → Agents → Privacy).
+  const quotaOn = require('./settings.cjs').get().claudeQuota !== false
+  const v = { codex: codex(), claude: claude(), claudeQuota: quotaOn ? await claudeQuota() : { error: 'off' } }
   cache = { t: Date.now(), v }
   return v
 }

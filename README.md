@@ -199,6 +199,10 @@ If Solti saves you time, **[give it a ⭐ on GitHub](https://github.com/jvyctor/
 
 [![Star History Chart](https://api.star-history.com/svg?repos=jvyctor/solti&type=Date)](https://star-history.com/#jvyctor/solti&Date)
 
+## Code signing policy
+
+Windows releases are built and signed only by this repository's Release workflow, after manual approval of each signing request. Read the **[Code signing policy](CODE_SIGNING.md)** for what is signed, the team roles and the privacy statement. The application to the SignPath Foundation's free program for open source is in progress; until then, the installers are unsigned.
+
 ## License
 
 [MIT](LICENSE) © João Vyctor

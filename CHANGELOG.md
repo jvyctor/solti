@@ -4,6 +4,9 @@ All notable changes to Solti. Versions follow [Semantic Versioning](https://semv
 Downloads for every version: [Releases](https://github.com/jvyctor/solti/releases).
 
 ## [Unreleased]
+### Added
+- [Code signing policy](CODE_SIGNING.md) with team roles and a privacy statement, ready for the SignPath Foundation's free code signing for open source. The Release workflow signs the Windows installer through SignPath as soon as it is configured, then rebuilds the auto-update files for the signed file.
+- Settings → Agents → Privacy: turn off the Claude plan quota check, the app's only request to Anthropic.
 
 ## [0.8.2] - 2026-10-17
 ### Added
