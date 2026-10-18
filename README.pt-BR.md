@@ -15,7 +15,7 @@
 [![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-blue)](LICENSE)
 [![Estrelas](https://img.shields.io/github/stars/jvyctor/solti?style=social)](https://github.com/jvyctor/solti/stargazers)
 
-**[Download](#download)** · **[O que faz](#o-que-faz)** · **[Começo rápido](#começo-rápido)** · **[Como funciona](#como-funciona)** · **[Novidades](CHANGELOG.md)** · **[English](README.md)**
+**[Download](#download)** · **[O que faz](#o-que-faz)** · **[Começo rápido](#começo-rápido)** · **[Como funciona](#como-funciona)** · **[Novidades](CHANGELOG.md)** · **[Lista de espera (Teams)](#solti-teams-entre-na-lista-de-espera)** · **[English](README.md)**
 
 <img src="docs/screenshots/canvas.png" alt="Um maestro e três agentes (dev, tester, reviewer) trabalhando num canvas, com um fluxo e conhecimento compartilhado do projeto" width="100%" />
 
@@ -177,6 +177,18 @@ O CI roda os testes unitários e o de fumaça em Windows, macOS e Linux a cada p
 - [ ] Briefings e skills em inglês
 
 Tem uma ideia? [Abra um pedido de funcionalidade](https://github.com/jvyctor/solti/issues/new/choose).
+
+## Solti Teams: entre na lista de espera
+
+**O Solti continua gratuito e open source.** Para times que trabalham juntos com agentes, estamos estudando um **Solti Teams** pago:
+
+- workspaces compartilhados;
+- orçamentos e relatórios de custo por time;
+- aprovações pelo Slack ou pelo celular para o time todo;
+- trilha de auditoria;
+- máquinas na nuvem para rodar os fluxos.
+
+👉 **[Entre na lista de espera](https://github.com/jvyctor/solti/discussions/1)**: reaja com 👍. Se puder, conte o tamanho do seu time e o que você pagaria primeiro. As respostas decidem o que vai ser construído.
 
 ## Contribuir
 

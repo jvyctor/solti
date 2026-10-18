@@ -15,7 +15,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/jvyctor/solti?style=social)](https://github.com/jvyctor/solti/stargazers)
 
-**[Download](#download)** · **[What it does](#what-it-does)** · **[Quick start](#quick-start)** · **[How it works](#how-it-works)** · **[Changelog](CHANGELOG.md)** · **[Português](README.pt-BR.md)**
+**[Download](#download)** · **[What it does](#what-it-does)** · **[Quick start](#quick-start)** · **[How it works](#how-it-works)** · **[Changelog](CHANGELOG.md)** · **[Teams waitlist](#solti-teams-join-the-waitlist)** · **[Português](README.pt-BR.md)**
 
 <img src="docs/screenshots/canvas.png" alt="A maestro and three agents (dev, tester, reviewer) working on one canvas, with a pipeline and shared project knowledge" width="100%" />
 
@@ -172,6 +172,18 @@ Tests: `npm run test:unit` (any OS, seconds), `npm run test:smoke` (the built ap
 - [ ] Briefings and skills in English
 
 Have an idea? [Open a feature request](https://github.com/jvyctor/solti/issues/new/choose).
+
+## Solti Teams: join the waitlist
+
+**Solti stays free and open source.** For teams that run agents together, we are exploring a paid **Solti Teams**:
+
+- shared workspaces;
+- team budgets and cost reports;
+- approvals from Slack or your phone for the whole team;
+- an audit trail;
+- cloud runners for pipelines.
+
+👉 **[Join the waitlist](https://github.com/jvyctor/solti/discussions/1)**: react with 👍. If you can, tell us your team size and what you would pay for first. Your answers decide what gets built.
 
 ## Contributing
 

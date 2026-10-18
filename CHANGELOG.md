@@ -4,6 +4,8 @@ All notable changes to Solti. Versions follow [Semantic Versioning](https://semv
 Downloads for every version: [Releases](https://github.com/jvyctor/solti/releases).
 
 ## [Unreleased]
+### Added
+- [Solti Teams waitlist](https://github.com/jvyctor/solti/discussions/1) on the download page and in the README.
 
 ## [0.8.1] - 2026-10-17
 

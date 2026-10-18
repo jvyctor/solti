@@ -68,6 +68,11 @@
   .dl .card .alt a { flex: 1; text-align: center; padding: 9px; font-size: 13.5px; border: 1px solid var(--border); border-radius: 10px; text-decoration: none; color: var(--text-2); }
   .dl .card .alt a:hover { color: var(--text); border-color: var(--text-3); }
   .note { margin-top: 12px; font-size: 13px; color: var(--text-3); }
+  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; padding: 36px; border: 1px solid var(--border); border-radius: var(--radius); background: radial-gradient(500px 220px at 0% 0%, rgba(124,156,255,.14), transparent), var(--surface); }
+  .teams ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; color: var(--text-2); }
+  .teams li { padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+  .teams li b { color: var(--text); }
+  @media (max-width: 780px) { .teams { grid-template-columns: 1fr; padding: 24px; } }
   .star-band { text-align: center; padding: 56px 20px; border: 1px solid var(--border); border-radius: var(--radius); background: radial-gradient(600px 200px at 50% 0%, rgba(242,194,48,.12), transparent), var(--surface); }
   footer { padding: 36px 0 60px; color: var(--text-3); font-size: 14px; border-top: 1px solid var(--border); }
   footer .wrap { display: flex; flex-wrap: wrap; gap: 18px; justify-content: space-between; }
@@ -86,6 +91,7 @@
     <nav>
       <a class="hide-sm" href="#features">Features</a>
       <a class="hide-sm" href="#download">Download</a>
+      <a class="hide-sm" href="#teams">Teams</a>
       <a class="hide-sm" href="https://github.com/jvyctor/solti/blob/main/CHANGELOG.md">Changelog</a>
       <a class="gh" href="https://github.com/jvyctor/solti" aria-label="Star Solti on GitHub">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -186,6 +192,27 @@
         </div>
       </div>
       <p class="note">You also need at least one agent CLI installed and logged in: Claude Code, Codex, Gemini CLI, OpenCode or Antigravity. The welcome screen checks each one and connects it with one click.</p>
+    </div>
+  </section>
+
+  <section id="teams">
+    <div class="wrap">
+      <div class="teams">
+        <div>
+          <span class="pill">Coming next · waitlist</span>
+          <h2>Solti Teams</h2>
+          <p class="sub">Solti stays free and open source. For teams that run agents together, we are exploring a paid plan. Your votes decide what gets built first.</p>
+          <a class="btn primary" href="https://github.com/jvyctor/solti/discussions/1">Join the waitlist</a>
+          <p class="note">On GitHub Discussions: react with 👍, and tell us your team size and what you would pay for. No forms, no tracking.</p>
+        </div>
+        <ul>
+          <li>🤝 <b>Shared workspaces</b>: the same canvas, agents and pipelines for the whole team</li>
+          <li>💸 <b>Team budgets and cost reports</b> per person, project and model</li>
+          <li>✅ <b>Approvals from Slack or your phone</b>: any teammate can unblock a run</li>
+          <li>🧾 <b>Audit trail</b>: who asked which agent to do what</li>
+          <li>☁️ <b>Cloud runners</b>: pipelines keep going while your laptop sleeps</li>
+        </ul>
+      </div>
     </div>
   </section>
 
