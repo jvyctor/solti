@@ -82,7 +82,7 @@ export function TerminalNode({ id, data, selected }) {
     const save = () => { if (ready && dirty) { dirty = false; api.termSave(id, ser.serialize({ scrollback: 1000 })) } }
     const timer = setInterval(save, 5000)
     window.addEventListener('beforeunload', save)
-    Promise.all([api.termLoad(id), api.spawn(id, { preset: data.preset, name: data.name, maestro: !!data.maestro, instructions: data.instructions, cwd: data.cwd, cols: term.cols, rows: term.rows, resume: !!dataRef.current.ran, sid, knowledge: getNodes().find((n) => n.type === 'knowledge')?.data.text || '' })]).then(([saved, r]) => {
+    Promise.all([api.termLoad(id), api.spawn(id, { preset: data.preset, boot: data.boot, name: data.name, maestro: !!data.maestro, instructions: data.instructions, cwd: data.cwd, cols: term.cols, rows: term.rows, resume: !!dataRef.current.ran, sid, knowledge: getNodes().find((n) => n.type === 'knowledge')?.data.text || '' })]).then(([saved, r]) => {
       setCwd(r.cwd)
       if (r.buf) { term.write(r.buf); setBooting(false) } // pty still alive (reload): its buffer is newer than the file
       // Pushed into scrollback: the shell's startup clear only wipes the visible screen.

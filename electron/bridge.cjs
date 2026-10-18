@@ -10,6 +10,8 @@ const activity = require('./activity.cjs')
 const settings = require('./settings.cjs')
 const portal = require('./portal.cjs')
 const gitx = require('./git.cjs')
+const briefs = require('./briefs.cjs')
+const { lang } = require('./i18n.cjs')
 
 const waiting = new Map() // asker id -> { from (target id), resolve, timer }
 
@@ -80,10 +82,10 @@ function handle(url, j, reply) {
       timer: setTimeout(() => {
         waiting.delete(from)
         comm('end')
-        reply(200, { timeout: true, note: `sem resposta em ${secs}s; se chegar depois, aparece no seu terminal` })
+        reply(200, { timeout: true, note: briefs.forLang(lang()).askTimeout(secs) })
       }, secs * 1000),
     })
-    typeInto(t, `[from ${me}] ${j.text} (Responda usando a ferramenta canvas_send para "${me}".)`)
+    typeInto(t, `[from ${me}] ${j.text} ${briefs.forLang(lang()).askReply(me)}`)
     return
   }
   if (url === '/read') {

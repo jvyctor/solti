@@ -19,7 +19,7 @@ const TOOLS = [
 
 function call(route, args) {
   return new Promise((resolve, reject) => {
-    if (!CANVAS_URL) return reject(new Error('not running inside an Solti terminal'))
+    if (!CANVAS_URL) return reject(new Error('not running inside a Solti terminal'))
     const req = http.request(CANVAS_URL + route, { method: 'POST' }, (res) => {
       let d = ''
       res.on('data', (c) => (d += c))

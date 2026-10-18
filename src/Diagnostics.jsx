@@ -13,9 +13,11 @@ const Chip = ({ ok, yes, no, unknown = tr('não sei') }) => (
 )
 
 // The CLI table, used in Settings → Diagnóstico and in the first-run welcome.
-export function DiagList() {
-  const [rows, setRows] = useState(null)
+// onRows: told the check results (the welcome screen leads with the demo when no CLI is installed).
+export function DiagList({ onRows }) {
+  const [rows, setRowsState] = useState(null)
   const [busy, setBusy] = useState('')
+  const setRows = (r) => { setRowsState(r); onRows?.(r) }
   const load = () => api.diagRun().then(setRows)
   useEffect(() => { load() }, [])
   const fix = async (id) => { setBusy(id); setRows(await api.diagFix(id)); setBusy('') }
@@ -64,7 +66,8 @@ export function DiagTab({ ui: { Section } }) {
 }
 
 // First run: what the app is, and whether the agents are ready. Shown once.
-export function Onboarding({ open, onClose, onTeam }) {
+export function Onboarding({ open, onClose, onTeam, onDemo }) {
+  const [noAgents, setNoAgents] = useState(false)
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
@@ -72,10 +75,12 @@ export function Onboarding({ open, onClose, onTeam }) {
         <Dialog.Content className="dlg wide" aria-describedby={undefined}>
           <Dialog.Title className="dlg-title">{tr("Bem-vindo ao Solti")}</Dialog.Title>
           <p>{tr("Terminais de agentes de IA lado a lado, ligados por cordas: um Maestro delega e os agentes executam e se comunicam. Veja se os seus agentes estão prontos:")}</p>
-          <DiagList />
+          <DiagList onRows={(rows) => setNoAgents(rows.every((r) => !r.installed))} />
+          {noAgents && <p className="set-note-left">{tr("Nenhum CLI de agente encontrado. Veja a demonstração (agentes simulados) enquanto instala o Claude Code, o Codex ou o Gemini CLI.")}</p>}
           <div className="dlg-actions">
             <button onClick={onClose}>{tr("Começar vazio")}</button>
-            <button className="primary" onClick={() => { onClose(); onTeam() }}>{tr("Criar um time")}</button>
+            <button className={noAgents ? 'primary' : ''} onClick={() => { onClose(); onDemo?.() }}>{tr("Ver a demonstração")}</button>
+            {!noAgents && <button className="primary" onClick={() => { onClose(); onTeam() }}>{tr("Criar um time")}</button>}
           </div>
         </Dialog.Content>
       </Dialog.Portal>

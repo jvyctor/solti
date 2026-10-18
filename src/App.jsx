@@ -10,6 +10,7 @@ const HistoryDialog = lazy(() => import('./History.jsx'))
 import { ApprovalDialog, AwayDigest } from './Activity.jsx'
 import { ErrorToast } from './ErrorToast.jsx'
 import { notify } from './notify.js'
+import { demoWorkspace } from './demo.js'
 import { resolveTheme, applyTheme } from './themes.js'
 import { Canvas } from './Canvas.jsx'
 import { Sidebar } from './Sidebar.jsx'
@@ -269,6 +270,18 @@ export default function App() {
     window.addEventListener('ac:goto', h)
     return () => window.removeEventListener('ac:goto', h)
   }, [goTo])
+  // Demo workspace (simulated agents, no AI CLI needed): opened from the welcome screen, an empty canvas or Ctrl+K.
+  // Reuses the existing demo workspace if there is one.
+  useEffect(() => {
+    const open = () => setState((s) => {
+      const existing = s.list.find((w) => w.demo)
+      if (existing) return { ...s, active: existing.id }
+      const w = demoWorkspace(uid)
+      return { ...s, list: [...s.list, w], active: w.id }
+    })
+    window.addEventListener('ac:demo', open)
+    return () => window.removeEventListener('ac:demo', open)
+  }, [])
   // Agent history dialog: { start: node id | '' } while open.
   const [history, setHistory] = useState(null)
   useEffect(() => {
@@ -340,6 +353,7 @@ export default function App() {
   const paletteActions = useMemo(() => [
     { label: tr("Novo workspace"), run: () => setState((s) => { const w = { id: uid('w'), name: `Workspace ${s.list.length + 1}`, nodes: [], edges: [] }; return { ...s, list: [...s.list, w], active: w.id } }) },
     { label: tr("Criar time pronto"), run: () => window.dispatchEvent(new Event('ac:team')) },
+    { label: tr("Abrir a demonstração"), run: () => window.dispatchEvent(new Event('ac:demo')) },
     { label: tr("Configurações"), run: () => setSettingsOpen(true) },
     { label: tr("Verificar atualizações"), run: () => { setUpdOpen(true); api.updateCheck() } },
     { label: tr("Mostrar/ocultar barra lateral"), run: toggleSide },
@@ -367,7 +381,7 @@ export default function App() {
         {settingsOpen && <SettingsDialog open={settingsOpen} onOpenChange={(o) => { setSettingsOpen(o); if (!o) setSettingsTab(null) }} startTab={settingsTab} settings={settings} api={api} mode={mode} update={{ targets, state: upd, open: () => setUpdOpen(true), io: { export: exportWs, import: importWs, points } }} />}
       </Suspense>
       <ApprovalDialog />
-      <Suspense fallback={null}>{(!!settings && !settings.onboarded && !!state && state.list.every((w) => w.nodes.length === 0)) && <Onboarding open onClose={() => api.settingsSet({ onboarded: true })} onTeam={() => setTimeout(() => window.dispatchEvent(new Event('ac:team')), 200)} />}</Suspense>
+      <Suspense fallback={null}>{(!!settings && !settings.onboarded && !!state && state.list.every((w) => w.nodes.length === 0)) && <Onboarding open onClose={() => api.settingsSet({ onboarded: true })} onTeam={() => setTimeout(() => window.dispatchEvent(new Event('ac:team')), 200)} onDemo={() => window.dispatchEvent(new Event('ac:demo'))} />}</Suspense>
       <AwayDigest />
       <ErrorToast />
       <Suspense fallback={null}>{history && <HistoryDialog open onClose={() => setHistory(null)} agents={historyAgents} start={history.start} />}</Suspense>

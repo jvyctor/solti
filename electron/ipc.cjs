@@ -91,7 +91,7 @@ function register() {
     const bin = CLIS[id]?.bin
     if (!bin) return runDiag()
     await require('./register.cjs').registerOne(bin)
-    try { require('./skills.cjs').installSkills() } catch {}
+    try { require('./skills.cjs').installSkills(i18n.lang()) } catch {}
     return runDiag()
   })
   // "Copiar diagnóstico": versions, agent checks and the recent error log, as plain text for a bug report.
@@ -157,7 +157,11 @@ function register() {
   ipcMain.handle('settings:get', () => settings.get())
   ipcMain.handle('settings:set', (_e, patch) => {
     const s = settings.set(patch)
-    if ('language' in patch) i18n.init(s.language, app.getLocale())
+    if ('language' in patch) {
+      i18n.init(s.language, app.getLocale())
+      // Agents read the skills in the app's language: rewrite the ones this app manages.
+      if (s.sendBriefing) try { require('./skills.cjs').installSkills(i18n.lang()) } catch {}
+    }
     terminals.applyPower()
     if ('remoteHttp' in patch) restartRemote()
     else if ('remoteEnabled' in patch || 'remotePort' in patch) applyRemote()

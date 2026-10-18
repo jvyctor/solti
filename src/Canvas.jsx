@@ -279,6 +279,7 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
           <div className="empty-actions">
             <button className="primary" onClick={() => setTeamDlg({ pos: { x: 80, y: 80 } })}>{tr("Criar um time")}</button>
             <button onClick={() => setDlg({ pos: { x: 80, y: 80 } })}>{tr("Novo terminal")}</button>
+            <button onClick={() => window.dispatchEvent(new Event('ac:demo'))} title={tr("Agentes simulados, sem precisar de nenhum CLI de IA")}>{tr("Ver a demonstração")}</button>
           </div>
           <small>{tr("Dica: clique com o botão direito no fundo para adicionar qualquer coisa, ou use Ctrl+K.")}</small>
         </div>

@@ -1,10 +1,19 @@
 #!/usr/bin/env node
 // Usage: canvas peers | canvas send <peer> <text...> | canvas read <peer> [bytes] | canvas note <text...> | canvas knowledge | canvas remember <text...> | canvas done <summary...>
+//        canvas demo <role> [previous result]   (simulated agent of the demo workspace, see canvas-demo.cjs)
 const http = require('http')
 const { CANVAS_URL, CANVAS_ID } = process.env
-if (!CANVAS_URL) { console.error('canvas: run inside an Solti terminal'); process.exit(1) }
+if (!CANVAS_URL) { console.error('canvas: run inside a Solti terminal'); process.exit(1) }
 
 const [cmd, ...args] = process.argv.slice(2)
+if (cmd === 'demo') {
+  const post = (route, payload) => new Promise((resolve) => {
+    const r = http.request(CANVAS_URL + route, { method: 'POST' }, (res) => { res.resume(); res.on('end', resolve) })
+    r.on('error', (e) => { console.error('canvas:', e.message); resolve() })
+    r.end(JSON.stringify({ from: CANVAS_ID, ...payload }))
+  })
+  return require('./canvas-demo.cjs')(args, post)
+}
 const routes = {
   peers: ['/peers', () => ({})],
   send: ['/send', () => ({ to: args[0], text: args.slice(1).join(' ') })],

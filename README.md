@@ -17,7 +17,9 @@
 
 **[Download](#download)** · **[What it does](#what-it-does)** · **[Quick start](#quick-start)** · **[How it works](#how-it-works)** · **[Changelog](CHANGELOG.md)** · **[Teams waitlist](#solti-teams-join-the-waitlist)** · **[Português](README.pt-BR.md)**
 
-<img src="docs/screenshots/canvas.png" alt="A maestro and three agents (dev, tester, reviewer) working on one canvas, with a pipeline and shared project knowledge" width="100%" />
+<img src="docs/screenshots/demo.gif" alt="The built-in demo: dev and tester work in parallel, the reviewer rejects, the pipeline loops back to the dev, then it approves" width="100%" />
+
+<sub>The built-in demo, no AI CLI needed: dev ∥ tester → the reviewer rejects → the pipeline loops back to the dev → approved. Try it from <b>Try the demo</b> on an empty canvas.</sub>
 
 </div>
 
@@ -49,11 +51,13 @@ Solti uses the agent CLIs you already have, logged in to your own accounts. It n
 
 👉 The **[download page](https://jvyctor.github.io/solti/)** picks the right file for your system. Every version and its changes are on **[Releases](https://github.com/jvyctor/solti/releases)** and in the **[Changelog](CHANGELOG.md)**.
 
-You also need at least one agent CLI installed and logged in: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex), [Gemini CLI](https://github.com/google-gemini/gemini-cli), [OpenCode](https://opencode.ai) or Antigravity. On first launch, the welcome screen checks each one and connects the canvas to it with one click.
+No agent CLI yet? Open the app and click **Try the demo**: it runs on simulated agents. To work for real, you need at least one agent CLI installed and logged in: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex), [Gemini CLI](https://github.com/google-gemini/gemini-cli), [OpenCode](https://opencode.ai) or Antigravity. On first launch, the welcome screen checks each one and connects the canvas to it with one click.
 
 ## What it does
 
 ### Teams of agents, roped together
+
+<img src="docs/screenshots/canvas.png" alt="A maestro and three agents (dev, tester, reviewer) working on one canvas, with a pipeline and shared project knowledge" width="100%" />
 
 Create a ready-made team (maestro + dev + reviewer + tester) or drop terminals anywhere and rope them together. Each agent gets a short role briefing and a handful of tools:
 
@@ -119,6 +123,7 @@ Each agent has a searchable timeline:
 
 ## Quick start
 
+0. **Just curious?** Install Solti and click **Try the demo**: a maestro and three simulated agents run a full pipeline (parallel, loop, approval) in plain shells, with no AI CLI installed.
 1. Install Solti ([Download](#download)) and at least one agent CLI, logged in.
 2. Open it. The welcome screen checks your CLIs; click **Fix** if the canvas is not connected yet.
 3. Click **Create a team** → **Development**. A maestro and three specialists appear, already roped.
@@ -169,7 +174,6 @@ Tests: `npm run test:unit` (any OS, seconds), `npm run test:smoke` (the built ap
 - [ ] Inline comments on the Diff node that go back to the agent as instructions
 - [ ] Warning when two agents change the same files in different worktrees
 - [ ] Shareable team and pipeline templates
-- [ ] Briefings and skills in English
 
 Have an idea? [Open a feature request](https://github.com/jvyctor/solti/issues/new/choose).
 

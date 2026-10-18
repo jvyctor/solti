@@ -1,6 +1,7 @@
-import { tr } from './i18n.js'
+import { getLang, tr } from './i18n.js'
 // Pipeline ("fluxo") logic: prompt templates, grouping, loops and stop criteria. The run loop lives in pipelineRunner.js.
-export const HINT = ' (Ao terminar, chame a ferramenta canvas_done com um resumo curto do resultado.)'
+// Reminder appended to each step, in the app's language (agents are briefed in it too).
+export const hint = () => (getLang() === 'en' ? ' (When you finish, call the canvas_done tool with a short summary of the result.)' : ' (Ao terminar, chame a ferramenta canvas_done com um resumo curto do resultado.)')
 export const DEFAULT_TIMEOUT_MIN = 15
 export const MAX_ROUNDS = 100 // safety net against loops that keep jumping back
 

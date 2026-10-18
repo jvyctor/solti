@@ -46,4 +46,5 @@ const tr = (s, args = []) => {
   return args.length ? base.replace(/\{(\d+)\}/g, (_m, i) => String(args[Number(i)] ?? '')) : base
 }
 
-module.exports = { init, tr }
+// The effective language ('pt' | 'en'): also what agents are briefed in.
+module.exports = { init, tr, lang: () => lang }

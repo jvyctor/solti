@@ -4,8 +4,16 @@ All notable changes to Solti. Versions follow [Semantic Versioning](https://semv
 Downloads for every version: [Releases](https://github.com/jvyctor/solti/releases).
 
 ## [Unreleased]
+
+## [0.8.2] - 2026-10-17
 ### Added
+- **Try the demo**: a demo workspace with a maestro and three simulated agents that runs a full pipeline in plain shells: parallel steps, a reviewer that rejects and loops back to the dev, and your approval at the end. No AI CLI needed. Open it from the welcome screen (it is the main button when no CLI is installed), from an empty canvas or from `Ctrl/⌘+K`.
+- **Agents are briefed in your language**: briefings, skills, the pipeline reminder and the messages typed into agents follow the app's language (English or Portuguese). Switching language rewrites the skills the app manages.
+- An animated demo at the top of the README and on the download page.
 - [Solti Teams waitlist](https://github.com/jvyctor/solti/discussions/1) on the download page and in the README.
+
+### Fixed
+- The app could fail to start in environments where the system data folder cannot be resolved early (seen with a custom home folder).
 
 ## [0.8.1] - 2026-10-17
 
@@ -94,6 +102,7 @@ The first open-source release, and the first one for **macOS and Linux**.
 ## [0.1.0] - 2026-10-15
 - First version: terminals on a canvas, roped together, with a maestro and agents that talk through MCP tools.
 
+[0.8.2]: https://github.com/jvyctor/solti/releases/tag/v0.8.2
 [0.8.1]: https://github.com/jvyctor/solti/releases/tag/v0.8.1
 [0.8.0]: https://github.com/jvyctor/solti/releases/tag/v0.8.0
 [0.7.0]: https://github.com/jvyctor/agent-canvas-releases/releases/tag/v0.7.0

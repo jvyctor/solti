@@ -4,7 +4,7 @@
 // Steps run group by group: a group is one step, or several marked "parallel" that run at the same time and are
 // waited for together. After a group, a step's loop rule may send the run back to an earlier step.
 // An approval step pauses the run until you allow it (desktop dialog or phone); denying stops the run.
-import { HINT, MAX_ROUNDS, fill, groupsOf, joinSummaries, loopDecision, shouldStop, timeoutMs, validate } from './pipeline.js'
+import { MAX_ROUNDS, hint as hintText, fill, groupsOf, joinSummaries, loopDecision, shouldStop, timeoutMs, validate } from './pipeline.js'
 import { tr } from './i18n.js'
 
 const BUDGET_CHECK = 5000
@@ -54,7 +54,7 @@ export async function runPipeline(id, deps) {
 
     const groups = groupsOf(steps)
     const input = node.data.input || ''
-    const hint = node.data.hint === false ? '' : HINT
+    const hint = node.data.hint === false ? '' : hintText()
     const budget = Number(node.data.budget) || 0
     const agents = [...new Set(steps.filter((s) => !s.approval).map((s) => s.agent))]
     const spentFrom = Object.fromEntries(agents.map((a) => [a, cost(a) || 0]))

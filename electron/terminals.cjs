@@ -10,7 +10,7 @@ const activity = require('./activity.cjs')
 const briefs = require('./briefs.cjs')
 const proc = require('./proc.cjs')
 const inputlog = require('./inputlog.cjs')
-const { tr } = require('./i18n.cjs')
+const { tr, lang: i18nLang } = require('./i18n.cjs')
 const { launchCommand } = require('./launch.cjs')
 
 // macOS and Linux: an app started from the Dock, Finder or a desktop menu gets a minimal PATH, without Homebrew,
@@ -47,22 +47,24 @@ function applyPower() {
   if (!want && blockerId !== null) { powerSaveBlocker.stop(blockerId); blockerId = null }
 }
 
+// The briefing (and the skills) follow the app's language, so agents are instructed in the user's language.
+const B = () => briefs.forLang(i18nLang())
 function writeBrief(id, name, maestro, instructions, knowledge) {
   const f = path.join(app.getPath('userData'), 'briefs', id + '.md')
   fs.mkdirSync(path.dirname(f), { recursive: true })
-  const extra = instructions ? `\n\n## Instruções específicas do maestro\n${instructions}\n` : ''
-  const know = `\n\n## Conhecimento compartilhado do projeto\nTodos os agentes deste workspace compartilham estas anotações. Consulte com \`canvas_knowledge\` e registre fatos duradouros (decisões, comandos, armadilhas) com \`canvas_remember\`.\n${knowledge ? '\n' + knowledge + '\n' : '\n(vazio por enquanto)\n'}`
-  fs.writeFileSync(f, (maestro ? briefs.maestro : briefs.agent)(name || id) + extra + know, 'utf8')
+  const b = B()
+  fs.writeFileSync(f, (maestro ? b.maestro : b.agent)(name || id) + (instructions ? b.instructions(instructions) : '') + b.knowledge(knowledge), 'utf8')
   return f
 }
-// ASCII only: this line is typed into a shell prompt.
-const briefLine = (f) => `Leia e siga o briefing de papel em ${f}`
+const briefLine = (f) => B().readLine(f)
 
 const defaultShell = () => (process.platform === 'win32' ? 'powershell.exe' : process.env.SHELL || (process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash'))
 // macOS terminals start login shells (that is where Homebrew sets PATH); elsewhere a plain interactive shell.
 const shellArgs = (shell) => (process.platform === 'darwin' && /(^|\/)(zsh|bash|sh|fish)$/.test(shell) ? ['-l'] : [])
 
-function spawnPty(id, { preset, name, maestro, instructions, cwd, cols, rows, resume, sid, knowledge }) {
+const BOOT_OK = /^canvas demo (maestro|idle [\w-]{1,30})$/
+// boot: a command typed once the shell starts (the demo workspace's simulated agents use it).
+function spawnPty(id, { preset, boot, name, maestro, instructions, cwd, cols, rows, resume, sid, knowledge }) {
   if (S.ptys.has(id)) return
   ensureSpawnHelper()
   const shell = settings.get().shell || defaultShell()
@@ -83,6 +85,7 @@ function spawnPty(id, { preset, name, maestro, instructions, cwd, cols, rows, re
         CANVAS_URL: `http://127.0.0.1:${S.bridgePort}/${S.TOKEN}`,
         CANVAS_ID: id,
         CANVAS_NODE: process.execPath, // lets bin/canvas(.cmd) run on the app's own runtime
+        CANVAS_LANG: i18nLang(), // language of the simulated demo agents
       },
     })
   } catch (e) {
@@ -105,8 +108,11 @@ function spawnPty(id, { preset, name, maestro, instructions, cwd, cols, rows, re
     applyPower()
     S.toRenderer('pty:exit', id)
   })
-  if (settings.get().commands[preset]) {
-    if (settings.get().sendBriefing) try { require('./skills.cjs').installSkills() } catch {} // idempotent; skills must exist before the agent starts
+  // Only the demo agent's own commands: workspace data can come from an imported file, and must not run
+  // arbitrary commands just by being opened.
+  if (typeof boot === 'string' && BOOT_OK.test(boot)) setTimeout(() => p.write(boot + '\r'), 400)
+  else if (settings.get().commands[preset]) {
+    if (settings.get().sendBriefing) try { require('./skills.cjs').installSkills(i18nLang()) } catch {} // idempotent; skills must exist before the agent starts
     const line = settings.get().sendBriefing ? briefLine(writeBrief(id, name, maestro, instructions, knowledge)) : ''
     setTimeout(() => p.write(launchCommand(settings.get(), preset, line, { resume, sid }) + '\r'), 400)
   }

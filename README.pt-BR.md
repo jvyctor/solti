@@ -17,7 +17,9 @@
 
 **[Download](#download)** · **[O que faz](#o-que-faz)** · **[Começo rápido](#começo-rápido)** · **[Como funciona](#como-funciona)** · **[Novidades](CHANGELOG.md)** · **[Lista de espera (Teams)](#solti-teams-entre-na-lista-de-espera)** · **[English](README.md)**
 
-<img src="docs/screenshots/canvas.png" alt="Um maestro e três agentes (dev, tester, reviewer) trabalhando num canvas, com um fluxo e conhecimento compartilhado do projeto" width="100%" />
+<img src="docs/screenshots/demo.gif" alt="A demonstração embutida: dev e testador em paralelo, o revisor reprova, o fluxo volta ao dev e depois aprova" width="100%" />
+
+<sub>A demonstração embutida, sem nenhum CLI de IA: dev ∥ testador → o revisor reprova → o fluxo volta ao dev → aprovado. Experimente em <b>Ver a demonstração</b>, num canvas vazio. (Gravada com a interface em inglês.)</sub>
 
 </div>
 
@@ -49,11 +51,13 @@ O Solti usa os CLIs de agente que você já tem, logados nas suas próprias cont
 
 👉 A **[página de download](https://jvyctor.github.io/solti/)** escolhe o arquivo certo para o seu sistema. Todas as versões e o que mudou em cada uma estão em **[Releases](https://github.com/jvyctor/solti/releases)** e no **[Changelog](CHANGELOG.md)**.
 
-Você também precisa de pelo menos um CLI de agente instalado e logado: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex), [Gemini CLI](https://github.com/google-gemini/gemini-cli), [OpenCode](https://opencode.ai) ou Antigravity. Na primeira abertura, a tela de boas-vindas confere cada um e conecta o canvas a ele com um clique.
+Ainda não tem nenhum CLI de agente? Abra o app e clique em **Ver a demonstração**: ela roda com agentes simulados. Para trabalhar de verdade, você precisa de pelo menos um CLI de agente instalado e logado: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex), [Gemini CLI](https://github.com/google-gemini/gemini-cli), [OpenCode](https://opencode.ai) ou Antigravity. Na primeira abertura, a tela de boas-vindas confere cada um e conecta o canvas a ele com um clique.
 
 ## O que faz
 
 ### Times de agentes ligados por cordas
+
+<img src="docs/screenshots/canvas.png" alt="Um maestro e três agentes (dev, tester, reviewer) trabalhando num canvas, com um fluxo e conhecimento compartilhado do projeto" width="100%" />
 
 Crie um time pronto (maestro + dev + revisor + testador) ou solte terminais em qualquer lugar e ligue-os com cordas. Cada agente recebe um briefing curto do seu papel e um punhado de ferramentas:
 
@@ -119,6 +123,7 @@ Os **pontos de restauração** guardam todos os workspaces, feitos à mão ou au
 
 ## Começo rápido
 
+0. **Só quer conhecer?** Instale o Solti e clique em **Ver a demonstração**: um maestro e três agentes simulados rodam um fluxo completo (paralelo, repetição, aprovação) em shells comuns, sem nenhum CLI de IA.
 1. Instale o Solti ([Download](#download)) e pelo menos um CLI de agente, já logado.
 2. Abra o app. A tela de boas-vindas confere os seus CLIs; clique em **Consertar** se o canvas ainda não estiver conectado.
 3. Clique em **Criar um time** → **Desenvolvimento**. Aparecem um maestro e três especialistas, já ligados.
@@ -174,7 +179,6 @@ O CI roda os testes unitários e o de fumaça em Windows, macOS e Linux a cada p
 - [ ] Comentários por linha no nó de Diff, enviados ao agente como instrução
 - [ ] Aviso quando dois agentes mexem nos mesmos arquivos em worktrees diferentes
 - [ ] Modelos de time e de fluxo compartilháveis
-- [ ] Briefings e skills em inglês
 
 Tem uma ideia? [Abra um pedido de funcionalidade](https://github.com/jvyctor/solti/issues/new/choose).
 
