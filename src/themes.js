@@ -51,9 +51,10 @@ export function resolveTheme(settings, mode) {
     gap: c.gap || p.gap,
     size: c.size || p.size,
     edgeStyle: c.edgeStyle || 'dashed',
-    edgeWidth: c.edgeWidth || 2.5,
+    edgeWidth: c.edgeWidth || 2,
     edgeSag: c.edgeSag ?? 1,
     edgeFlow: !!c.edgeFlow,
+    edgePhysics: c.edgePhysics !== false, // ropes swing and settle when a node moves
     radius: c.radius ?? 14,
     shadow: c.shadow !== false,
     snap: !!c.snap,

@@ -152,6 +152,9 @@ function Tela({ s, set, mode }) {
             </Row>
           </>
         )}
+        <Row title={tr("Física das cordas")} desc={tr("Ao mover um nó, a corda balança e assenta, em vez de ficar rígida.")}>
+          <Switch label={tr("Física das cordas")} checked={t.edgePhysics} onChange={(v) => setC({ edgePhysics: v })} />
+        </Row>
         <Row title={tr("Animar")} desc={tr("Faz o tracejado correr ao longo da corda.")}>
           <Switch label={tr("Animar cordas")} checked={t.edgeFlow} onChange={(v) => setC({ edgeFlow: v })} />
         </Row>

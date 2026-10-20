@@ -870,4 +870,6 @@ export default {
   'Avisar fora do app quando algo esperar sua aprovação': 'Notify outside the app when something waits for your approval',
   'URL https de um webhook do Slack, Discord ou Telegram (…/sendMessage?chat_id=…), ou de um tópico do ntfy.sh. Só o texto do pedido é enviado. Aprove no app ou pelo celular. Vazio = desligado.': 'https URL of a Slack, Discord or Telegram (…/sendMessage?chat_id=…) webhook, or an ntfy.sh topic. Only the request text is sent. Approve in the app or on your phone. Empty = off.',
   'URL do aviso externo': 'External notice URL',
+  'Física das cordas': 'Rope physics',
+  'Ao mover um nó, a corda balança e assenta, em vez de ficar rígida.': 'When a node moves, the rope swings and settles instead of staying rigid.',
 }

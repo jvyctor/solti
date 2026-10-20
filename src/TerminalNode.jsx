@@ -163,7 +163,7 @@ export function TerminalNode({ id, data, selected }) {
     setNodes((ns) => ns.map((n) => (n.type !== 'terminal' ? n : { ...n, data: { ...n.data, maestro: n.id === id ? maestro : maestro ? false : n.data.maestro } })))
 
   return (
-    <div className={'tnode' + (selected ? ' selected' : '') + (data.maestro ? ' maestro' : '')}>
+    <div className={'tnode' + (selected ? ' selected' : '') + (data.maestro ? ' maestro' : '') + (status === 'working' ? ' st-working' : '')}>
       <NodeResizer minWidth={300} minHeight={180} isVisible={selected} />
       <Handle type="target" position={Position.Left} />
       <div className="thead">
