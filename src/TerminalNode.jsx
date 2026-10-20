@@ -70,8 +70,10 @@ export function TerminalNode({ id, data, selected }) {
     let dragging = false
     const unscale = (e) => {
       const z = flow.getState().transform[2]
-      if (!e.isTrusted || z === 1) return
-      if (e.type === 'mousedown' ? !term.element?.contains(e.target) : !dragging && !term.element?.contains(e.target)) return
+      if (!e.isTrusted) return
+      if (z === 1) { if (e.type === 'mouseup') dragging = false; return }
+      // Only a press that starts inside this terminal (and its drag) is touched; anything else, such as dragging a card across it, is left alone.
+      if (e.type === 'mousedown' ? !term.element?.contains(e.target) : !dragging) return
       if (e.type === 'mousedown') dragging = true
       else if (e.type === 'mouseup') dragging = false
       const r = (term.element.querySelector('.xterm-screen') || term.element).getBoundingClientRect()

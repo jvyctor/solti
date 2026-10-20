@@ -4,7 +4,7 @@ import { CommCtx, SettingsCtx } from './shared.js'
 
 // Rope physics: the two control points chase their resting place like springs, so when a node is dragged the rope
 // trails behind, swings and settles instead of staying rigid. Runs only while something moves.
-const STIFF = 0.09, DAMP = 0.84, REST = 0.05
+const STIFF = 0.14, DAMP = 0.6, REST = 0.05 // close to critically damped: it trails and settles, it does not ring while you drag
 
 // Edge that leaves each node on the side facing the other node, so lines look natural wherever nodes sit.
 export function FloatingEdge({ id, source, target, markerEnd, style }) {
