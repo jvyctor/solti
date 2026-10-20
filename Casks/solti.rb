@@ -1,9 +1,9 @@
 cask "solti" do
   arch arm: "arm64-", intel: ""
 
-  version "0.8.2"
-  sha256 arm:   "bd3a8a00edeb3eb3126d6786b4236e79840364b0e156ae4283377be809eb8e22",
-         intel: "991e3922512d353647c20958aae7c5783bf5e0c9a57ddc474bfdd9831f04de59"
+  version "0.9.0"
+  sha256 arm:   "137fe470afe92969036cab32db6790cba193b7399c918e5fbe20a11a1cef1411",
+         intel: "b91b1297844ccb909836275bdb3d396f84602804055912697ba5edeaf98332a1"
 
   url "https://github.com/jvyctor/solti/releases/download/v#{version}/Solti-#{version}-#{arch}mac.zip"
   name "Solti"

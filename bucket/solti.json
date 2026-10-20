@@ -1,12 +1,12 @@
 {
-    "version": "0.8.2",
+    "version": "0.9.0",
     "description": "Run a team of AI coding agents (Claude Code, Codex, Gemini CLI, OpenCode) side by side on one canvas: a maestro delegates, agents talk to each other, pipelines with loops and human approval.",
     "homepage": "https://jvyctor.github.io/solti/",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/jvyctor/solti/releases/download/v0.8.2/Solti-Setup-0.8.2.exe#/dl.7z",
-            "hash": "ad5202907f639b27a63fcf1b3be4055709891fd61f2bff71e57a0c000865d539"
+            "url": "https://github.com/jvyctor/solti/releases/download/v0.9.0/Solti-Setup-0.9.0.exe#/dl.7z",
+            "hash": "bae5f53daefe743d493bb7966eeb30c976bc4e6a5b0c2b01ce0d4fe13861b4db"
         }
     },
     "installer": {

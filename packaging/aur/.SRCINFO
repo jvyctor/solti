@@ -1,6 +1,6 @@
 pkgbase = solti-bin
 	pkgdesc = Run a team of AI coding agents side by side on one canvas
-	pkgver = 0.8.2
+	pkgver = 0.9.0
 	pkgrel = 1
 	url = https://jvyctor.github.io/solti/
 	arch = x86_64
@@ -16,7 +16,7 @@ pkgbase = solti-bin
 	conflicts = solti
 	options = !strip
 	options = !debug
-	source = Solti-0.8.2.deb::https://github.com/jvyctor/solti/releases/download/v0.8.2/Solti-0.8.2.deb
-	sha256sums = 4b870ebd868104ea89e7f0fd31ee60475b3670518daea85da9b660c61c4019da
+	source = Solti-0.9.0.deb::https://github.com/jvyctor/solti/releases/download/v0.9.0/Solti-0.9.0.deb
+	sha256sums = cf39969dda101942d2f87a328939a600d0a8820ba7333d7c5249bfe8779e8206
 
 pkgname = solti-bin

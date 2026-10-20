@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
 PackageIdentifier: jvyctor.Solti
-PackageVersion: 0.8.2
+PackageVersion: 0.9.0
 PackageLocale: en-US
 Publisher: João Vyctor
 PublisherUrl: https://github.com/jvyctor
@@ -18,6 +18,6 @@ Tags:
 - codex
 - gemini-cli
 - terminal
-ReleaseNotesUrl: https://github.com/jvyctor/solti/releases/tag/v0.8.2
+ReleaseNotesUrl: https://github.com/jvyctor/solti/releases/tag/v0.9.0
 ManifestType: defaultLocale
 ManifestVersion: 1.6.0
