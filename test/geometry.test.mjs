@@ -10,3 +10,23 @@ test('nodes whose centre is inside the group move with it; others and other grou
   nodes[5].measured = { width: 100, height: 100 }
   assert.deepEqual(kidsInside(g, nodes).map((k) => k.id), ['in', 'measured'])
 })
+
+import { arrange } from '../src/geometry.js'
+
+test('align moves every node to the same edge or centre', () => {
+  const nodes = [n('a', 0, 0, 100, 50), n('b', 40, 80, 200, 100), n('c', 300, 20, 50, 50)]
+  assert.deepEqual([...arrange(nodes, 'left')].map(([id, p]) => [id, p.x]), [['b', 0], ['c', 0]])
+  assert.deepEqual([...arrange(nodes, 'right')].map(([id, p]) => [id, p.x]), [['a', 250], ['b', 150]])
+  assert.equal(arrange(nodes, 'top').get('b').y, 0)
+  assert.equal(arrange(nodes, 'vcenter').get('a').y, 65)
+})
+
+test('distribute leaves equal gaps and keeps the outer nodes in place', () => {
+  const nodes = [n('a', 0, 0, 100, 100), n('b', 120, 0, 100, 100), n('c', 500, 0, 100, 100)]
+  const m = arrange(nodes, 'hspace')
+  assert.equal(m.has('a'), false)
+  assert.equal(m.has('c'), false)
+  assert.equal(m.get('b').x, 250)
+  assert.equal(arrange(nodes.slice(0, 2), 'hspace').size, 0, 'needs three nodes')
+  assert.equal(arrange(nodes.slice(0, 1), 'left').size, 0)
+})

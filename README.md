@@ -187,9 +187,9 @@ Tests: `npm run test:unit` (any OS, seconds), `npm run test:smoke` (the built ap
 ## Roadmap
 
 - [ ] Code-signed and notarized builds
-- [ ] Inline comments on the Diff node that go back to the agent as instructions
-- [ ] Warning when two agents change the same files in different worktrees
-- [ ] Shareable team and pipeline templates
+- [x] Inline comments on the Diff node that go back to the agent as instructions
+- [x] Warning when two agents change the same files in different worktrees
+- [x] Shareable team and pipeline templates
 
 Have an idea? [Open a feature request](https://github.com/jvyctor/solti/issues/new/choose).
 

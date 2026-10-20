@@ -1,7 +1,7 @@
 {
   "name": "solti",
   "productName": "Solti",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "description": "Run a team of AI coding agents (Claude Code, Codex, Gemini CLI, OpenCode) side by side on one canvas: a maestro delegates, agents talk to each other, pipelines with loops and human approval.",
   "author": {
     "name": "João Vyctor",
@@ -37,7 +37,7 @@
     "icons": "node build/make-icons.cjs",
     "postinstall": "node build/fix-node-pty.cjs",
     "test": "node --test --test-concurrency=1 --test-timeout=300000 \"test/*.test.mjs\"",
-    "test:unit": "node --test --test-timeout=120000 test/activity.test.mjs test/agentusage.test.mjs test/backup.test.mjs test/briefs.test.mjs test/changelog.test.mjs test/conflicts.test.mjs test/hooks.test.mjs test/packagers.test.mjs test/report.test.mjs test/templates.test.mjs test/diagnose.test.mjs test/geometry.test.mjs test/git.test.mjs test/history.test.mjs test/inputlog.test.mjs test/launch.test.mjs test/ledger.test.mjs test/pipeline.test.mjs test/pipelinerunner.test.mjs test/proc.test.mjs test/remote.test.mjs test/routines.test.mjs test/schedule.test.mjs test/status.test.mjs test/teams.test.mjs",
+    "test:unit": "node --test --test-timeout=120000 test/activity.test.mjs test/agentusage.test.mjs test/backup.test.mjs test/briefs.test.mjs test/changelog.test.mjs test/conflicts.test.mjs test/hooks.test.mjs test/packagers.test.mjs test/report.test.mjs test/templates.test.mjs test/diagnose.test.mjs test/geometry.test.mjs test/git.test.mjs test/history.test.mjs test/inputlog.test.mjs test/launch.test.mjs test/ledger.test.mjs test/pipeline.test.mjs test/pipelinerunner.test.mjs test/proc.test.mjs test/remote.test.mjs test/routines.test.mjs test/search.test.mjs test/push.test.mjs test/schedule.test.mjs test/status.test.mjs test/teams.test.mjs",
     "test:smoke": "node --test --test-concurrency=1 --test-timeout=300000 test/smoke.test.mjs test/demo.test.mjs",
     "release": "vite build && electron-builder --win nsis --x64 --publish always \"--config.directories.output=%LOCALAPPDATA%\\solti-release\"",
     "dist": "vite build && electron-builder --win nsis --x64 \"--config.directories.output=%LOCALAPPDATA%\\solti-release\""

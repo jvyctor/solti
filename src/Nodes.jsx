@@ -64,7 +64,7 @@ export function NoteNode({ id, data, selected }) {
 export function GroupNode({ id, data, selected }) {
   const { updateNodeData } = useReactFlow()
   return (
-    <div className="group">
+    <div className="group" style={data.color ? { borderColor: data.color, background: `color-mix(in srgb, ${data.color} 12%, transparent)` } : undefined}>
       <NodeResizer minWidth={200} minHeight={120} isVisible={selected} />
       <input value={data.name || ''} placeholder={tr("Grupo")} onChange={(e) => updateNodeData(id, { name: e.target.value })} />
     </div>

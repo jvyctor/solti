@@ -18,6 +18,7 @@ const DEFAULTS = {
   notifyDone: true, // an agent called canvas_done
   notifyWaiting: true, // an agent is asking you something
   notifyPipeline: true, // a pipeline finished or stopped
+  pushUrl: '', // https webhook (Slack, Discord, Telegram, ntfy) that is told when an approval is waiting; empty = off
   autoUpdate: true,
   claudeQuota: true, // read the Claude plan quota from Anthropic with Claude Code's own login (usage panel)
   language: 'auto', // auto | pt | en

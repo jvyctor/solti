@@ -166,3 +166,31 @@ test('pipeline budget: spending since the start beyond the budget stops the run 
   assert.match(w.data.note, /orçamento do fluxo/)
   assert.deepEqual(w.interrupted.sort(), ['a', 'b'])
 })
+
+test('resume: a run that stopped at step 2 continues from there with {{prev}} intact, without redoing step 1', async () => {
+  let answer = false
+  const w = world({ a: { reply: () => 'código pronto' }, b: { reply: (t) => (answer ? `ok: ${t}` : undefined) } })
+  w.api.promptAgent = ((orig) => (id, text) => { if (id === 'b' && !answer) { w.sent.push({ id, text }); return } orig(id, text) })(w.api.promptAgent)
+  w.set({ hint: false, steps: [{ agent: 'a', prompt: 'faça' }, { agent: 'b', prompt: 'revise {{prev}}' }] })
+  const first = runPipeline('p', w.deps)
+  await new Promise((r) => setTimeout(r, 40))
+  stopPipeline('p', 'parado')
+  await first
+  assert.equal(w.data.state, 'stopped')
+  assert.equal(w.data.checkpoint.g, 1)
+  assert.equal(w.data.checkpoint.prev, 'código pronto')
+  answer = true
+  await runPipeline('p', { ...w.deps, resume: true })
+  assert.equal(w.data.state, 'done')
+  assert.equal(w.sent.filter((s) => s.id === 'a').length, 1, 'step 1 was not run again')
+  assert.equal(w.sent.at(-1).text, 'revise código pronto')
+  assert.equal(w.data.checkpoint, null, 'a finished run leaves no checkpoint')
+  assert.equal(w.deps.snapshots.length, 1, 'no second restore point when resuming')
+})
+
+test('resume ignores a checkpoint taken with a different list of steps', async () => {
+  const w = world({ a: { reply: () => 'x' }, b: { reply: () => 'y' } })
+  w.set({ hint: false, checkpoint: { n: 5, g: 1, prev: 'velho', loops: [], results: [] }, steps: [{ agent: 'a', prompt: '' }, { agent: 'b', prompt: '' }] })
+  await runPipeline('p', { ...w.deps, resume: true })
+  assert.equal(w.sent[0].id, 'a', 'started over')
+})

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import { Search, SquareTerminal, Folder, Zap, FileText } from 'lucide-react'
+import { Search, SquareTerminal, Folder, Zap, FileText, StickyNote, Workflow, ScrollText, History } from 'lucide-react'
+import { searchNodes } from './search.js'
 import { tr } from './i18n.js'
 
 const api = window.api
@@ -10,13 +11,17 @@ const norm = (s) => String(s).toLowerCase()
 export default function Palette({ open, onClose, state, goTo, actions }) {
   const [q, setQ] = useState('')
   const [hits, setHits] = useState([]) // lines found in terminal output
+  const [past, setPast] = useState([]) // history entries (what agents were asked and answered)
   const [sel, setSel] = useState(0)
   const list = useRef(null)
 
-  useEffect(() => { if (open) { setQ(''); setHits([]); setSel(0) } }, [open])
+  useEffect(() => { if (open) { setQ(''); setHits([]); setPast([]); setSel(0) } }, [open])
   useEffect(() => {
-    if (q.trim().length < 3) return setHits([])
-    const t = setTimeout(() => api.searchTerminals(q.trim()).then(setHits), 200)
+    if (q.trim().length < 3) { setHits([]); setPast([]); return }
+    const t = setTimeout(() => {
+      api.searchTerminals(q.trim()).then(setHits)
+      api.historyQuery({ q: q.trim(), limit: 8 }).then(setPast)
+    }, 200)
     return () => clearTimeout(t)
   }, [q])
 
@@ -31,8 +36,11 @@ export default function Palette({ open, onClose, state, goTo, actions }) {
     const base = f ? all.filter((i) => norm(i.label).includes(f)) : all
     const where = new Map(state.list.flatMap((w) => w.nodes.map((n) => [n.id, w])))
     const found = hits.map((h) => ({ icon: FileText, label: h.line, hint: tr("saída de {0}", [h.name]), run: () => goTo(where.get(h.id)?.id, h.id) }))
-    return [...base.slice(0, 40), ...found]
-  }, [q, hits, state, actions, goTo])
+    const KIND = { note: [StickyNote, tr("nota")], text: [StickyNote, tr("texto")], knowledge: [StickyNote, tr("conhecimento")], group: [Folder, tr("grupo")], pipeline: [Workflow, tr("fluxo")], report: [ScrollText, tr("relatório de fluxo")] }
+    const nodes = searchNodes(state, q).map((h) => ({ icon: KIND[h.kind][0], label: h.label, hint: `${KIND[h.kind][1]} · ${h.wsName}`, run: () => goTo(h.wsId, h.nodeId) }))
+    const old = past.map((e) => ({ icon: History, label: `${e.from}${e.to ? ' → ' + e.to : ''}: ${String(e.text || '').replace(/\s+/g, ' ').slice(0, 120)}`, hint: tr("histórico"), run: () => where.get(e.fromId || e.toId) ? goTo(where.get(e.fromId || e.toId).id, e.fromId || e.toId) : window.dispatchEvent(new CustomEvent('ac:agent-history', { detail: { nodeId: e.fromId || e.toId || '' } })) }))
+    return [...base.slice(0, 40), ...nodes, ...found, ...old]
+  }, [q, hits, past, state, actions, goTo])
 
   useEffect(() => { setSel(0) }, [q])
   useEffect(() => { list.current?.children[sel]?.scrollIntoView({ block: 'nearest' }) }, [sel])
@@ -50,7 +58,7 @@ export default function Palette({ open, onClose, state, goTo, actions }) {
         <Dialog.Overlay className="dlg-back" />
         <Dialog.Content className="dlg palette" aria-describedby={undefined} onKeyDown={onKey}>
           <Dialog.Title className="sr-only">{tr("Paleta de comandos")}</Dialog.Title>
-          <label className="pal-input"><Search size={16} /><input autoFocus value={q} placeholder={tr("Ir para workspace ou terminal, buscar na saída, executar ação…")} onChange={(e) => setQ(e.target.value)} /></label>
+          <label className="pal-input"><Search size={16} /><input autoFocus value={q} placeholder={tr("Buscar em workspaces, terminais, notas, fluxos, relatórios e histórico; executar ação…")} onChange={(e) => setQ(e.target.value)} /></label>
           <ul ref={list} className="pal-list" role="listbox">
             {items.length === 0 && <li className="pal-none">{tr("Nada encontrado.")}</li>}
             {items.map((i, k) => (

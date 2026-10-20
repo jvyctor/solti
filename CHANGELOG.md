@@ -4,7 +4,14 @@ All notable changes to Solti. Versions follow [Semantic Versioning](https://semv
 Downloads for every version: [Releases](https://github.com/jvyctor/solti/releases).
 
 ## [Unreleased]
+
+## [0.9.0] - 2026-10-19
 ### Added
+- **Per-agent budget**: set a US$ limit in the footer of a Claude, Codex or Gemini terminal; the agent is interrupted once when its estimated spend reaches it.
+- **Resume a pipeline**: a run that stopped (failure, timeout, budget, app closed) continues from the step where it stopped, with `{{prev}}` and the loop counters kept. "From the start" is still there.
+- **Global search** (`Ctrl/⌘+K`): besides workspaces and terminal output, it now finds notes, texts, project knowledge, pipeline steps, run reports and the agent history.
+- **Canvas organization**: align and distribute the selected nodes (right-click), color a group, and save camera positions per workspace (`Alt+1`…`Alt+9`).
+- **Approval notices outside the app**: an optional Slack, Discord, Telegram or ntfy.sh webhook is told when something waits for your approval (Settings → General → Notifications). Off by default; only the request text is sent.
 - [Code signing policy](CODE_SIGNING.md) with team roles and a privacy statement, ready for the SignPath Foundation's free code signing for open source. The Release workflow signs the Windows installer through SignPath as soon as it is configured, then rebuilds the auto-update files for the signed file.
 - Settings → Agents → Privacy: turn off the Claude plan quota check, the app's only request to Anthropic.
 - **What's new**: after an update, the app shows what changed since the version you had (also in Settings → About and `Ctrl/⌘+K`).
@@ -15,6 +22,9 @@ Downloads for every version: [Releases](https://github.com/jvyctor/solti/release
 - **Run reports**: every pipeline run gets a Markdown report (each step's result, the estimated cost per agent, the files each agent changed). Copy it as a PR description or save it as `.md` (pipeline → Recent runs).
 - **Install from the command line**: `scoop install solti` (Windows) and `brew install --cask solti` (macOS), with this repository as the bucket and the tap. Manifests for winget and the AUR are generated on every release ([packaging](packaging/README.md)). Installed this way, the app leaves updates to the package manager.
 ### Fixed
+- `Ctrl+V` did not paste into terminals (it sent `^V`). It pastes now, and `Ctrl+C` copies when text is selected (without a selection it still interrupts).
+- Selecting text in a terminal picked another place whenever the canvas was not at 100% zoom.
+- Resizing nodes: much larger handles and edge hit areas, above the connection ring.
 - Importing workspaces kept pipeline steps pointing at the old agent ids, so imported pipelines could not run.
 ### Changed
 - The app shell (`App.jsx`) is split into focused hooks under `src/app/`.
@@ -116,6 +126,7 @@ The first open-source release, and the first one for **macOS and Linux**.
 ## [0.1.0] - 2026-10-15
 - First version: terminals on a canvas, roped together, with a maestro and agents that talk through MCP tools.
 
+[0.9.0]: https://github.com/jvyctor/solti/releases/tag/v0.9.0
 [0.8.2]: https://github.com/jvyctor/solti/releases/tag/v0.8.2
 [0.8.1]: https://github.com/jvyctor/solti/releases/tag/v0.8.1
 [0.8.0]: https://github.com/jvyctor/solti/releases/tag/v0.8.0

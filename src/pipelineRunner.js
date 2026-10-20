@@ -28,9 +28,10 @@ function waitDone(api, agent, ms, { onCancel, overBudget }) {
 
 // deps: { api, getNode(id), patch(id, partialData), agentExists(id), agentName?(id), cost?(id) -> US$,
 //         snapshot?(label), notify?(title, body), approve?({ key, title, step, text, timeoutMs }) -> Promise<bool>,
-//         cancelApproval?(key), changes?(agentId) -> Promise<{ branch, base, files } | null> (for the run report) }
+//         cancelApproval?(key), changes?(agentId) -> Promise<{ branch, base, files } | null> (for the run report),
+//         resume?: continue from the checkpoint a stopped run left on the node instead of starting over }
 export async function runPipeline(id, deps) {
-  const { api, getNode, patch, agentExists, agentName = (a) => a, cost = () => 0, snapshot, notify, approve, cancelApproval, changes } = deps
+  const { api, getNode, patch, agentExists, agentName = (a) => a, cost = () => 0, snapshot, notify, approve, cancelApproval, changes, resume } = deps
   if (active.has(id)) return
   const cancels = new Set()
   let cancelReason = ''
@@ -71,14 +72,18 @@ export async function runPipeline(id, deps) {
     spent = () => agents.reduce((sum, a) => sum + Math.max((cost(a) || 0) - spentFrom[a], 0), 0)
     const overBudget = () => budget > 0 && spent() >= budget
 
-    snapshot?.(tr('Antes do fluxo “{0}”', [title]))
-    results = steps.map(() => null) // latest result per step: { state, summary, runs, note }
-    const loops = steps.map(() => 0) // jumps back taken from each step
+    // Resuming: the checkpoint is only good for the same steps it was taken with.
+    const cp = resume && node.data.checkpoint?.n === steps.length && node.data.checkpoint.g < groups.length ? node.data.checkpoint : null
+    if (!cp) snapshot?.(tr('Antes do fluxo “{0}”', [title]))
+    results = cp ? cp.results : steps.map(() => null) // latest result per step: { state, summary, runs, note }
+    const loops = cp ? [...cp.loops] : steps.map(() => 0) // jumps back taken from each step
     const show = (extra = {}) => patch(id, { results: results.map((r) => r && { ...r }), loops: [...loops], spent: spent(), ...extra })
-    show({ state: 'running', note: '', at: 0 })
+    show({ state: 'running', note: '', at: cp ? groups[cp.g][0] : 0 })
 
-    let prev = ''
-    for (let g = 0; g < groups.length;) {
+    let prev = cp ? cp.prev : ''
+    for (let g = cp ? cp.g : 0; g < groups.length;) {
+      // Where "Retomar" picks up if the run stops (or the app closes) before this group is done.
+      patch(id, { checkpoint: { n: steps.length, g, prev, loops: [...loops], results: results.map((r) => r && { ...r }) } })
       if (cancelReason) return end({ state: 'stopped', note: cancelReason }) // stopped between two groups
       if (++rounds > MAX_ROUNDS) return end({ state: 'stopped', note: tr('Parado: mais de {0} rodadas (verifique as repetições).', [MAX_ROUNDS]) })
       const idx = groups[g]
@@ -149,7 +154,7 @@ export async function runPipeline(id, deps) {
       show()
       g = jump ?? g + 1
     }
-    end({ state: 'done', note: '' }, prev)
+    end({ state: 'done', note: '', checkpoint: null }, prev)
   } finally {
     active.delete(id)
   }

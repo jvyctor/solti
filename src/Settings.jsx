@@ -224,6 +224,9 @@ function Geral({ s, set }) {
           <Row title={tr("Quando um fluxo terminar")} desc={tr("Concluído, parado, sem resposta ou orçamento atingido.")}>
             <Switch label={tr("Quando um fluxo terminar")} checked={s.notifyPipeline} onChange={(v) => set({ notifyPipeline: v })} />
           </Row>
+          <Row title={tr("Avisar fora do app quando algo esperar sua aprovação")} desc={tr("URL https de um webhook do Slack, Discord ou Telegram (…/sendMessage?chat_id=…), ou de um tópico do ntfy.sh. Só o texto do pedido é enviado. Aprove no app ou pelo celular. Vazio = desligado.")}>
+            <input className="set-input" type="url" aria-label={tr("URL do aviso externo")} placeholder="https://ntfy.sh/meu-topico" defaultValue={s.pushUrl || ''} onBlur={(e) => set({ pushUrl: e.target.value.trim() })} />
+          </Row>
         </Section>
         <Section title={tr("ATIVIDADE")}>
           <Row title={tr("Avisar quando um agente parar")} desc={tr("Notificação do sistema para terminais com “Monitorar atividade” ligado.")}>

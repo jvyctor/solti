@@ -192,9 +192,9 @@ O CI roda os testes unitários e o de fumaça em Windows, macOS e Linux a cada p
 ## Próximos passos
 
 - [ ] Instaladores assinados e notarizados
-- [ ] Comentários por linha no nó de Diff, enviados ao agente como instrução
-- [ ] Aviso quando dois agentes mexem nos mesmos arquivos em worktrees diferentes
-- [ ] Modelos de time e de fluxo compartilháveis
+- [x] Comentários por linha no nó de Diff, enviados ao agente como instrução
+- [x] Aviso quando dois agentes mexem nos mesmos arquivos em worktrees diferentes
+- [x] Modelos de time e de fluxo compartilháveis
 
 Tem uma ideia? [Abra um pedido de funcionalidade](https://github.com/jvyctor/solti/issues/new/choose).
 

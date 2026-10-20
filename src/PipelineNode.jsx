@@ -1,6 +1,6 @@
 import { Suspense, lazy, useContext, useEffect, useRef, useState } from 'react'
 import { Handle, NodeResizer, Position, useNodes, useReactFlow } from '@xyflow/react'
-import { Workflow, X, Play, Square, Plus, Trash2, Columns2, Repeat, SlidersHorizontal, ShieldCheck, FileText } from 'lucide-react'
+import { Workflow, X, Play, Square, Plus, Trash2, Columns2, Repeat, SlidersHorizontal, ShieldCheck, FileText, RotateCcw } from 'lucide-react'
 import { DEFAULT_APPROVAL_MIN, DEFAULT_TIMEOUT_MIN, settle } from './pipeline.js'
 import { isRunning } from './pipelineRunner.js'
 import { PipeCtx, money } from './shared.js'
@@ -39,6 +39,7 @@ export default function PipelineNode({ id, data, selected }) {
   }, [])
 
   const running = data.state === 'running'
+  const canResume = data.state === 'stopped' && data.checkpoint?.n === steps.length && data.checkpoint.g > 0
   const [report, setReport] = useState('') // run report open in a dialog
 
   return (
@@ -152,7 +153,10 @@ export default function PipelineNode({ id, data, selected }) {
           <label className="pipe-hint"><input type="checkbox" checked={data.hint !== false} disabled={running} onChange={(e) => set({ hint: e.target.checked })} /> {tr("lembrar o agente de chamar")} <code>{tr("canvas_done")}</code></label>
           {running
             ? <button onClick={() => stop(id)}><Square size={12} /> {tr("Parar")}</button>
-            : <button disabled={!steps.length} onClick={() => start(id)}><Play size={12} /> {tr("Executar")}</button>}
+            : <>
+                {canResume && <button title={tr("Continua do passo onde parou, sem refazer os anteriores")} onClick={() => start(id, { resume: true })}><RotateCcw size={12} /> {tr("Retomar")}</button>}
+                <button disabled={!steps.length} onClick={() => start(id)}><Play size={12} /> {canResume ? tr("Do início") : tr("Executar")}</button>
+              </>}
         </div>
       </div>
       <Suspense fallback={null}>{report && <ReportDialog title={data.name || tr('Fluxo')} report={report} onClose={() => setReport('')} />}</Suspense>

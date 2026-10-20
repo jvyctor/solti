@@ -73,6 +73,7 @@ app.whenReady().then(() => {
   ipc.startRoutines()
   activity.init(app.getPath('userData'), (ch, d) => S.toRenderer(ch, d))
   ledger.init(app.getPath('userData'))
+  require('./push.cjs').init({ activity, settings, tr: i18n.tr })
   terminals.applyPower()
   bridge.start()
   // Re-register only when the MCP script location changes.

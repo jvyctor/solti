@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { api, fmt, money } from '../shared.js'
 import { overBudget, wsCost } from '../costs.js'
+import { agentsOverBudget } from '../budget.js'
 import { isRunning, stopPipeline } from '../pipelineRunner.js'
 import { notify } from '../notify.js'
 import { tr } from '../i18n.js'
@@ -21,6 +22,24 @@ export function useGuards({ state, byNode, settings, findNode }) {
     limitedRef.current = next
     setLimited(next)
   }, [byNode, settings?.tokenLimit])
+
+  // Per-agent budget (US$, estimated): same rule as the token limit, interrupted once per crossing.
+  const [broke, setBroke] = useState(() => new Set())
+  const brokeRef = useRef(broke)
+  const agentBudgetKey = (state?.list || []).flatMap((w) => w.nodes.map((n) => n.data?.budget && n.type === 'terminal' ? `${n.id}:${n.data.budget}` : '')).join('|')
+  useEffect(() => {
+    if (!state) return
+    const next = new Set(agentsOverBudget(state, byNode))
+    for (const id of next) {
+      if (brokeRef.current.has(id)) continue
+      const n = findNode(id)
+      api.interrupt(id)
+      api.activityRecord({ kind: 'budget', from: n?.data.name || id, text: tr("Orçamento do agente de {0} atingido; interrompido.", [money(Number(n?.data.budget))]) })
+      notify(n?.data.name || id, tr("Orçamento de {0} atingido; agente interrompido.", [money(Number(n?.data.budget))]), { nodeId: id, always: true })
+    }
+    brokeRef.current = next
+    setBroke(next)
+  }, [byNode, agentBudgetKey])
 
   // Workspace budget (US$, estimated): reaching it stops that workspace's pipelines and interrupts its agents once.
   // You can still type to the agents; raising the budget re-arms it.
@@ -52,5 +71,6 @@ export function useGuards({ state, byNode, settings, findNode }) {
   }, [byNode, budgetKey])
 
   // What components read through UsageCtx.
-  return useMemo(() => ({ byNode, limited }), [byNode, limited])
+  const stopped = useMemo(() => new Set([...limited, ...broke]), [limited, broke])
+  return useMemo(() => ({ byNode, limited: stopped }), [byNode, stopped])
 }

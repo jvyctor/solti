@@ -10,13 +10,14 @@ import { tr } from '../i18n.js'
 // ws: { findNode, wsOf, patchNode, stateRef }; usageRef: current byNode; settingsRef: current settings.
 export function usePipelines({ findNode, wsOf, patchNode, stateRef }, usageRef, settingsRef) {
   const pipe = useMemo(() => ({
-    start: (id) => {
+    start: (id, opts = {}) => {
       const w = wsOf(id)
       if (w?.budget > 0 && wsCost(w, usageRef.current).total >= w.budget) {
         patchNode(id, { state: 'stopped', note: tr("Orçamento do workspace atingido. Aumente o orçamento no painel de uso para executar.") })
         return
       }
       return runPipeline(id, {
+        resume: !!opts.resume,
         api,
         getNode: findNode,
         patch: patchNode,

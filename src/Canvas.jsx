@@ -2,7 +2,7 @@ import { Suspense, lazy, useCallback, useContext, useEffect, useMemo, useRef, us
 import { Background, BackgroundVariant, ConnectionMode, MiniMap, ReactFlow, addEdge, applyEdgeChanges, applyNodeChanges, useReactFlow, useViewport } from '@xyflow/react'
 import { Map as MapIcon, Minus, Plus, X } from 'lucide-react'
 import { createHistory, snapshot, applySnapshot } from './history.js'
-import { kidsInside } from './geometry.js'
+import { arrange, kidsInside } from './geometry.js'
 import DiffNode from './DiffNode.jsx'
 import PipelineNode from './PipelineNode.jsx'
 import { ActivityDock } from './Activity.jsx'
@@ -18,6 +18,8 @@ import { PRESET_LABELS, SettingsCtx, api, ask, fresh, mem, randomName, terms, ui
 import { tr } from './i18n.js'
 
 export const GRID_VARIANT = { lines: BackgroundVariant.Lines, dots: BackgroundVariant.Dots, cross: BackgroundVariant.Cross }
+
+export const GROUP_COLORS = [['#ef4444', 'Vermelho'], ['#f59e0b', 'Laranja'], ['#10b981', 'Verde'], ['#2f7bff', 'Azul'], ['#8b5cf6', 'Roxo'], ['#ec4899', 'Rosa']]
 
 export const nodeTypes = { terminal: TerminalNode, note: NoteNode, group: GroupNode, text: TextNode, portal: PortalNode, files: FilesNode, diff: DiffNode, knowledge: KnowledgeNode, pipeline: PipelineNode }
 
@@ -86,7 +88,7 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
   const shownEdges = useMemo(() => ws.edges.map((e) => ({ ...e, type: 'floating', animated: false })), [ws.edges])
 
   const SIZES = { terminal: { width: 520, height: 340 }, portal: { width: 560, height: 380 }, group: { width: 640, height: 400 }, files: { width: 280, height: 360 }, diff: { width: 560, height: 400 }, knowledge: { width: 320, height: 240 }, pipeline: { width: 420, height: 480 }, note: { width: 280, height: 200 } }
-  const { screenToFlowPosition, deleteElements } = useReactFlow()
+  const { screenToFlowPosition, deleteElements, getViewport, setViewport } = useReactFlow()
   // Every deletion path (✕, menu, keyboard) funnels through here; ptys die in onNodesChange afterwards.
   const onBeforeDelete = async ({ nodes, edges }) => {
     const t = nodes.filter((n) => n.type === 'terminal')
@@ -164,6 +166,39 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
   }, [travel])
+  // Saved camera positions (ws.views): Alt+1..9 jumps to the Nth.
+  const views = ws.views || []
+  const goView = (v) => setViewport({ x: v.x, y: v.y, zoom: v.zoom }, { duration: 400 })
+  const saveView = () => update((w) => ({ ...w, views: [...(w.views || []), { name: tr('Vista {0}', [(w.views || []).length + 1]), ...getViewport() }].slice(0, 9) }))
+  const viewsRef = useRef(views)
+  viewsRef.current = views
+  useEffect(() => {
+    const key = (e) => {
+      if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.target.closest?.('input, textarea, select, [contenteditable], .xterm')) return
+      const v = viewsRef.current[Number(e.key) - 1]
+      if (v) { e.preventDefault(); goView(v) }
+    }
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  }, [])
+  // Align / distribute whatever is selected (right-click on one of the selected nodes).
+  const selectedNodes = () => ws.nodes.filter((x) => x.selected && !x.data.locked)
+  const arrangeSel = (mode) => {
+    const moves = arrange(selectedNodes(), mode)
+    if (moves.size) setNodes((ns) => ns.map((x) => (moves.has(x.id) ? { ...x, position: moves.get(x.id) } : x)))
+  }
+  const arrangeMenu = () => [
+    { label: tr("Alinhar à esquerda"), run: () => arrangeSel('left') },
+    { label: tr("Alinhar ao centro (horizontal)"), run: () => arrangeSel('hcenter') },
+    { label: tr("Alinhar à direita"), run: () => arrangeSel('right') },
+    '-',
+    { label: tr("Alinhar ao topo"), run: () => arrangeSel('top') },
+    { label: tr("Alinhar ao meio (vertical)"), run: () => arrangeSel('vcenter') },
+    { label: tr("Alinhar à base"), run: () => arrangeSel('bottom') },
+    '-',
+    { label: tr("Distribuir na horizontal"), disabled: selectedNodes().length < 3, run: () => arrangeSel('hspace') },
+    { label: tr("Distribuir na vertical"), disabled: selectedNodes().length < 3, run: () => arrangeSel('vspace') },
+  ]
   const add = (type, data, pos) =>
     setNodes((n) => [
       ...n,
@@ -206,6 +241,10 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
             '-',
           ]
         : []),
+      ...(n.type === 'group'
+        ? [{ label: tr("Cor do grupo"), sub: [{ label: tr("Padrão"), checked: !d.color, run: () => patch(n.id, { color: undefined }) }, ...GROUP_COLORS.map(([c, name]) => ({ label: tr(name), checked: d.color === c, run: () => patch(n.id, { color: c }) }))] }]
+        : []),
+      ...(selectedNodes().length > 1 && n.selected ? [{ label: tr("Alinhar e distribuir"), sub: arrangeMenu() }] : []),
       { label: tr("Copiar elemento"), run: () => (mem.clip = { ...n, data: fresh(n.data) }) },
       { label: tr("Duplicar"), run: () => spawnCopy(n) },
       { label: d.locked ? tr("Desbloquear") : tr("Bloquear"), run: () => setNodes((ns) => ns.map((x) => (x.id === n.id ? { ...x, draggable: !!d.locked, deletable: !!d.locked, data: { ...x.data, locked: !d.locked } } : x))) },
@@ -241,6 +280,15 @@ export function Canvas({ ws, update, scores, saveScore, insertScore, focus }) {
         { label: tr("Grupo"), run: () => add('group', { name: 'Grupo' }, pos) },
       ],
     },
+    {
+      label: tr("Posições da câmera"),
+      sub: [
+        { label: tr("Salvar posição atual"), disabled: views.length >= 9, run: saveView },
+        ...views.map((v, i) => ({ label: `${i + 1}. ${v.name}  (Alt+${i + 1})`, run: () => goView(v) })),
+        ...(views.length ? ['-', ...views.map((v, i) => ({ label: tr("Remover: {0}", [v.name]), danger: true, run: () => update((w) => ({ ...w, views: (w.views || []).filter((_, k) => k !== i) })) }))] : []),
+      ],
+    },
+    ...(selectedNodes().length > 1 ? [{ label: tr("Alinhar e distribuir"), sub: arrangeMenu() }] : []),
     { label: tr("Desfazer"), run: () => travel(-1) },
     { label: tr("Refazer"), run: () => travel(1) },
     { label: tr("Colar"), disabled: !mem.clip, run: () => mem.clip && setNodes((ns) => [...ns, { ...mem.clip, id: uid('n'), selected: false, position: pos }]) },
